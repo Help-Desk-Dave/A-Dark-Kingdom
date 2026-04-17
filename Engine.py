@@ -138,9 +138,11 @@ while True:
         try:
             coords = action[1].split(',')
             my_game.reconnoiter(int(coords[0]), int(coords[1]))
-        except: pass
+        except (ValueError, IndexError):
+            pass
     if action[0] == 'c' and len(action) == 2:
         try:
             coords = action[1].split(',')
             my_game.claim_hex(int(coords[0]), int(coords[1]))
-        except: pass
+        except (ValueError, IndexError):
+            pass
