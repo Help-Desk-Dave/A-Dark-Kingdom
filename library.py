@@ -106,7 +106,9 @@ ARMY_TYPES = [
     {"type": "Siege Engines", "desc": "Catapults and ballistae. High damage against fortifications."}
 ]
 
+CITIZEN_NAMES = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+
+
 def get_random_citizen():
     """Helper function to generate a generic pop."""
-    first_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
-    return random.choice(first_names)
+    return random.choice(CITIZEN_NAMES)
