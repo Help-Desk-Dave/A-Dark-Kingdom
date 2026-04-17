@@ -1,5 +1,7 @@
 import os
 import random
+import threading
+import time
 from rich.console import Console
 from rich.layout import Layout
 from rich.panel import Panel
@@ -8,6 +10,28 @@ from rich.text import Text
 from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
 
 console = Console()
+
+class Pop:
+    def __init__(self, name):
+        self.name = name
+        self.job = None
+        self.starving = False
+
+class Building:
+    def __init__(self, b_type):
+        self.type = b_type
+        data = STRUCTURES_DB.get(b_type, {})
+        self.capacity = data.get("capacity", 0)
+        self.housing_capacity = data.get("housing_capacity", 0)
+        self.production = data.get("production", {})
+        self.workers = []
+
+    def assign_worker(self, pop):
+        if len(self.workers) < self.capacity and pop.job is None:
+            self.workers.append(pop)
+            pop.job = self
+            return True
+        return False
 
 class Hex:
     def __init__(self, terrain):
@@ -25,6 +49,9 @@ class Kingdom:
         self.food = 40
         self.unrest = 0
         self.xp = 0
+        from data_libraries import get_random_citizen
+        self.pops = [Pop(get_random_citizen()) for _ in range(3)]
+        self.buildings = []
         self.level = 1
         
         # Flavor Set Config
@@ -38,6 +65,52 @@ class Kingdom:
         self.start_x, self.start_y = 5, 5
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
         self.log = [f"Expedition landed in the {flavor} regions.", "Capital founded."]
+
+
+    def tick(self):
+        from data_libraries import get_random_citizen
+
+        # Calculate production
+        produced_food = 0.0
+        produced_bp = 0.0
+
+        for building in self.buildings:
+            if building.production and building.capacity > 0:
+                efficiency = len(building.workers) / building.capacity
+                prod_amount = building.production.get("base_rate", 0) * efficiency
+
+                if building.production.get("type") == "food":
+                    produced_food += prod_amount
+                elif building.production.get("type") == "bp":
+                    produced_bp += prod_amount
+
+        self.food += produced_food
+        self.bp += produced_bp
+
+        # Consumption
+        food_consumed = len(self.pops) * 1.0
+        self.food -= food_consumed
+
+        # Starvation
+        if self.food < 0:
+            for pop in self.pops:
+                pop.starving = True
+            self.log.append("[!] Your pops are starving!")
+        else:
+            for pop in self.pops:
+                pop.starving = False
+
+        # Migration
+        max_housing = sum(b.housing_capacity for b in self.buildings)
+        if len(self.pops) < max_housing:
+            new_pop = Pop(get_random_citizen())
+            self.pops.append(new_pop)
+            self.log.append(f"[+] Migrant arrived: {new_pop.name}")
+
+        # Draw UI after tick to update screen
+        os.system('cls' if os.name == 'nt' else 'clear')
+        draw_ui(self)
+        print("\n> ", end="", flush=True) # reprint prompt
 
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
@@ -113,34 +186,89 @@ def draw_ui(game):
     
     # Stats Table
     stats = Table.grid(expand=True)
-    stats.add_row("BP (Treasury):", str(game.bp))
+    stats.add_row("BP (Treasury):", str(int(game.bp)))
+    stats.add_row("Food Stores:", str(int(game.food)))
     stats.add_row("Unrest:", str(game.unrest))
     stats.add_row("Kingdom XP:", str(game.xp))
+    stats.add_row("Population:", str(len(game.pops)))
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
-    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [N]ext | [Q]uit"))
+
+    # Log Panel
+    log_text = "\n".join(game.log[-5:])
+    layout["footer"].update(Panel(f"{log_text}\nCommands: [R]econnoiter x,y | [C]laim x,y | [aa] Auto-Assign | [Q]uit", title="Log"))
+
     
     console.print(layout)
 
 # --- Logic Phase ---
 # Since you're a Floridian, I've defaulted it to Swamp flavor!
-my_game = Kingdom("The Sunken Glades", flavor="swamp")
+if __name__ == '__main__':
+    my_game = Kingdom("The Sunken Glades", flavor="swamp")
 
-while True:
-    os.system('cls' if os.name == 'nt' else 'clear')
-    draw_ui(my_game)
+
+    def game_loop(game):
+        while True:
+            time.sleep(5)
+            game.tick()
+
+    # Start background thread
+    tick_thread = threading.Thread(target=game_loop, args=(my_game,), daemon=True)
+    tick_thread.start()
+
+    while True:
+
+        os.system('cls' if os.name == 'nt' else 'clear')
+        draw_ui(my_game)
     
-    action = input("\n> ").lower().split()
-    if not action: continue
+        action = input("\n> ").lower().split()
+        if not action: continue
     
-    if action[0] == 'q': break
-    if action[0] == 'r' and len(action) == 2:
-        try:
-            coords = action[1].split(',')
-            my_game.reconnoiter(int(coords[0]), int(coords[1]))
-        except: pass
-    if action[0] == 'c' and len(action) == 2:
-        try:
-            coords = action[1].split(',')
-            my_game.claim_hex(int(coords[0]), int(coords[1]))
-        except: pass
+        if action[0] == 'q': break
+        if action[0] == 'r' and len(action) == 2:
+            try:
+                coords = action[1].split(',')
+                my_game.reconnoiter(int(coords[0]), int(coords[1]))
+            except: pass
+        if action[0] == 'c' and len(action) == 2:
+            try:
+                coords = action[1].split(',')
+                my_game.claim_hex(int(coords[0]), int(coords[1]))
+            except: pass
+        if action[0] == 'aa':
+        # Auto-Assign
+            unemployed = [p for p in my_game.pops if p.job is None]
+            if not unemployed:
+                my_game.log.append("[!] No unemployed pops to assign.")
+                continue
+
+            empty_slots = []
+            for b in my_game.buildings:
+                empty_slots.extend([b] * (b.capacity - len(b.workers)))
+
+            if not empty_slots:
+                my_game.log.append("[!] No empty building slots.")
+                continue
+
+        # Determine demand based on what resource we are lowest on relative to a baseline
+        # Food is constantly consumed, so it usually has higher priority if low
+            food_demand_score = 100 - my_game.food
+            bp_demand_score = 100 - my_game.bp
+
+        # Sort buildings by which resource they produce that we need the most
+            def get_building_priority(b):
+                if not b.production: return 0
+                if b.production.get("type") == "food": return food_demand_score
+                if b.production.get("type") == "bp": return bp_demand_score
+                return 1
+
+            empty_slots.sort(key=get_building_priority, reverse=True)
+
+            assigned_count = 0
+            while unemployed and empty_slots:
+                pop = unemployed.pop(0)
+                building = empty_slots.pop(0)
+                if building.assign_worker(pop):
+                    assigned_count += 1
+
+            my_game.log.append(f"[+] Auto-assigned {assigned_count} pops.")

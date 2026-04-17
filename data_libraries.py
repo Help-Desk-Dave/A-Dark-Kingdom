@@ -59,6 +59,8 @@ PROMINENT_CITIZENS = [
     {"name": "Loris Shadwest", "title": "The Taxidermist", "trigger": "Kingdom Level 17", "quest": "Wants to taxidermy a real winged owlbear."}
 ]
 
+VILLAGER_NAMES = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+
 # --- SETTLEMENT STRUCTURES DB ---
 # Text Note: This dictionary maps a structure's name to its exact cost (in Resource Points), 
 # the number of lots it takes up on your Urban Grid, and its benefits.
@@ -67,21 +69,22 @@ STRUCTURES_DB = {
     "alchemy laboratory": {"lots": 1, "cost_rp": 18, "traits": ["building"], "desc": "A factory for alchemists crafting elixirs and items."},
     "arena": {"lots": 4, "cost_rp": 40, "traits": ["edifice", "yard"], "desc": "A large public structure for gladiator combats and spectacle."},
     "bank": {"lots": 1, "cost_rp": 28, "traits": ["building"], "desc": "A secure building for storing valuables and granting loans."},
-    "barracks": {"lots": 1, "cost_rp": 6, "traits": ["building", "residential"], "desc": "Housing and training for guards and militia. Reduces Unrest."},
+    "barracks": {"lots": 1, "cost_rp": 6, "traits": ["building", "residential"], "desc": "Housing and training for guards and militia. Reduces Unrest.", "housing_capacity": 4},
     "brewery": {"lots": 1, "cost_rp": 6, "traits": ["building"], "desc": "Crafts alcohol and beverages. Reduces Unrest initially."},
     "castle": {"lots": 4, "cost_rp": 54, "traits": ["building", "edifice", "famous", "infamous"], "desc": "A fortified seat of government. Significantly reduces Unrest."},
     "cathedral": {"lots": 4, "cost_rp": 58, "traits": ["building", "edifice", "famous", "infamous"], "desc": "A focal point of spiritual worship."},
     "cemetery": {"lots": 1, "cost_rp": 4, "traits": ["yard"], "desc": "A plot of land to bury the dead. Mitigates Unrest from dangerous events."},
     "dump": {"lots": 1, "cost_rp": 4, "traits": ["yard"], "desc": "A centralized place for the disposal of refuse."},
+    "farm": {"lots": 1, "cost_rp": 2, "traits": ["building", "agricultural"], "desc": "Produces food for the kingdom.", "capacity": 3, "production": {"type": "food", "base_rate": 5}},
     "garrison": {"lots": 2, "cost_rp": 28, "traits": ["building", "residential"], "desc": "A complex for maintaining military forces."},
     "general store": {"lots": 1, "cost_rp": 8, "traits": ["building"], "desc": "A basic shop that provides standard goods to citizens."},
     "granary": {"lots": 1, "cost_rp": 12, "traits": ["building"], "desc": "Silos and warehouses for grain. Increases Food capacity."},
     "hospital": {"lots": 2, "cost_rp": 30, "traits": ["building"], "desc": "Dedicated to healing the sick through magical and mundane means."},
-    "houses": {"lots": 1, "cost_rp": 3, "traits": ["building", "residential"], "desc": "Neighborhood dwellings for citizens to prevent overcrowding."},
+    "houses": {"lots": 1, "cost_rp": 3, "traits": ["building", "residential"], "desc": "Neighborhood dwellings for citizens to prevent overcrowding.", "housing_capacity": 4},
     "illicit market": {"lots": 1, "cost_rp": 50, "traits": ["building", "infamous"], "desc": "Unregulated and illegal trade. Increases Crime ruin."},
     "inn": {"lots": 1, "cost_rp": 10, "traits": ["building", "residential"], "desc": "A safe place for visitors to rest."},
     "jail": {"lots": 1, "cost_rp": 14, "traits": ["building"], "desc": "Fortified structure that houses criminals. Reduces Crime."},
-    "lumberyard": {"lots": 2, "cost_rp": 16, "traits": ["yard"], "desc": "Increases Lumber capacity. Must be built next to water."},
+    "lumberyard": {"lots": 2, "cost_rp": 16, "traits": ["yard"], "desc": "Increases Lumber capacity. Must be built next to water.", "capacity": 3, "production": {"type": "bp", "base_rate": 3}},
     "marketplace": {"lots": 2, "cost_rp": 48, "traits": ["building", "residential"], "desc": "A large neighborhood of shops around an open area."},
     "park": {"lots": 1, "cost_rp": 5, "traits": ["yard"], "desc": "Undeveloped land set aside for public use."},
     "shrine": {"lots": 1, "cost_rp": 8, "traits": ["building"], "desc": "A small building devoted to a deity or faith."},
@@ -108,5 +111,9 @@ ARMY_TYPES = [
 
 def get_random_citizen():
     """Helper function to generate a generic pop."""
-    first_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
-    return random.choice(first_names)
+    return random.choice(VILLAGER_NAMES)
+FLAVORS = {
+    "swamp": {
+        "farm_art": " 🌾 ",
+    }
+}
