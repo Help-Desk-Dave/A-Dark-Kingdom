@@ -2,8 +2,40 @@ import random
 
 FLAVORS = {
     "swamp": {
-        "farm_art": " ~ ",
-        "color": "green"
+        "Forest": " Ѱ ",
+        "Plain": " . ",
+        "Mountain": " ▲ ",
+        "Hill": " m ",
+        "Swamp": " ~ ",
+        "color": "green",
+        "text_suffix": "of the Glades"
+    },
+    "icy": {
+        "Forest": " ❄ ",
+        "Plain": " _ ",
+        "Mountain": " 🏔 ",
+        "Hill": " ^ ",
+        "Swamp": " 🧊 ",
+        "color": "cyan",
+        "text_suffix": "of the Frozen North"
+    },
+    "necromancy": {
+        "Forest": " ✝ ",
+        "Plain": " ☠ ",
+        "Mountain": " ⚰ ",
+        "Hill": " ☖ ",
+        "Swamp": " ☣ ",
+        "color": "magenta",
+        "text_suffix": "of the Grave"
+    },
+    "desert": {
+        "Forest": " 🌵 ",
+        "Plain": " . ",
+        "Mountain": " ▲ ",
+        "Hill": " n ",
+        "Swamp": " ♒ ",
+        "color": "yellow",
+        "text_suffix": "of the Burning Sands"
     }
 }
 
