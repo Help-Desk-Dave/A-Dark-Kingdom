@@ -59,7 +59,11 @@ export class Pop {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     getModifier(stat) {
         return Math.floor((stat - 10) / 2);
@@ -128,10 +132,17 @@ export function processTick(state) {
     bpChange += Math.floor(state.pops.length / 2);
 
 =======
+<<<<<<< HEAD
 
     // Tax base (1 BP per 2 Pops)
     bpChange += Math.floor(state.pops.length / 2);
 
+=======
+
+    // Tax base (1 BP per 2 Pops)
+    bpChange += Math.floor(state.pops.length / 2);
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     // Food Consumption
     foodChange -= state.pops.length;
@@ -144,7 +155,11 @@ export function processTick(state) {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     if (state.advisors.general) {
         const gMod = Math.floor((state.advisors.general.strength - 10) / 2);
@@ -164,7 +179,11 @@ export function processTick(state) {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                 // Terrain Specialization
                 if (hex.terrain === "Mountain" || hex.terrain === "Hill") {
@@ -175,7 +194,11 @@ export function processTick(state) {
 <<<<<<< HEAD
                     // The instructions said "Lumberyard: If built in a hex with a Forest...".
 =======
+<<<<<<< HEAD
                     // The instructions said "Lumberyard: If built in a hex with a Forest...".
+=======
+                    // The instructions said "Lumberyard: If built in a hex with a Forest...".
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                     // Let's abstract this: if the capital has a lumberyard, all claimed forests get +1 BP.
                 } else if (hex.terrain === "Swamp") {
@@ -220,7 +243,11 @@ export function processTick(state) {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     if (state.food < 0) {
         state.food = 0;
@@ -243,10 +270,17 @@ export function processTick(state) {
         let migrants = Math.min(spaceLeft, baseMigrants);
 
 =======
+<<<<<<< HEAD
 
         let spaceLeft = housingCapacity - state.pops.length;
         let migrants = Math.min(spaceLeft, baseMigrants);
 
+=======
+
+        let spaceLeft = housingCapacity - state.pops.length;
+        let migrants = Math.min(spaceLeft, baseMigrants);
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
         for (let i = 0; i < migrants; i++) {
              let p = new Pop();

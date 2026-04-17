@@ -79,7 +79,11 @@ function App() {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     const { x, y } = selectedLot;
     const requiredLots = structure.lots || 1;
@@ -121,7 +125,11 @@ function App() {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     if (state.bp >= structure.cost_rp) {
       setState(prevState => {
@@ -152,7 +160,11 @@ function App() {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
     const assignedPop = availablePops[0];
     setState(prevState => ({
@@ -219,10 +231,17 @@ function App() {
         <div className="flex-1 p-4 overflow-y-auto space-y-6">
 
 =======
+<<<<<<< HEAD
 
         {/* Left Column: Maps */}
         <div className="flex-1 p-4 overflow-y-auto space-y-6">
 
+=======
+
+        {/* Left Column: Maps */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-6">
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
             {/* World Map Section */}
             <div className="bg-gray-800 rounded p-4 shadow">
@@ -234,7 +253,11 @@ function App() {
 <<<<<<< HEAD
                     {state.world.map((row, y) =>
 =======
+<<<<<<< HEAD
                     {state.world.map((row, y) =>
+=======
+                    {state.world.map((row, y) =>
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                         row.map((hex, x) => (
                             <button
@@ -245,8 +268,13 @@ function App() {
                                     ${hex.status === 0 ? 'bg-gray-700 text-gray-500' :
                                       hex.status === 1 ? 'bg-gray-600 text-white' :
 =======
+<<<<<<< HEAD
                                     ${hex.status === 0 ? 'bg-gray-700 text-gray-500' :
                                       hex.status === 1 ? 'bg-gray-600 text-white' :
+=======
+                                    ${hex.status === 0 ? 'bg-gray-700 text-gray-500' :
+                                      hex.status === 1 ? 'bg-gray-600 text-white' :
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                                       'bg-yellow-900 border border-yellow-500 text-yellow-300 font-bold'}
                                     hover:bg-gray-500 transition-colors
@@ -256,8 +284,13 @@ function App() {
                                 {hex.status === 0 ? '?' :
                                  hex.status === 1 ? flavor[hex.terrain] || '.' :
 =======
+<<<<<<< HEAD
                                 {hex.status === 0 ? '?' :
                                  hex.status === 1 ? flavor[hex.terrain] || '.' :
+=======
+                                {hex.status === 0 ? '?' :
+                                 hex.status === 1 ? flavor[hex.terrain] || '.' :
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                                  '[C]'}
                             </button>
@@ -299,7 +332,11 @@ function App() {
 <<<<<<< HEAD
                     {state.capitalGrid.map((row, y) =>
 =======
+<<<<<<< HEAD
                     {state.capitalGrid.map((row, y) =>
+=======
+                    {state.capitalGrid.map((row, y) =>
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                         row.map((lot, x) => (
                             <button
@@ -330,8 +367,13 @@ function App() {
                                     <button
                                         key={key}
 =======
+<<<<<<< HEAD
                                     <button
                                         key={key}
+=======
+                                    <button
+                                        key={key}
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                                         onClick={() => handleBuild(key)}
                                         className="text-left px-2 py-1 bg-gray-800 hover:bg-gray-600 rounded text-xs flex justify-between"
@@ -353,7 +395,11 @@ function App() {
 <<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
             {/* Advisors Section */}
             <div className="bg-gray-800 rounded p-4 shadow flex justify-between">
@@ -406,10 +452,17 @@ function App() {
             <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between">
                 <button
 =======
+<<<<<<< HEAD
 
             {/* Quick Actions / Reset */}
             <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between">
                 <button
+=======
+
+            {/* Quick Actions / Reset */}
+            <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between">
+                <button
+>>>>>>> origin/feat/vite-react-frontend-7468165478531852990
 >>>>>>> jules-7468165478531852990-94aa9d18
                     onClick={() => {
                         if(window.confirm('Are you sure you want to abdicate? This will reset your kingdom.')) {
