@@ -6,14 +6,8 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from library import STRUCTURES_DB, PROMINENT_CITIZENS
+from data_libraries import FLAVORS
 
-# Define FLAVORS since it wasn't in library.py but was imported
-FLAVORS = {
-    "swamp": {"farm_art": " 🌾"},
-    "forest": {"farm_art": " 🌲"},
-    "plain": {"farm_art": " 🌿"},
-    "mountain": {"farm_art": " ⛰️"}
-}
 
 console = Console()
 
@@ -163,6 +157,7 @@ class Kingdom:
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
+        self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
 
     def generate_world(self):
@@ -199,8 +194,13 @@ class Kingdom:
         sx, sy = self.current_view
         hex_obj = self.world[sy][sx]
         if hex_obj.settlement is None:
-            self.log.append("[!] No settlement exists here to build in.")
-            return
+            if hex_obj.status == 2: # Claimed
+                # Auto-initialize a settlement if claimed but empty
+                hex_obj.settlement = Settlement(f"Settlement ({sx},{sy})")
+                self.log.append(f"[+] Initialized new settlement at {sx},{sy}.")
+            else:
+                self.log.append("[!] You must claim this hex before building a settlement here.")
+                return
 
         structure_name = structure_name.lower()
         if structure_name not in STRUCTURES_DB:
@@ -336,6 +336,32 @@ if __name__ == "__main__":
                 coords = action[1].split(',')
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
             except Exception: pass
+        if action[0] == 'v' and len(action) == 2:
+            if action[1] == 'world':
+                my_game.current_view = 'world'
+                my_game.log.append('[+] Viewing World Map.')
+            else:
+                try:
+                    coords = action[1].split(',')
+                    vx, vy = int(coords[0]), int(coords[1])
+                    if 0 <= vx < 10 and 0 <= vy < 10:
+                        if my_game.world[vy][vx].status > 0:
+                            my_game.current_view = (vx, vy)
+                            my_game.log.append(f'[+] Viewing Hex ({vx},{vy}).')
+                        else:
+                            my_game.log.append(f'[-] Hex ({vx},{vy}) is unmapped.')
+                    else:
+                        my_game.log.append(f'[!] ({vx},{vy}) is out of bounds!')
+                except Exception:
+                    pass
+        if action[0] == 'b' and len(action) >= 3:
+            try:
+                structure_name = ' '.join(action[1:-1])
+                coords = action[-1].split(',')
+                bx, by = int(coords[0]), int(coords[1])
+                my_game.build_structure(structure_name, bx, by)
+            except Exception:
+                pass
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
