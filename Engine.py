@@ -8,6 +8,9 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 from library import STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen
+from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
+from library import STRUCTURES_DB, PROMINENT_CITIZENS
+from data_libraries import FLAVORS
 
 # Define FLAVORS since it wasn't in library.py but was imported
 FLAVORS = {
@@ -194,6 +197,11 @@ class Kingdom:
         self.citizens = [Pop(get_random_citizen()) for _ in range(5)]
         self.advisors = {"general": None, "treasurer": None, "diplomat": None}
 
+        self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
+        self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
+
     def tick(self):
         with self.lock:
             if self.stage < 3:
@@ -223,6 +231,9 @@ class Kingdom:
                 boost = self.advisors["diplomat"].charisma // 4
                 self.loyalty += boost
                 self.log.append(f"[+] Diplomat {self.advisors['diplomat'].name} improved Loyalty by {boost}.")
+            # Advisor Modifiers (Attribute // 4)
+            treasurer_bonus = self.advisors.get("Treasurer", {}).get("attribute", 0) // 4
+            self.bp += treasurer_bonus
 
             if self.tick_count % 12 == 0:
                 self.bp -= ANNUAL_UPKEEP
@@ -319,6 +330,7 @@ class Kingdom:
         if self.stage < 2: return
         # Treasurer's Warning: Using a check to prevent overspending
         cost = 5
+        cost = RECON_COST
 
         # Guardrail check
         if self.bp - cost < 0:
@@ -350,6 +362,13 @@ class Kingdom:
         if hex_obj.settlement is None:
             self.log.append("[!] No settlement exists here to build in.")
             return
+            if hex_obj.status == 2: # Claimed
+                # Auto-initialize a settlement if claimed but empty
+                hex_obj.settlement = Settlement(f"Settlement ({sx},{sy})")
+                self.log.append(f"[+] Initialized new settlement at {sx},{sy}.")
+            else:
+                self.log.append("[!] You must claim this hex before building a settlement here.")
+                return
 
         structure_name = structure_name.lower()
         if structure_name not in STRUCTURES_DB:
@@ -391,6 +410,18 @@ class Kingdom:
 
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
+        cost = 10
+        if 0 <= x < 10 and 0 <= y < 10:
+            if self.world[y][x].status == 1:
+                if self.bp >= cost:
+                    self.bp -= cost
+                    self.world[y][x].status = 2
+                    self.xp += 10 # Milestone: 10 XP per hex
+                    self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
+                else:
+                    self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
+            else:
+                self.log.append("[!] You must map this area before claiming it!")
         if self.stage < 2: return
         cost = CLAIM_COST
 
@@ -409,7 +440,7 @@ class Kingdom:
                 self.xp += 10 # Milestone: 10 XP per hex
                 self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
         else:
-            self.log.append("[!] You must map this area before claiming it!")
+            self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
     def render_map(self):
         """Note: This logic checks the 'status' of every hex to decide what to show Jules."""
@@ -485,6 +516,7 @@ def draw_ui(game):
          stats.add_row("Kingdom XP:", "???")
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
+    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [V]iew x,y / world | [B]uild <name> x,y | Flavor <name> | [N]ext | [Q]uit"))
 
     # Render log
     log_content = "\n".join(game.log[-5:])
@@ -530,11 +562,56 @@ if __name__ == "__main__":
                 coords = action[1].split(',')
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
             except Exception: pass
+        if action[0] == 'v' and len(action) == 2:
+            if action[1] == 'world':
+                my_game.current_view = 'world'
+                my_game.log.append('[+] Viewing World Map.')
+            else:
+                try:
+                    coords = action[1].split(',')
+                    vx, vy = int(coords[0]), int(coords[1])
+                    if 0 <= vx < 10 and 0 <= vy < 10:
+                        if my_game.world[vy][vx].status > 0:
+                            my_game.current_view = (vx, vy)
+                            my_game.log.append(f'[+] Viewing Hex ({vx},{vy}).')
+                        else:
+                            my_game.log.append(f'[-] Hex ({vx},{vy}) is unmapped.')
+                    else:
+                        my_game.log.append(f'[!] ({vx},{vy}) is out of bounds!')
+                except Exception:
+                    pass
+        if action[0] == 'b' and len(action) >= 3:
+            try:
+                structure_name = ' '.join(action[1:-1])
+                coords = action[-1].split(',')
+                bx, by = int(coords[0]), int(coords[1])
+                my_game.build_structure(structure_name, bx, by)
+            except Exception:
+                pass
+            except (ValueError, IndexError): pass
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
             except Exception: pass
+            except (ValueError, IndexError): pass
+        if action[0] == 'v' and len(action) == 2:
+            if action[1] == 'world':
+                my_game.current_view = "world"
+            else:
+                try:
+                    coords = action[1].split(',')
+                    x, y = int(coords[0]), int(coords[1])
+                    if 0 <= x < 10 and 0 <= y < 10:
+                        my_game.current_view = (x, y)
+                except (ValueError, IndexError): pass
+        if action[0] == 'b' and len(action) >= 3:
+            try:
+                coords = action[-1].split(',')
+                x, y = int(coords[0]), int(coords[1])
+                structure_name = " ".join(action[1:-1])
+                my_game.build_structure(structure_name, x, y)
+            except (ValueError, IndexError): pass
         if action[0] in ['flavor', 'f'] and len(action) == 2:
             new_flavor = action[1]
             if new_flavor in FLAVORS:
