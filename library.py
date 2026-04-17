@@ -1,5 +1,49 @@
 import random
 
+RECON_COST = 5
+CLAIM_COST = 10
+ANNUAL_UPKEEP = 25
+HOUSING_CAPACITY = 4
+
+FLAVORS = {
+    "swamp": {
+        "Forest": " Ѱ ",
+        "Plain": " . ",
+        "Mountain": " ▲ ",
+        "Hill": " m ",
+        "Swamp": " ~ ",
+        "color": "green",
+        "text_suffix": "of the Glades"
+    },
+    "icy": {
+        "Forest": " ❄ ",
+        "Plain": " _ ",
+        "Mountain": " 🏔 ",
+        "Hill": " ^ ",
+        "Swamp": " 🧊 ",
+        "color": "cyan",
+        "text_suffix": "of the Frozen North"
+    },
+    "necromancy": {
+        "Forest": " ✝ ",
+        "Plain": " ☠ ",
+        "Mountain": " ⚰ ",
+        "Hill": " ☖ ",
+        "Swamp": " ☣ ",
+        "color": "magenta",
+        "text_suffix": "of the Grave"
+    },
+    "desert": {
+        "Forest": " 🌵 ",
+        "Plain": " . ",
+        "Mountain": " ▲ ",
+        "Hill": " n ",
+        "Swamp": " ♒ ",
+        "color": "yellow",
+        "text_suffix": "of the Burning Sands"
+    }
+}
+
 # Text Note: This library has been greatly expanded using the Kingmaker PDF.
 # By keeping this data structured as lists and dictionaries, your main game logic 
 # (in kingdom_sim.py) can loop through them without needing thousands of lines of hard-coded text.
@@ -73,6 +117,7 @@ STRUCTURES_DB = {
     "cathedral": {"lots": 4, "cost_rp": 58, "traits": ["building", "edifice", "famous", "infamous"], "desc": "A focal point of spiritual worship."},
     "cemetery": {"lots": 1, "cost_rp": 4, "traits": ["yard"], "desc": "A plot of land to bury the dead. Mitigates Unrest from dangerous events."},
     "dump": {"lots": 1, "cost_rp": 4, "traits": ["yard"], "desc": "A centralized place for the disposal of refuse."},
+    "farm": {"lots": 1, "cost_rp": 5, "traits": ["yard"], "desc": "Produces food for your citizens. Essential for survival."},
     "garrison": {"lots": 2, "cost_rp": 28, "traits": ["building", "residential"], "desc": "A complex for maintaining military forces."},
     "general store": {"lots": 1, "cost_rp": 8, "traits": ["building"], "desc": "A basic shop that provides standard goods to citizens."},
     "granary": {"lots": 1, "cost_rp": 12, "traits": ["building"], "desc": "Silos and warehouses for grain. Increases Food capacity."},
@@ -106,13 +151,9 @@ ARMY_TYPES = [
     {"type": "Siege Engines", "desc": "Catapults and ballistae. High damage against fortifications."}
 ]
 
+CITIZEN_NAMES = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+
+
 def get_random_citizen():
     """Helper function to generate a generic pop."""
-    first_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
-    return random.choice(first_names)
-FLAVORS = {
-    "swamp": {
-        "farm_art": " T ",
-        "color": "green"
-    }
-}
+    return random.choice(CITIZEN_NAMES)
