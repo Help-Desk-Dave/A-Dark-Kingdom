@@ -37,7 +37,7 @@ class Kingdom:
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
-        self.log = [f"Expedition landed in the {flavor} regions.", "Capital founded."]
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
 
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
@@ -88,8 +88,8 @@ class Kingdom:
                     map_display.append(" ?? ", style="dim")
                 elif hex_obj.status == 1:
                     # Show terrain based on Flavor
-                    char = self.style["farm_art"] if hex_obj.terrain == "Swamp" else " . "
-                    map_display.append(char, style="green")
+                    char = self.style.get(hex_obj.terrain, " . ")
+                    map_display.append(char, style=self.style["color"])
                 elif hex_obj.status == 2:
                     map_display.append(" [C]", style="bold gold1")
             map_display.append("\n")
@@ -108,7 +108,7 @@ def draw_ui(game):
     )
 
     # Apply Flavor Visuals
-    header_color = "green" if game.flavor == "swamp" else "cyan"
+    header_color = game.style["color"]
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
     layout["map"].update(Panel(game.render_map(), title="World Map (Stolen Lands)", border_style=header_color))
@@ -120,7 +120,7 @@ def draw_ui(game):
     stats.add_row("Kingdom XP:", str(game.xp))
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
-    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [N]ext | [Q]uit"))
+    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | Flavor <name> | [N]ext | [Q]uit"))
     
     console.print(layout)
 
@@ -147,3 +147,11 @@ if __name__ == "__main__":
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
             except: pass
+        if action[0] in ['flavor', 'f'] and len(action) == 2:
+            new_flavor = action[1]
+            if new_flavor in FLAVORS:
+                my_game.flavor = new_flavor
+                my_game.style = FLAVORS[new_flavor]
+                my_game.log.append(f"[!] Kingdom aesthetic shifted to {new_flavor.capitalize()}.")
+            else:
+                my_game.log.append(f"[!] Unknown flavor: {new_flavor}")

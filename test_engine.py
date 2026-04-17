@@ -65,5 +65,32 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertEqual(self.game.bp, initial_bp)
         self.assertTrue(any("[!] That area is already mapped." in entry for entry in self.game.log))
 
+    def test_flavor_switching(self):
+        from data_libraries import FLAVORS
+        # Switch to icy
+        self.game.flavor = "icy"
+        self.game.style = FLAVORS["icy"]
+        self.assertEqual(self.game.style["color"], "cyan")
+
+        # Test rendering with icy flavor
+        x, y = 0, 0
+        self.game.world[y][x].status = 1
+        self.game.world[y][x].terrain = "Mountain"
+
+        # We need to mock the Text object's append method to see what's being added
+        with patch('Engine.Text') as MockText:
+            mock_text_inst = MockText.return_value
+            self.game.render_map()
+
+            # Check if it appended the icy mountain art " 🏔 "
+            # It might append other things like " ?? ", "\n"
+            # We look for a call that has " 🏔 " and style "cyan"
+            found = False
+            for call in mock_text_inst.append.call_args_list:
+                if " 🏔 " in str(call) and "cyan" in str(call):
+                    found = True
+                    break
+            self.assertTrue(found, "Should render icy mountain with cyan style.")
+
 if __name__ == '__main__':
     unittest.main()
