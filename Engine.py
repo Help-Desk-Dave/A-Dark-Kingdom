@@ -5,9 +5,25 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
+from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen
 
 console = Console()
+
+class Pop:
+    def __init__(self, name):
+        self.name = name
+        self.hunger = 0
+        self.happiness = 100
+        self.is_alive = True
+
+        # Determine alignment based on pathfinder (LG, NG, CG, LN, N, CN, LE, NE, CE)
+        alignments = ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
+        self.alignment = random.choice(alignments)
+
+        # Stats ranging from 8 to 18
+        self.strength = random.randint(8, 18)
+        self.intelligence = random.randint(8, 18)
+        self.charisma = random.randint(8, 18)
 
 class Hex:
     def __init__(self, terrain):
@@ -26,6 +42,7 @@ class Kingdom:
         self.unrest = 0
         self.xp = 0
         self.level = 1
+        self.loyalty = 0
         
         # Flavor Set Config
         self.style = FLAVORS[flavor]
@@ -38,6 +55,37 @@ class Kingdom:
         self.start_x, self.start_y = 5, 5
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
         self.log = [f"Expedition landed in the {flavor} regions.", "Capital founded."]
+
+        # Citizens and Advisors
+        self.citizens = [Pop(get_random_citizen()) for _ in range(5)]
+        self.advisors = {"general": None, "treasurer": None, "diplomat": None}
+
+    def tick(self):
+        """Monthly Tick: Updates stats based on advisors and triggers events."""
+        self.log.append("--- A new month begins ---")
+
+        # Passive Shield Mechanic
+        if self.loyalty > 10 and self.unrest > 0:
+            if random.random() < 0.5: # 50% chance
+                self.unrest = max(0, self.unrest - 1)
+                self.log.append("[+] High Loyalty automatically reduced Unrest by 1.")
+
+        # Advisor Effects
+        if self.advisors["treasurer"] and self.advisors["treasurer"].is_alive:
+            bonus = self.advisors["treasurer"].intelligence // 4
+            self.bp += bonus
+            self.log.append(f"[+] Treasurer {self.advisors['treasurer'].name} collected {bonus} extra BP.")
+
+        if self.advisors["general"] and self.advisors["general"].is_alive:
+            reduction = self.advisors["general"].strength // 4
+            if self.unrest > 0:
+                self.unrest = max(0, self.unrest - reduction)
+                self.log.append(f"[+] General {self.advisors['general'].name} reduced Unrest by {reduction}.")
+
+        if self.advisors["diplomat"] and self.advisors["diplomat"].is_alive:
+            boost = self.advisors["diplomat"].charisma // 4
+            self.loyalty += boost
+            self.log.append(f"[+] Diplomat {self.advisors['diplomat'].name} improved Loyalty by {boost}.")
 
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
@@ -115,10 +163,21 @@ def draw_ui(game):
     stats = Table.grid(expand=True)
     stats.add_row("BP (Treasury):", str(game.bp))
     stats.add_row("Unrest:", str(game.unrest))
+    stats.add_row("Loyalty:", str(game.loyalty))
     stats.add_row("Kingdom XP:", str(game.xp))
+    stats.add_row("", "")
+    stats.add_row("[bold]Advisors:[/bold]", "")
+    for role, pop in game.advisors.items():
+        stats.add_row(f"{role.capitalize()}:", pop.name if pop else "None")
+
+    stats.add_row("", "")
+    stats.add_row("[bold]Citizens:[/bold]", "")
+    for pop in game.citizens:
+        stats.add_row(f"{pop.name}", f"S:{pop.strength} I:{pop.intelligence} C:{pop.charisma}")
     
-    layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
-    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [N]ext | [Q]uit"))
+    ledger_style = "red" if game.bp < 10 else "white"
+    layout["stats"].update(Panel(stats, title="Kingdom Ledger", border_style=ledger_style))
+    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | assign <role> <name> | [N]ext | [Q]uit"))
     
     console.print(layout)
 
@@ -134,6 +193,24 @@ while True:
     if not action: continue
     
     if action[0] == 'q': break
+    if action[0] == 'n':
+        my_game.tick()
+    if action[0] == 'assign' and len(action) == 3:
+        role = action[1].lower()
+        pop_name = action[2].lower()
+
+        if role in my_game.advisors:
+            target_pop = next((p for p in my_game.citizens if p.name.lower() == pop_name), None)
+            if target_pop:
+                if target_pop.is_alive:
+                    my_game.advisors[role] = target_pop
+                    my_game.log.append(f"[+] Assigned {target_pop.name} to {role.capitalize()}.")
+                else:
+                    my_game.log.append(f"[-] {target_pop.name} is dead and cannot be an advisor.")
+            else:
+                my_game.log.append(f"[-] Could not find a citizen named {pop_name}.")
+        else:
+            my_game.log.append(f"[-] Invalid advisor role: {role}.")
     if action[0] == 'r' and len(action) == 2:
         try:
             coords = action[1].split(',')

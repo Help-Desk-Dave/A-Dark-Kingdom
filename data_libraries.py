@@ -110,3 +110,9 @@ def get_random_citizen():
     """Helper function to generate a generic pop."""
     first_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
     return random.choice(first_names)
+FLAVORS = {
+    "swamp": {
+        "farm_art": " T ",
+        "color": "green"
+    }
+}
