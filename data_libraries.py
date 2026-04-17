@@ -114,6 +114,21 @@ FLAVORS = {
         "color": "green",
         "text_suffix": "in the swamp regions",
         "Swamp": " 🌾 "
+    },
+    "icy": {
+        "color": "cyan",
+        "text_suffix": "in the frozen wastes",
+        "Mountain": " 🏔️ "
+    },
+    "necromancy": {
+        "color": "magenta",
+        "text_suffix": "in the blighted lands",
+        "Forest": " 💀 "
+    },
+    "desert": {
+        "color": "yellow",
+        "text_suffix": "in the scorching dunes",
+        "Plain": " 🏜️ "
     }
 }
 
