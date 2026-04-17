@@ -103,6 +103,80 @@ class TestEngineReconnoiter(unittest.TestCase):
                     break
             self.assertTrue(found, "Should render icy mountain with cyan style.")
 
+class TestSettlement(unittest.TestCase):
+    def test_overcrowded_logic(self):
+        # A settlement is 'Overcrowded' if residential lots are less than a quarter of other occupied lots (residential_lots < other_lots // 4).
+        settlement = Engine.Settlement()
+
+        # 0 other, 0 residential
+        self.assertFalse(settlement.is_overcrowded)
+
+        # 4 other, 0 residential -> overcrowded
+        settlement.other_lots = 4
+        settlement.residential_lots = 0
+        self.assertTrue(settlement.is_overcrowded)
+
+        # 4 other, 1 residential -> not overcrowded
+        settlement.residential_lots = 1
+        self.assertFalse(settlement.is_overcrowded)
+
+        # 9 other, 2 residential -> not overcrowded (9 // 4 = 2, 2 < 2 is false)
+        settlement.other_lots = 9
+        settlement.residential_lots = 2
+        self.assertFalse(settlement.is_overcrowded)
+
+        # 8 other, 1 residential -> overcrowded (8 // 4 = 2, 1 < 2 is true)
+        settlement.other_lots = 8
+        settlement.residential_lots = 1
+        self.assertTrue(settlement.is_overcrowded)
+
+class TestStructures(unittest.TestCase):
+    def test_build_structure_logic(self):
+        # We need to test the building placement on 5x5 grid
+        settlement = Engine.Settlement()
+        logs = []
+
+        # Build 1-lot structure
+        success = settlement.build("alchemy laboratory", 0, 0, logs)
+        self.assertTrue(success)
+        self.assertEqual(settlement.grid[0][0], "alchemy laboratory")
+
+        # Build 2-lot structure (academy)
+        # Assuming lots are verified horizontally
+        success = settlement.build("academy", 0, 1, logs)
+        self.assertTrue(success)
+        self.assertEqual(settlement.grid[1][0], "academy")
+        self.assertEqual(settlement.grid[1][1], "academy")
+
+        # Build out of bounds
+        success = settlement.build("alchemy laboratory", 5, 5, logs)
+        self.assertFalse(success)
+
+        # Build over existing structure
+        success = settlement.build("alchemy laboratory", 0, 0, logs)
+        self.assertFalse(success)
+
+        # Build 4-lot structure (castle)
+        success = settlement.build("castle", 3, 3, logs)
+        self.assertTrue(success)
+        self.assertEqual(settlement.grid[3][3], "castle")
+        self.assertEqual(settlement.grid[3][4], "castle")
+        self.assertEqual(settlement.grid[4][3], "castle")
+        self.assertEqual(settlement.grid[4][4], "castle")
+
+    def test_kingdom_build_structure(self):
+        game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+        game.bp = 100
+        game.current_view = (5, 5) # Assuming we are viewing the capital
+
+        # We need a settlement
+        game.world[5][5].settlement = Engine.Settlement("Capital")
+
+        # Mock input to confirm building
+        with patch('builtins.input', return_value='yes'):
+            game.build_structure("alchemy laboratory", 0, 0)
+            self.assertEqual(game.world[5][5].settlement.grid[0][0], "alchemy laboratory")
+
 class TestEngineCitizens(unittest.TestCase):
     def setUp(self):
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
