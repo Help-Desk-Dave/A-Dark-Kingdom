@@ -7,7 +7,7 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from library import STRUCTURES_DB, PROMINENT_CITIZENS, RECON_COST, CLAIM_COST, ANNUAL_UPKEEP
+from library import STRUCTURES_DB, PROMINENT_CITIZENS, RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY
 
 # Define FLAVORS since it wasn't in library.py but was imported
 FLAVORS = {
@@ -172,6 +172,9 @@ class Kingdom:
 
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
+        self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
+        self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
 
     def tick(self):
@@ -309,8 +312,13 @@ class Kingdom:
         sx, sy = self.current_view
         hex_obj = self.world[sy][sx]
         if hex_obj.settlement is None:
-            self.log.append("[!] No settlement exists here to build in.")
-            return
+            if hex_obj.status == 2: # Claimed
+                # Auto-initialize a settlement if claimed but empty
+                hex_obj.settlement = Settlement(f"Settlement ({sx},{sy})")
+                self.log.append(f"[+] Initialized new settlement at {sx},{sy}.")
+            else:
+                self.log.append("[!] You must claim this hex before building a settlement here.")
+                return
 
         structure_name = structure_name.lower()
         if structure_name not in STRUCTURES_DB:
@@ -355,6 +363,10 @@ class Kingdom:
         if self.stage < 2: return
         cost = CLAIM_COST
 
+        if not (0 <= x < 10 and 0 <= y < 10):
+            self.log.append(f"[!] ({x},{y}) is out of bounds!")
+            return
+
         # Guardrail check
         if self.bp - cost < 0:
             self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
@@ -364,11 +376,10 @@ class Kingdom:
              return
 
         if self.world[y][x].status == 1:
-            if self.bp >= cost:
-                self.bp -= cost
-                self.world[y][x].status = 2
-                self.xp += 10 # Milestone: 10 XP per hex
-                self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
+            self.bp -= cost
+            self.world[y][x].status = 2
+            self.xp += 10 # Milestone: 10 XP per hex
+            self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
         else:
             self.log.append("[!] You must map this area before claiming it!")
 
@@ -446,6 +457,7 @@ def draw_ui(game):
          stats.add_row("Kingdom XP:", "???")
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
+    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [V]iew x,y / world | [B]uild <name> x,y | Flavor <name> | [N]ext | [Q]uit"))
 
     # Render log
     log_content = "\n".join(game.log[-5:])
@@ -488,17 +500,31 @@ if __name__ == "__main__":
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
             except (ValueError, IndexError):
                 pass
+        if action[0] == "v" and len(action) == 2:
+            if action[1] == "world":
+                my_game.current_view = "world"
+                my_game.log.append("[+] Viewing World Map.")
+            else:
+                try:
+                    coords = action[1].split(",")
+                    vx, vy = int(coords[0]), int(coords[1])
+                    if 0 <= vx < 10 and 0 <= vy < 10:
+                        my_game.current_view = (vx, vy)
+                        my_game.log.append(f"[+] Viewing Settlement at ({vx},{vy}).")
+                    else:
+                        my_game.log.append("[-] Out of bounds.")
+                except (ValueError, IndexError):
+                    my_game.log.append("[-] Invalid coordinates.")
+        if action[0] == "b" and len(action) == 3:
+            structure = action[1]
+            try:
+                coords = action[2].split(",")
+                x, y = int(coords[0]), int(coords[1])
+                my_game.build_structure(structure, x, y)
+            except (ValueError, IndexError):
+                pass
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
-            except (ValueError, IndexError):
-                pass
-        if action[0] in ['flavor', 'f'] and len(action) == 2:
-            new_flavor = action[1]
-            if new_flavor in FLAVORS:
-                my_game.flavor = new_flavor
-                my_game.style = FLAVORS[new_flavor]
-                my_game.log.append(f"[!] Kingdom aesthetic shifted to {new_flavor.capitalize()}.")
-            else:
-                my_game.log.append(f"[!] Unknown flavor: {new_flavor}")
+            except (ValueError, IndexError): pass
