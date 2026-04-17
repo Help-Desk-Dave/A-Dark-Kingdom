@@ -61,6 +61,8 @@ class Kingdom:
                 self.log.append(f"[+] Reconnoitered ({x},{y}). It is a {self.world[y][x].terrain}.")
             else:
                 self.log.append("[!] That area is already mapped.")
+        else:
+            self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
@@ -124,7 +126,8 @@ def draw_ui(game):
 
 # --- Logic Phase ---
 # Since you're a Floridian, I've defaulted it to Swamp flavor!
-my_game = Kingdom("The Sunken Glades", flavor="swamp")
+if __name__ == "__main__":
+    my_game = Kingdom("The Sunken Glades", flavor="swamp")
 
 while True:
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -146,3 +149,21 @@ while True:
             my_game.claim_hex(int(coords[0]), int(coords[1]))
         except (ValueError, IndexError):
             pass
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        draw_ui(my_game)
+
+        action = input("\n> ").lower().split()
+        if not action: continue
+
+        if action[0] == 'q': break
+        if action[0] == 'r' and len(action) == 2:
+            try:
+                coords = action[1].split(',')
+                my_game.reconnoiter(int(coords[0]), int(coords[1]))
+            except: pass
+        if action[0] == 'c' and len(action) == 2:
+            try:
+                coords = action[1].split(',')
+                my_game.claim_hex(int(coords[0]), int(coords[1]))
+            except: pass

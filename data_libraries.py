@@ -1,16 +1,25 @@
 import random
 
+FLAVORS = {
+    "swamp": {
+        "farm_art": " ~ ",
+        "color": "green"
+    }
+}
+
+import random
+
 # Text Note: This library has been greatly expanded using the Kingmaker PDF.
-# By keeping this data structured as lists and dictionaries, your main game logic 
+# By keeping this data structured as lists and dictionaries, your main game logic
 # (in kingdom_sim.py) can loop through them without needing thousands of lines of hard-coded text.
 
 # --- LOCATIONS & SETTLEMENTS ---
 SETTLEMENT_NAMES = [
     # Florida/Swamp Inspired
-    "Alligator's End", "Mangrove Reach", "The Glades", "Sawgrass Outpost", 
+    "Alligator's End", "Mangrove Reach", "The Glades", "Sawgrass Outpost",
     "Ever-Mist", "Cypress Stand", "Keys of Chaos", "Spanish Moss Manor",
     # Pathfinder Stolen Lands / Brevoy Lore
-    "Restov", "Pitax", "Oleg's Rest", "Staglord's Folly", "Tuskdale", 
+    "Restov", "Pitax", "Oleg's Rest", "Staglord's Folly", "Tuskdale",
     "Greenbelt Heart", "Varnhold", "Hooktongue Slough", "Lake Reykal", "Golushkin"
 ]
 
@@ -38,13 +47,13 @@ LEADERSHIP_ROLES = [
 ]
 
 KINGDOM_SKILLS = [
-    "Agriculture", "Arts", "Boating", "Defense", "Engineering", "Exploration", 
-    "Folklore", "Industry", "Intrigue", "Magic", "Politics", "Scholarship", 
+    "Agriculture", "Arts", "Boating", "Defense", "Engineering", "Exploration",
+    "Folklore", "Industry", "Intrigue", "Magic", "Politics", "Scholarship",
     "Statecraft", "Trade", "Warfare", "Wilderness"
 ]
 
 # --- PROMINENT CITIZENS (QUEST GIVERS) ---
-# Text Note: These NPCs are pulled directly from the PDF sidebars. 
+# Text Note: These NPCs are pulled directly from the PDF sidebars.
 # You can use the "trigger" property to spawn them when the Kingdom hits specific milestones.
 PROMINENT_CITIZENS = [
     {"name": "Arven", "title": "The Fisher", "trigger": "Build a Pier", "quest": "Wants you to clear a monster from his secret fishing hole."},
@@ -60,7 +69,7 @@ PROMINENT_CITIZENS = [
 ]
 
 # --- SETTLEMENT STRUCTURES DB ---
-# Text Note: This dictionary maps a structure's name to its exact cost (in Resource Points), 
+# Text Note: This dictionary maps a structure's name to its exact cost (in Resource Points),
 # the number of lots it takes up on your Urban Grid, and its benefits.
 STRUCTURES_DB = {
     "academy": {"lots": 2, "cost_rp": 52, "traits": ["building", "edifice"], "desc": "An institution where advanced study in many fields can be pursued."},
@@ -106,9 +115,7 @@ ARMY_TYPES = [
     {"type": "Siege Engines", "desc": "Catapults and ballistae. High damage against fortifications."}
 ]
 
-CITIZEN_NAMES = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
-
-
 def get_random_citizen():
     """Helper function to generate a generic pop."""
-    return random.choice(CITIZEN_NAMES)
+    first_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+    return random.choice(first_names)
