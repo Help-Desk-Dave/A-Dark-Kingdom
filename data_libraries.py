@@ -59,7 +59,7 @@ PROMINENT_CITIZENS = [
     {"name": "Loris Shadwest", "title": "The Taxidermist", "trigger": "Kingdom Level 17", "quest": "Wants to taxidermy a real winged owlbear."}
 ]
 
-VILLAGER_NAMES = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+CITIZEN_NAMES = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
 
 # --- SETTLEMENT STRUCTURES DB ---
 # Text Note: This dictionary maps a structure's name to its exact cost (in Resource Points), 
@@ -109,11 +109,14 @@ ARMY_TYPES = [
     {"type": "Siege Engines", "desc": "Catapults and ballistae. High damage against fortifications."}
 ]
 
-def get_random_citizen():
-    """Helper function to generate a generic pop."""
-    return random.choice(VILLAGER_NAMES)
 FLAVORS = {
     "swamp": {
-        "farm_art": " 🌾 ",
+        "color": "green",
+        "text_suffix": "in the swamp regions",
+        "Swamp": " 🌾 "
     }
 }
+
+def get_random_citizen():
+    """Helper function to generate a generic pop."""
+    return random.choice(CITIZEN_NAMES)

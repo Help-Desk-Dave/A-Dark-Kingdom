@@ -64,8 +64,7 @@ class Kingdom:
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
-        self.log = [f"Expedition landed in the {flavor} regions.", "Capital founded."]
-
+        self.log = [f"Expedition landed {self.style.get('text_suffix', 'in the regions')}.", "Capital founded."]
 
     def tick(self):
         from data_libraries import get_random_citizen
@@ -134,6 +133,8 @@ class Kingdom:
                 self.log.append(f"[+] Reconnoitered ({x},{y}). It is a {self.world[y][x].terrain}.")
             else:
                 self.log.append("[!] That area is already mapped.")
+        else:
+            self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
@@ -159,8 +160,8 @@ class Kingdom:
                     map_display.append(" ?? ", style="dim")
                 elif hex_obj.status == 1:
                     # Show terrain based on Flavor
-                    char = self.style["farm_art"] if hex_obj.terrain == "Swamp" else " . "
-                    map_display.append(char, style="green")
+                    char = self.style.get(hex_obj.terrain, " . ")
+                    map_display.append(char, style=self.style.get("color", "green"))
                 elif hex_obj.status == 2:
                     map_display.append(" [C]", style="bold gold1")
             map_display.append("\n")
@@ -179,7 +180,7 @@ def draw_ui(game):
     )
 
     # Apply Flavor Visuals
-    header_color = "green" if game.flavor == "swamp" else "cyan"
+    header_color = game.style.get("color", "green")
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
     layout["map"].update(Panel(game.render_map(), title="World Map (Stolen Lands)", border_style=header_color))
@@ -196,16 +197,13 @@ def draw_ui(game):
 
     # Log Panel
     log_text = "\n".join(game.log[-5:])
-    layout["footer"].update(Panel(f"{log_text}\nCommands: [R]econnoiter x,y | [C]laim x,y | [aa] Auto-Assign | [Q]uit", title="Log"))
+    layout["footer"].update(Panel(f"{log_text}\nCommands: [R]econnoiter x,y | [C]laim x,y | Flavor <name> | [aa] Auto-Assign | [Q]uit", title="Log"))
 
-    
     console.print(layout)
 
 # --- Logic Phase ---
-# Since you're a Floridian, I've defaulted it to Swamp flavor!
-if __name__ == '__main__':
+if __name__ == "__main__":
     my_game = Kingdom("The Sunken Glades", flavor="swamp")
-
 
     def game_loop(game):
         while True:
@@ -217,7 +215,6 @@ if __name__ == '__main__':
     tick_thread.start()
 
     while True:
-
         os.system('cls' if os.name == 'nt' else 'clear')
         draw_ui(my_game)
     
@@ -229,14 +226,24 @@ if __name__ == '__main__':
             try:
                 coords = action[1].split(',')
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
-            except: pass
+            except (ValueError, IndexError):
+                pass
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
-            except: pass
+            except (ValueError, IndexError):
+                pass
+        if action[0] in ['flavor', 'f'] and len(action) == 2:
+            new_flavor = action[1]
+            if new_flavor in FLAVORS:
+                my_game.flavor = new_flavor
+                my_game.style = FLAVORS[new_flavor]
+                my_game.log.append(f"[!] Kingdom aesthetic shifted to {new_flavor.capitalize()}.")
+            else:
+                my_game.log.append(f"[!] Unknown flavor: {new_flavor}")
         if action[0] == 'aa':
-        # Auto-Assign
+            # Auto-Assign
             unemployed = [p for p in my_game.pops if p.job is None]
             if not unemployed:
                 my_game.log.append("[!] No unemployed pops to assign.")
@@ -250,12 +257,12 @@ if __name__ == '__main__':
                 my_game.log.append("[!] No empty building slots.")
                 continue
 
-        # Determine demand based on what resource we are lowest on relative to a baseline
-        # Food is constantly consumed, so it usually has higher priority if low
+            # Determine demand based on what resource we are lowest on relative to a baseline
+            # Food is constantly consumed, so it usually has higher priority if low
             food_demand_score = 100 - my_game.food
             bp_demand_score = 100 - my_game.bp
 
-        # Sort buildings by which resource they produce that we need the most
+            # Sort buildings by which resource they produce that we need the most
             def get_building_priority(b):
                 if not b.production: return 0
                 if b.production.get("type") == "food": return food_demand_score
