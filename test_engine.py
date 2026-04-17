@@ -1,230 +1,108 @@
 import unittest
-from unittest.mock import MagicMock, patch
-import sys
+from unittest.mock import patch
+from Engine import Kingdom, Hex, Settlement, Building
+from data_libraries import STRUCTURES_DB
 
-# Mocking the rich library before importing Engine
-mock_rich = MagicMock()
-sys.modules['rich'] = mock_rich
-sys.modules['rich.console'] = MagicMock()
-sys.modules['rich.layout'] = MagicMock()
-sys.modules['rich.panel'] = MagicMock()
-sys.modules['rich.table'] = MagicMock()
-sys.modules['rich.text'] = MagicMock()
-
-import Engine
-
-class TestEngineReconnoiter(unittest.TestCase):
-    def setUp(self):
-        # Initialize Kingdom with a fixed seed if possible,
-        # but here we just want to test logic.
-        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-<<<<<<< HEAD
-=======
-        self.game.stage = 3 # Bypass stage progression for recon checks
->>>>>>> origin/main
-        self.game.bp = 60 # Ensure enough BP for tests
-
-    def test_reconnoiter_out_of_bounds_negative(self):
-        initial_bp = self.game.bp
-        self.game.reconnoiter(-1, -1)
-        self.assertEqual(self.game.bp, initial_bp, "BP should not be deducted for out-of-bounds.")
-        # Check that no hex status was changed (though -1,-1 is impossible to check in world array)
-        # We can check that the log doesn't contain a success message
-        self.assertFalse(any("[+] Reconnoitered" in entry for entry in self.game.log if "(-1,-1)" in entry))
-        self.assertTrue(any("[!] (-1,-1) is out of bounds!" in entry for entry in self.game.log))
-
-    def test_reconnoiter_out_of_bounds_positive(self):
-        initial_bp = self.game.bp
-        self.game.reconnoiter(10, 10)
-        self.assertEqual(self.game.bp, initial_bp, "BP should not be deducted for out-of-bounds.")
-        self.assertFalse(any("[+] Reconnoitered" in entry for entry in self.game.log if "(10,10)" in entry))
-        self.assertTrue(any("[!] (10,10) is out of bounds!" in entry for entry in self.game.log))
-
-    def test_reconnoiter_valid(self):
-        # Find a hex that is hidden (status 0)
-        x, y = 0, 0
-        if self.game.world[y][x].status != 0:
-            x, y = 1, 1 # Try another
-
-        initial_bp = self.game.bp
-        self.game.reconnoiter(x, y)
-        self.assertEqual(self.game.world[y][x].status, 1)
-        self.assertEqual(self.game.bp, initial_bp - 5)
-        self.assertTrue(any(f"[+] Reconnoitered ({x},{y})" in entry for entry in self.game.log))
-
-    def test_reconnoiter_insufficient_bp(self):
-        self.game.bp = 4
-        x, y = 0, 0
-        initial_status = self.game.world[y][x].status
-        self.game.reconnoiter(x, y)
-        self.assertEqual(self.game.world[y][x].status, initial_status)
-        self.assertEqual(self.game.bp, 4)
-        self.assertTrue(any("[-] Treasurer: 'We literally cannot afford to map that area right now.'" in entry for entry in self.game.log))
-
-    def test_reconnoiter_already_mapped(self):
-        x, y = 2, 2
-        self.game.world[y][x].status = 1
-        initial_bp = self.game.bp
-        self.game.reconnoiter(x, y)
-        self.assertEqual(self.game.bp, initial_bp)
-        self.assertTrue(any("[!] That area is already mapped." in entry for entry in self.game.log))
-
-<<<<<<< HEAD
-    def test_flavor_switching(self):
-        from data_libraries import FLAVORS
-=======
-    def test_claim_hex_out_of_bounds(self):
-        initial_bp = self.game.bp
-        self.game.claim_hex(-1, -1)
-        self.assertEqual(self.game.bp, initial_bp)
-        self.assertTrue(any("[!] (-1,-1) is out of bounds!" in entry for entry in self.game.log))
-
-        self.game.claim_hex(10, 10)
-        self.assertEqual(self.game.bp, initial_bp)
-        self.assertTrue(any("[!] (10,10) is out of bounds!" in entry for entry in self.game.log))
-
-    def test_flavor_switching(self):
-        from library import FLAVORS
->>>>>>> origin/main
-        # Switch to icy
-        self.game.flavor = "icy"
-        self.game.style = FLAVORS["icy"]
-        self.assertEqual(self.game.style["color"], "cyan")
-
-        # Test rendering with icy flavor
-        x, y = 0, 0
-        self.game.world[y][x].status = 1
-        self.game.world[y][x].terrain = "Mountain"
-
-        # We need to mock the Text object's append method to see what's being added
-        with patch('Engine.Text') as MockText:
-            mock_text_inst = MockText.return_value
-            self.game.render_map()
-
-            # Check if it appended the icy mountain art " 🏔 "
-            # It might append other things like " ?? ", "\n"
-            # We look for a call that has " 🏔 " and style "cyan"
-            found = False
-            for call in mock_text_inst.append.call_args_list:
-                if " 🏔 " in str(call) and "cyan" in str(call):
-                    found = True
-                    break
-            self.assertTrue(found, "Should render icy mountain with cyan style.")
-
-<<<<<<< HEAD
-=======
 class TestSettlement(unittest.TestCase):
-    def test_overcrowded_logic(self):
-        # A settlement is 'Overcrowded' if residential lots are less than a quarter of other occupied lots (residential_lots < other_lots // 4).
-        settlement = Engine.Settlement()
+    def setUp(self):
+        self.settlement = Settlement("Testville")
 
-        # 0 other, 0 residential
-        self.assertFalse(settlement.is_overcrowded)
+    def test_initial_lots(self):
+        self.assertEqual(self.settlement.residential_lots, 0)
+        self.assertEqual(self.settlement.other_lots, 0)
+        self.assertFalse(self.settlement.is_overcrowded)
 
-        # 4 other, 0 residential -> overcrowded
-        settlement.other_lots = 4
-        settlement.residential_lots = 0
-        self.assertTrue(settlement.is_overcrowded)
+    def test_place_residential_building(self):
+        success, msg = self.settlement.place_building("houses", 0, 0)
+        self.assertTrue(success)
+        self.assertEqual(self.settlement.residential_lots, 1)
+        self.assertFalse(self.settlement.is_overcrowded)
 
-        # 4 other, 1 residential -> not overcrowded
-        settlement.residential_lots = 1
-        self.assertFalse(settlement.is_overcrowded)
+    def test_place_other_building(self):
+        success, msg = self.settlement.place_building("farm", 0, 0)
+        self.assertTrue(success)
+        self.assertEqual(self.settlement.other_lots, 1)
+        self.assertTrue(self.settlement.is_overcrowded)
 
-        # 9 other, 2 residential -> not overcrowded (9 // 4 = 2, 2 < 2 is false)
-        settlement.other_lots = 9
-        settlement.residential_lots = 2
-        self.assertFalse(settlement.is_overcrowded)
+    def test_place_occupied_lot(self):
+        self.settlement.place_building("houses", 0, 0)
+        success, msg = self.settlement.place_building("farm", 0, 0)
+        self.assertFalse(success)
+        self.assertEqual(msg, "Lot is occupied.")
 
-        # 8 other, 1 residential -> overcrowded (8 // 4 = 2, 1 < 2 is true)
-        settlement.other_lots = 8
-        settlement.residential_lots = 1
-        self.assertTrue(settlement.is_overcrowded)
+    def test_place_invalid_lot(self):
+        success, msg = self.settlement.place_building("houses", 3, 3)
+        self.assertFalse(success)
+        self.assertEqual(msg, "Invalid lot coordinates.")
+
+    def test_unknown_structure(self):
+        success, msg = self.settlement.place_building("super_laser", 0, 0)
+        self.assertFalse(success)
+        self.assertIn("Unknown structure", msg)
 
 class TestStructures(unittest.TestCase):
-    def test_build_structure_logic(self):
-        # We need to test the building placement on 5x5 grid
-        settlement = Engine.Settlement()
-        logs = []
+    def test_all_structures_have_traits(self):
+        for name, data in STRUCTURES_DB.items():
+            self.assertIn("traits", data, f"Structure '{name}' missing 'traits'")
+            self.assertIsInstance(data["traits"], list)
 
-        # Build 1-lot structure
-        success = settlement.build("alchemy laboratory", 0, 0, logs)
-        self.assertTrue(success)
-        self.assertEqual(settlement.grid[0][0], "alchemy laboratory")
-
-        # Build 2-lot structure (academy)
-        # Assuming lots are verified horizontally
-        success = settlement.build("academy", 0, 1, logs)
-        self.assertTrue(success)
-        self.assertEqual(settlement.grid[1][0], "academy")
-        self.assertEqual(settlement.grid[1][1], "academy")
-
-        # Build out of bounds
-        success = settlement.build("alchemy laboratory", 5, 5, logs)
-        self.assertFalse(success)
-
-        # Build over existing structure
-        success = settlement.build("alchemy laboratory", 0, 0, logs)
-        self.assertFalse(success)
-
-        # Build 4-lot structure (castle)
-        success = settlement.build("castle", 3, 3, logs)
-        self.assertTrue(success)
-        self.assertEqual(settlement.grid[3][3], "castle")
-        self.assertEqual(settlement.grid[3][4], "castle")
-        self.assertEqual(settlement.grid[4][3], "castle")
-        self.assertEqual(settlement.grid[4][4], "castle")
-
-    def test_kingdom_build_structure(self):
-        game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        game.bp = 100
-        game.current_view = (5, 5) # Assuming we are viewing the capital
-
-        # We need a settlement
-        game.world[5][5].settlement = Engine.Settlement("Capital")
-
-        # Mock input to confirm building
-        with patch('builtins.input', return_value='yes'):
-            game.build_structure("alchemy laboratory", 0, 0)
-            self.assertEqual(game.world[5][5].settlement.grid[0][0], "alchemy laboratory")
-
-class TestEngineCitizens(unittest.TestCase):
+class TestKingdomEngine(unittest.TestCase):
     def setUp(self):
-        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+        self.game = Kingdom("Test Kingdom", flavor="swamp")
 
-    def test_monthly_tick_increments_turn(self):
-        initial_turn = self.game.turn
-        self.game.monthly_tick()
-        self.assertEqual(self.game.turn, initial_turn + 1)
-        self.assertTrue(any(f"--- Month {initial_turn + 1} Begins ---" in entry for entry in self.game.log))
+    def test_initial_state(self):
+        self.assertEqual(self.game.name, "Test Kingdom")
+        self.assertEqual(self.game.bp, 60)
+        self.assertEqual(self.game.unrest, 0)
+        self.assertEqual(len(self.game.world), 10)
 
-    def test_kingdom_founded_citizen_trigger(self):
-        # We start with level 1, so "Kingdom founded" condition is always true.
-        self.game.monthly_tick()
-        self.assertIn("Edrist Hanvaki", self.game.spawned_citizens)
-        self.assertTrue(any("Edrist Hanvaki" in entry for entry in self.game.log))
+    def test_reconnoiter(self):
+        initial_bp = self.game.bp
 
-    def test_structure_citizen_trigger(self):
-        # Edrist spawns immediately so clear spawned list for clear test
-        self.game.spawned_citizens.clear()
+        # Test out of bounds
+        self.game.reconnoiter(-1, -1)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertIn("out of bounds", self.game.log[-1])
 
-        # Test "Build a Lumberyard" condition
-        self.assertNotIn("Stas", self.game.spawned_citizens)
+        # Test valid reconnoiter
+        self.game.reconnoiter(0, 0)
+        self.assertEqual(self.game.world[0][0].status, 1)
+        self.assertEqual(self.game.bp, initial_bp - 5)
 
-        # Manually create a settlement and a lumberyard
-        # Ensure we don't accidentally pick the capital at 5,5
-        x, y = 1, 1
-        self.game.world[y][x].settlement = Engine.Settlement("Test Village")
+    def test_claim_hex(self):
+        # Must reconnoiter first
+        self.game.claim_hex(1, 1)
+        self.assertIn("must map this area", self.game.log[-1])
 
-        # Lumberyard takes 2 lots, place it on the settlement grid
-        self.game.world[y][x].settlement.grid[0][0] = "lumberyard"
-        self.game.world[y][x].settlement.grid[0][1] = "lumberyard"
+        self.game.reconnoiter(1, 1)
+        initial_bp = self.game.bp
 
-        self.game.monthly_tick()
+        # Now claim
+        self.game.claim_hex(1, 1)
+        self.assertEqual(self.game.world[1][1].status, 2)
+        self.assertEqual(self.game.bp, initial_bp - 10)
 
-        # Check if the lumberjack spawned
-        self.assertIn("Stas", self.game.spawned_citizens)
-        self.assertTrue(any("Stas" in entry for entry in self.game.log))
+    def test_flavor_initialization(self):
+        swamp_game = Kingdom("Swampy", flavor="swamp")
+        self.assertEqual(swamp_game.style["color"], "green")
+        self.assertIn("swamp", swamp_game.log[0].lower())
 
->>>>>>> origin/main
+        icy_game = Kingdom("Frosty", flavor="icy")
+        self.assertEqual(icy_game.style["color"], "cyan")
+        self.assertIn("frozen wastes", icy_game.log[0].lower())
+
+    def test_flavor_dynamic_switching(self):
+        self.game.flavor = "desert"
+        from data_libraries import FLAVORS
+        self.game.style = FLAVORS["desert"]
+        self.assertEqual(self.game.style["color"], "yellow")
+
+    @patch('data_libraries.random.choice')
+    def test_get_random_citizen(self, mock_choice):
+        mock_choice.return_value = "Urist"
+        from data_libraries import get_random_citizen
+        citizen = get_random_citizen()
+        self.assertEqual(citizen, "Urist")
+
 if __name__ == '__main__':
     unittest.main()

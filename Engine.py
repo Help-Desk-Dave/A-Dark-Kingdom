@@ -195,7 +195,6 @@ class Kingdom:
                   self.log.append("[!] Overcrowded settlements caused Unrest to increase.")
              self.log.append("[+] A month has passed.")
 
-
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
         terrain_types = ["Forest", "Plain", "Mountain", "Hill", "Swamp"]
@@ -269,7 +268,6 @@ class Kingdom:
              self.log.append(f"[+] Built {structure_name} at ({x},{y}) in {hex_obj.settlement.name}.")
         else:
              self.log.append(f"[-] Build failed: {msg}")
-
 
     def render_map(self):
         """Note: This logic checks the 'status' of every hex to decide what to show Jules."""
