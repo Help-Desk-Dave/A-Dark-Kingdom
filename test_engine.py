@@ -65,6 +65,16 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertEqual(self.game.bp, initial_bp)
         self.assertTrue(any("[!] That area is already mapped." in entry for entry in self.game.log))
 
+    def test_claim_hex_out_of_bounds(self):
+        initial_bp = self.game.bp
+        self.game.claim_hex(-1, -1)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertTrue(any("[!] (-1,-1) is out of bounds!" in entry for entry in self.game.log))
+
+        self.game.claim_hex(10, 10)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertTrue(any("[!] (10,10) is out of bounds!" in entry for entry in self.game.log))
+
     def test_flavor_switching(self):
         from data_libraries import FLAVORS
         # Switch to icy

@@ -78,7 +78,7 @@ Command Prompt (Footer): Where the user types commands (r 5,5 to reconnoiter, bu
 
 [x] Phase 2: Database Integration - Separate data into data_libraries.py.
 
-[ ] Phase 3: The Dark Map - Implement the 10x10 grid, the Hex class state machine (Hidden -> Reconnoitered -> Claimed), and coordinate commands.
+[x] Phase 3: The Dark Map - Implement the 10x10 grid, the Hex class state machine (Hidden -> Reconnoitered -> Claimed), and coordinate commands.
 
 [ ] Phase 4: Flavor Sets - Hook the FLAVORS dictionary into the Map Panel to swap ASCII art and rich text styles dynamically.
 

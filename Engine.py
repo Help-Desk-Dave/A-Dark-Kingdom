@@ -5,15 +5,7 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from library import STRUCTURES_DB, PROMINENT_CITIZENS
-
-# Define FLAVORS since it wasn't in library.py but was imported
-FLAVORS = {
-    "swamp": {"farm_art": " 🌾"},
-    "forest": {"farm_art": " 🌲"},
-    "plain": {"farm_art": " 🌿"},
-    "mountain": {"farm_art": " ⛰️"}
-}
+from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
 
 console = Console()
 
@@ -163,6 +155,7 @@ class Kingdom:
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
+        self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
 
     def generate_world(self):
@@ -235,16 +228,19 @@ class Kingdom:
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
         cost = 10
-        if self.world[y][x].status == 1:
-            if self.bp >= cost:
-                self.bp -= cost
-                self.world[y][x].status = 2
-                self.xp += 10 # Milestone: 10 XP per hex
-                self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
+        if 0 <= x < 10 and 0 <= y < 10:
+            if self.world[y][x].status == 1:
+                if self.bp >= cost:
+                    self.bp -= cost
+                    self.world[y][x].status = 2
+                    self.xp += 10 # Milestone: 10 XP per hex
+                    self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
+                else:
+                    self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
             else:
-                self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
+                self.log.append("[!] You must map this area before claiming it!")
         else:
-            self.log.append("[!] You must map this area before claiming it!")
+            self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
     def render_map(self):
         """Note: This logic checks the 'status' of every hex to decide what to show Jules."""
@@ -314,7 +310,7 @@ def draw_ui(game):
             stats.add_row("Other Lots:", str(settlement.other_lots))
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
-    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | Flavor <name> | [N]ext | [Q]uit"))
+    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [V]iew x,y / world | [B]uild <name> x,y | Flavor <name> | [N]ext | [Q]uit"))
     
     console.print(layout)
 
@@ -335,12 +331,29 @@ if __name__ == "__main__":
             try:
                 coords = action[1].split(',')
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
-            except Exception: pass
+            except (ValueError, IndexError): pass
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
-            except Exception: pass
+            except (ValueError, IndexError): pass
+        if action[0] == 'v' and len(action) == 2:
+            if action[1] == 'world':
+                my_game.current_view = "world"
+            else:
+                try:
+                    coords = action[1].split(',')
+                    x, y = int(coords[0]), int(coords[1])
+                    if 0 <= x < 10 and 0 <= y < 10:
+                        my_game.current_view = (x, y)
+                except (ValueError, IndexError): pass
+        if action[0] == 'b' and len(action) >= 3:
+            try:
+                coords = action[-1].split(',')
+                x, y = int(coords[0]), int(coords[1])
+                structure_name = " ".join(action[1:-1])
+                my_game.build_structure(structure_name, x, y)
+            except (ValueError, IndexError): pass
         if action[0] in ['flavor', 'f'] and len(action) == 2:
             new_flavor = action[1]
             if new_flavor in FLAVORS:
