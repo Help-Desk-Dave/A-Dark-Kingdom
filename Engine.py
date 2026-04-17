@@ -129,6 +129,26 @@ def draw_ui(game):
 if __name__ == "__main__":
     my_game = Kingdom("The Sunken Glades", flavor="swamp")
 
+while True:
+    os.system('cls' if os.name == 'nt' else 'clear')
+    draw_ui(my_game)
+    
+    action = input("\n> ").lower().split()
+    if not action: continue
+    
+    if action[0] == 'q': break
+    if action[0] == 'r' and len(action) == 2:
+        try:
+            coords = action[1].split(',')
+            my_game.reconnoiter(int(coords[0]), int(coords[1]))
+        except (ValueError, IndexError):
+            pass
+    if action[0] == 'c' and len(action) == 2:
+        try:
+            coords = action[1].split(',')
+            my_game.claim_hex(int(coords[0]), int(coords[1]))
+        except (ValueError, IndexError):
+            pass
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         draw_ui(my_game)
