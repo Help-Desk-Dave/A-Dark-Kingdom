@@ -7,10 +7,23 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+
 from data_libraries import STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen
+
 from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
+from data_libraries import STRUCTURES_DB, PROMINENT_CITIZENS
+from data_libraries import FLAVORS
+
+# Define FLAVORS since it wasn't in library.py but was imported
+FLAVORS = {
+    "swamp": {"farm_art": " 🌾", "text_suffix": "in the swamp", "color": "green"},
+    "forest": {"farm_art": " 🌲", "text_suffix": "in the forest", "color": "green"},
+    "plain": {"farm_art": " 🌿", "text_suffix": "on the plains", "color": "yellow"},
+    "mountain": {"farm_art": " ⛰️", "text_suffix": "in the mountains", "color": "white"}
+}
 
 console = Console()
+
 
 class Pop:
     def __init__(self, name):
@@ -98,6 +111,7 @@ class Settlement:
             display.append("\n")
         return display
 
+
 class Pop:
     def __init__(self, name):
         self.name = name
@@ -118,6 +132,7 @@ class Hex:
     def __init__(self, terrain):
         self.terrain = terrain
         self.feature = None
+        self.settlement = None
         # Status: 0 = Hidden (??), 1 = Reconnoitered (Terrain Visible), 2 = Claimed ([C])
         self.status = 0 
         self.settlement = None
@@ -134,7 +149,11 @@ class Kingdom:
         self.pops = [Pop(get_random_citizen()) for _ in range(3)]
         self.buildings = []
         self.level = 1
+        self.turn = 1
+        self.spawned_citizens = set()
+
         self.lock = threading.Lock()
+
         
         # UI State
         self.current_view = "world" # either "world" or a tuple (x, y) for a hex view
@@ -147,6 +166,15 @@ class Kingdom:
         self.world = []
         self.generate_world()
         
+        # View state: "world" or a tuple like (5, 5) for a specific hex's settlement
+        self.current_view = "world"
+
+        # Stage Progression
+        # 1: Dark room, only 'establish camp'
+        # 2: Camp established, limited UI
+        # 3: UI fully revealed
+        self.stage = 1
+
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
@@ -156,6 +184,7 @@ class Kingdom:
         self.advisors = {"general": None, "treasurer": None, "diplomat": None}
 
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
+
 
         # Establish Capital Settlement automatically
         self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
@@ -220,6 +249,7 @@ class Kingdom:
              self.log.append("[+] A month has passed.")
 
 
+
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
         terrain_types = ["Forest", "Plain", "Mountain", "Hill", "Swamp"]
@@ -227,15 +257,92 @@ class Kingdom:
             row = [Hex(random.choice(terrain_types)) for x in range(10)]
             self.world.append(row)
 
+    def check_prominent_citizens(self):
+        for citizen in PROMINENT_CITIZENS:
+            name = citizen["name"]
+            if name in self.spawned_citizens:
+                continue
+
+            trigger = citizen["trigger"]
+            conditions_met = False
+
+            if trigger == "Kingdom founded":
+                conditions_met = True
+            elif trigger == "Build a Pier":
+                conditions_met = self.count_structures("pier") >= 1
+            elif trigger == "Build a Lumberyard":
+                conditions_met = self.count_structures("lumberyard") >= 1
+            elif trigger == "Build a Manor/Craft Luxuries":
+                conditions_met = self.count_structures("manor") >= 1
+            elif trigger == "Build an Academy or Museum":
+                conditions_met = self.count_structures("academy") >= 1 or self.count_structures("museum") >= 1
+            elif trigger == "Build a Noble Villa":
+                conditions_met = self.count_structures("noble villa") >= 1
+            elif trigger == "Build 3 Breweries":
+                conditions_met = self.count_structures("brewery") >= 3
+            elif trigger == "Kingdom Level 17":
+                conditions_met = self.level >= 17
+            elif trigger == "Claim a swamp hex":
+                swamp_claimed = False
+                for row in self.world:
+                    for hex_obj in row:
+                        if hex_obj.status == 2 and hex_obj.terrain.lower() == "swamp":
+                            swamp_claimed = True
+                            break
+                    if swamp_claimed:
+                        break
+                conditions_met = swamp_claimed
+            elif trigger == "Random Event":
+                conditions_met = random.random() < 0.05 # 5% chance per turn
+
+            if conditions_met:
+                self.spawned_citizens.add(name)
+                title = citizen["title"]
+                quest = citizen["quest"]
+                self.log.append(f"[*] PROMINENT CITIZEN ARRIVES: {name}, {title}. Quest: {quest}")
+
+    def monthly_tick(self):
+        self.turn += 1
+        self.log.append(f"--- Month {self.turn} Begins ---")
+        self.check_prominent_citizens()
+
+
+    def count_structures(self, structure_name):
+        structure_name = structure_name.lower()
+        if structure_name not in STRUCTURES_DB:
+            return 0
+
+        lots_per_building = STRUCTURES_DB[structure_name]["lots"]
+        total_lots_found = 0
+
+        for row in self.world:
+            for hex_obj in row:
+                if hex_obj.settlement:
+                    for sy in range(len(hex_obj.settlement.grid)):
+                        for sx in range(len(hex_obj.settlement.grid[0])):
+                            b = hex_obj.settlement.grid[sy][sx]
+                            if b and getattr(b, 'type', None) == structure_name:
+                                total_lots_found += 1
+                            elif b and isinstance(b, str) and b == structure_name:
+                                total_lots_found += 1
+
+        return total_lots_found // lots_per_building
+
     def reconnoiter(self, x, y):
         """Note: Pathfinder Rule - Surveying a hex reveals its contents but costs resources."""
+        if self.stage < 2: return
         # Treasurer's Warning: Using a check to prevent overspending
         cost = 5
 
+
         if self.bp < cost:
+
 
             self.log.append("[-] Treasurer: 'We literally cannot afford to map that area right now.'")
             return
+        elif self.bp - cost < 15:
+             self.log.append("[-] Treasurer WARNING: Funds are critically low! Reconsidering recon.")
+             return
 
         if 0 <= x < 10 and 0 <= y < 10:
             if self.world[y][x].status == 0:
@@ -249,6 +356,8 @@ class Kingdom:
 
 
 
+
+
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
         cost = 10
@@ -258,12 +367,15 @@ class Kingdom:
                     self.bp -= cost
                     self.world[y][x].status = 2
                     self.xp += 10 # Milestone: 10 XP per hex
+
                     self.world[y][x].settlement = Settlement("Outpost")
                     self.log.append(f"[+] Claimed ({x},{y}) and established an outpost. Kingdom Size +1.")
+
                 else:
                     self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
             else:
                 self.log.append("[!] You must map this area before claiming it!")
+
         else:
             self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
@@ -298,6 +410,7 @@ class Kingdom:
         else:
              self.log.append(f"[-] Build failed: {msg}")
 
+
     def render_map(self):
         """Note: This logic checks the 'status' of every hex to decide what to show Jules."""
         map_display = Text()
@@ -309,7 +422,9 @@ class Kingdom:
                 elif hex_obj.status == 1:
                     # Show terrain based on Flavor
                     char = self.style.get(hex_obj.terrain, " . ")
+
                     map_display.append(char, style=self.style.get("color", "green"))
+
                 elif hex_obj.status == 2:
                     map_display.append(" [C]", style="bold gold1")
             map_display.append("\n")
@@ -333,7 +448,9 @@ def draw_ui(game):
     )
 
     # Apply Flavor Visuals
+
     header_color = game.style.get("color", "green")
+
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
     if game.current_view == "world":
@@ -355,11 +472,13 @@ def draw_ui(game):
     stats = Table.grid(expand=True)
 
     if game.stage >= 3:
+
         stats.add_row("BP (Treasury):", str(int(game.bp)))
         stats.add_row("Food Stores:", str(int(game.food)))
         stats.add_row("Unrest:", str(game.unrest))
         stats.add_row("Kingdom XP:", str(game.xp))
         stats.add_row("Population:", str(len(game.pops)))
+
 
         if game.current_view != "world":
             sx, sy = game.current_view
@@ -370,6 +489,7 @@ def draw_ui(game):
                 stats.add_row("Other Lots:", str(settlement.other_lots))
     else:
          stats.add_row("BP (Treasury):", "???")
+
          stats.add_row("Food Stores:", str(int(game.food)))
          stats.add_row("Unrest:", "???")
          stats.add_row("Kingdom XP:", "???")
@@ -377,16 +497,19 @@ def draw_ui(game):
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
 
+
     # Render log
     log_content = "\n".join(game.log[-5:])
     layout["log"].update(Panel(log_content, title="Event Log", border_style="white"))
 
     if game.stage == 1:
+
         layout["footer"].update(Panel("Commands: [E]stablish Camp | [Q]uit | [aa] Auto-Assign"))
     elif game.stage == 2:
         layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | Flavor <name> | [Q]uit | [aa] Auto-Assign"))
     else:
         layout["footer"].update(Panel("Commands: [V]iew x,y/world | [R]econnoiter x,y | [C]laim x,y | [B]uild <structure> x,y | Flavor <name> | [N]ext | [Q]uit | [aa] Auto-Assign"))
+
 
     console.print(layout)
 
@@ -397,11 +520,13 @@ def simulation_loop(game):
         # In a real CLI, we might need a better way to refresh the UI asynchronously.
         # For now, it refreshes on input.
 
+
 # --- Logic Phase ---
 if __name__ == "__main__":
     my_game = Kingdom("The Sunken Glades", flavor="swamp")
     # For testing, push to stage 3
     my_game.stage = 3
+
 
     sim_thread = threading.Thread(target=simulation_loop, args=(my_game,), daemon=True)
     sim_thread.start()
@@ -416,6 +541,7 @@ if __name__ == "__main__":
 
         if action[0] == 'q': break
         if action[0] in ['n', 'next']:
+
             with my_game.lock:
                 my_game.monthly_tick()
         if action[0] == 'r' and len(action) == 2:
@@ -435,11 +561,13 @@ if __name__ == "__main__":
                 with my_game.lock:
                     my_game.current_view = 'world'
                     my_game.log.append('[+] Viewing World Map.')
+
             else:
                 try:
                     coords = action[1].split(',')
                     vx, vy = int(coords[0]), int(coords[1])
                     if 0 <= vx < 10 and 0 <= vy < 10:
+
                         with my_game.lock:
                             if my_game.world[vy][vx].status > 0:
                                 my_game.current_view = (vx, vy)
@@ -449,6 +577,7 @@ if __name__ == "__main__":
                     else:
                         with my_game.lock:
                             my_game.log.append(f'[!] ({vx},{vy}) is out of bounds!')
+
                 except Exception:
                     pass
         if action[0] == 'b' and len(action) >= 3:
@@ -456,6 +585,7 @@ if __name__ == "__main__":
                 structure_name = ' '.join(action[1:-1])
                 coords = action[-1].split(',')
                 bx, by = int(coords[0]), int(coords[1])
+
                 with my_game.lock:
                     my_game.build_structure(structure_name, bx, by)
             except Exception:

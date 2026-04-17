@@ -1,5 +1,49 @@
 import random
 
+RECON_COST = 5
+CLAIM_COST = 10
+ANNUAL_UPKEEP = 25
+HOUSING_CAPACITY = 4
+
+FLAVORS = {
+    "swamp": {
+        "Forest": " Ѱ ",
+        "Plain": " . ",
+        "Mountain": " ▲ ",
+        "Hill": " m ",
+        "Swamp": " ~ ",
+        "color": "green",
+        "text_suffix": "of the Glades"
+    },
+    "icy": {
+        "Forest": " ❄ ",
+        "Plain": " _ ",
+        "Mountain": " 🏔 ",
+        "Hill": " ^ ",
+        "Swamp": " 🧊 ",
+        "color": "cyan",
+        "text_suffix": "of the Frozen North"
+    },
+    "necromancy": {
+        "Forest": " ✝ ",
+        "Plain": " ☠ ",
+        "Mountain": " ⚰ ",
+        "Hill": " ☖ ",
+        "Swamp": " ☣ ",
+        "color": "magenta",
+        "text_suffix": "of the Grave"
+    },
+    "desert": {
+        "Forest": " 🌵 ",
+        "Plain": " . ",
+        "Mountain": " ▲ ",
+        "Hill": " n ",
+        "Swamp": " ♒ ",
+        "color": "yellow",
+        "text_suffix": "of the Burning Sands"
+    }
+}
+
 # Text Note: This library has been greatly expanded using the Kingmaker PDF.
 # By keeping this data structured as lists and dictionaries, your main game logic 
 # (in kingdom_sim.py) can loop through them without needing thousands of lines of hard-coded text.
