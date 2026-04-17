@@ -18,6 +18,7 @@ class TestEngineReconnoiter(unittest.TestCase):
         # Initialize Kingdom with a fixed seed if possible,
         # but here we just want to test logic.
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+        self.game.stage = 3 # Bypass stage progression for recon checks
         self.game.bp = 60 # Ensure enough BP for tests
 
     def test_reconnoiter_out_of_bounds_negative(self):
@@ -66,7 +67,7 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertTrue(any("[!] That area is already mapped." in entry for entry in self.game.log))
 
     def test_flavor_switching(self):
-        from data_libraries import FLAVORS
+        from library import FLAVORS
         # Switch to icy
         self.game.flavor = "icy"
         self.game.style = FLAVORS["icy"]
