@@ -162,10 +162,8 @@ class Kingdom:
 
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
-        capital_hex = self.world[self.start_y][self.start_x]
-        capital_hex.status = 2 # Capital is claimed
-        capital_hex.settlement = Settlement("Capital")
-        self.log = [f"Expedition landed in the {flavor} regions.", "Capital founded."]
+        self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
 
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
@@ -189,6 +187,8 @@ class Kingdom:
                 self.log.append(f"[+] Reconnoitered ({x},{y}). It is a {self.world[y][x].terrain}.")
             else:
                 self.log.append("[!] That area is already mapped.")
+        else:
+            self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
     def build_structure(self, structure_name, x, y):
         # We need to be viewing a settlement to build
@@ -256,8 +256,8 @@ class Kingdom:
                     map_display.append(" ?? ", style="dim")
                 elif hex_obj.status == 1:
                     # Show terrain based on Flavor
-                    char = self.style["farm_art"] if hex_obj.terrain == "Swamp" else " . "
-                    map_display.append(char, style="green")
+                    char = self.style.get(hex_obj.terrain, " . ")
+                    map_display.append(char, style=self.style["color"])
                 elif hex_obj.status == 2:
                     map_display.append(" [C]", style="bold gold1")
             map_display.append("\n")
@@ -281,7 +281,7 @@ def draw_ui(game):
     )
 
     # Apply Flavor Visuals
-    header_color = "green" if game.flavor == "swamp" else "cyan"
+    header_color = game.style["color"]
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
     if game.current_view == "world":
@@ -313,56 +313,39 @@ def draw_ui(game):
             stats.add_row("Res. Lots:", str(settlement.residential_lots))
             stats.add_row("Other Lots:", str(settlement.other_lots))
     
-    layout["main"]["map_and_stats"]["stats"].update(Panel(stats, title="Kingdom Ledger"))
-
-    # Log Table
-    log_text = Text("\n".join(game.log[-5:])) # Show last 5 logs
-    layout["main"]["log"].update(Panel(log_text, title="Log"))
-
-    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [V]iew x,y (or 'world') | [B]uild <struct> x,y | [Q]uit"))
+    layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
+    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | Flavor <name> | [N]ext | [Q]uit"))
     
     console.print(layout)
 
 # --- Logic Phase ---
 # Since you're a Floridian, I've defaulted it to Swamp flavor!
-my_game = Kingdom("The Sunken Glades", flavor="swamp")
+if __name__ == "__main__":
+    my_game = Kingdom("The Sunken Glades", flavor="swamp")
 
-while True:
-    os.system('cls' if os.name == 'nt' else 'clear')
-    draw_ui(my_game)
-    
-    action = input("\n> ").lower().split()
-    if not action: continue
-    
-    if action[0] == 'q': break
-    if action[0] == 'r' and len(action) == 2:
-        try:
-            coords = action[1].split(',')
-            my_game.reconnoiter(int(coords[0]), int(coords[1]))
-        except: pass
-    if action[0] == 'c' and len(action) == 2:
-        try:
-            coords = action[1].split(',')
-            my_game.claim_hex(int(coords[0]), int(coords[1]))
-        except: pass
-    if action[0] == 'v' and len(action) == 2:
-        if action[1].lower() == 'world':
-            my_game.current_view = "world"
-        else:
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        draw_ui(my_game)
+
+        action = input("\n> ").lower().split()
+        if not action: continue
+
+        if action[0] == 'q': break
+        if action[0] == 'r' and len(action) == 2:
             try:
                 coords = action[1].split(',')
-                vx, vy = int(coords[0]), int(coords[1])
-                if 0 <= vx < 10 and 0 <= vy < 10:
-                    my_game.current_view = (vx, vy)
-                else:
-                    my_game.log.append("[!] Coordinates out of bounds.")
-            except: pass
-    if action[0] == 'b' and len(action) >= 3:
-        try:
-            # action is like ['b', 'academy', '1,1'] or ['b', 'general', 'store', '1,1']
-            coords_str = action[-1]
-            coords = coords_str.split(',')
-            bx, by = int(coords[0]), int(coords[1])
-            structure_name = " ".join(action[1:-1])
-            my_game.build_structure(structure_name, bx, by)
-        except: pass
+                my_game.reconnoiter(int(coords[0]), int(coords[1]))
+            except Exception: pass
+        if action[0] == 'c' and len(action) == 2:
+            try:
+                coords = action[1].split(',')
+                my_game.claim_hex(int(coords[0]), int(coords[1]))
+            except Exception: pass
+        if action[0] in ['flavor', 'f'] and len(action) == 2:
+            new_flavor = action[1]
+            if new_flavor in FLAVORS:
+                my_game.flavor = new_flavor
+                my_game.style = FLAVORS[new_flavor]
+                my_game.log.append(f"[!] Kingdom aesthetic shifted to {new_flavor.capitalize()}.")
+            else:
+                my_game.log.append(f"[!] Unknown flavor: {new_flavor}")
