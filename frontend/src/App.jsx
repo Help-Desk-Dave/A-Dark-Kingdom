@@ -76,7 +76,11 @@ function App() {
   const handleBuild = (structureKey) => {
     const structure = STRUCTURES_DB[structureKey];
     if (!selectedLot) return;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     const { x, y } = selectedLot;
     const requiredLots = structure.lots || 1;
 
@@ -114,7 +118,11 @@ function App() {
         }));
         return;
     }
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     if (state.bp >= structure.cost_rp) {
       setState(prevState => {
         // Deep copy capitalGrid to avoid direct state mutation issues
@@ -141,7 +149,11 @@ function App() {
     if (state.pops.length === 0) return;
     const availablePops = state.pops.filter(p => p !== state.advisors.general && p !== state.advisors.treasurer && p !== state.advisors.diplomat);
     if (availablePops.length === 0) return;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     const assignedPop = availablePops[0];
     setState(prevState => ({
         ...prevState,
@@ -201,10 +213,17 @@ function App() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
+<<<<<<< HEAD
 
         {/* Left Column: Maps */}
         <div className="flex-1 p-4 overflow-y-auto space-y-6">
 
+=======
+
+        {/* Left Column: Maps */}
+        <div className="flex-1 p-4 overflow-y-auto space-y-6">
+
+>>>>>>> jules-7468165478531852990-94aa9d18
             {/* World Map Section */}
             <div className="bg-gray-800 rounded p-4 shadow">
                 <h2 className="text-lg font-bold mb-2 border-b border-gray-700 pb-1 flex justify-between">
@@ -212,20 +231,34 @@ function App() {
                     <span className="text-sm font-normal text-gray-400">Year {Math.floor(state.tickCount / 12)}, Month {(state.tickCount % 12) + 1}</span>
                 </h2>
                 <div className="grid grid-cols-10 gap-1 w-max mx-auto mt-4">
+<<<<<<< HEAD
                     {state.world.map((row, y) =>
+=======
+                    {state.world.map((row, y) =>
+>>>>>>> jules-7468165478531852990-94aa9d18
                         row.map((hex, x) => (
                             <button
                                 key={`${x}-${y}`}
                                 onClick={() => setSelectedHex(hex)}
                                 className={`w-8 h-8 flex items-center justify-center rounded text-sm
+<<<<<<< HEAD
                                     ${hex.status === 0 ? 'bg-gray-700 text-gray-500' :
                                       hex.status === 1 ? 'bg-gray-600 text-white' :
+=======
+                                    ${hex.status === 0 ? 'bg-gray-700 text-gray-500' :
+                                      hex.status === 1 ? 'bg-gray-600 text-white' :
+>>>>>>> jules-7468165478531852990-94aa9d18
                                       'bg-yellow-900 border border-yellow-500 text-yellow-300 font-bold'}
                                     hover:bg-gray-500 transition-colors
                                 `}
                             >
+<<<<<<< HEAD
                                 {hex.status === 0 ? '?' :
                                  hex.status === 1 ? flavor[hex.terrain] || '.' :
+=======
+                                {hex.status === 0 ? '?' :
+                                 hex.status === 1 ? flavor[hex.terrain] || '.' :
+>>>>>>> jules-7468165478531852990-94aa9d18
                                  '[C]'}
                             </button>
                         ))
@@ -263,7 +296,11 @@ function App() {
             <div className="bg-gray-800 rounded p-4 shadow">
                 <h2 className="text-lg font-bold mb-2 border-b border-gray-700 pb-1">Capital Settlement (5x5)</h2>
                 <div className="grid grid-cols-5 gap-2 w-max mx-auto mt-4">
+<<<<<<< HEAD
                     {state.capitalGrid.map((row, y) =>
+=======
+                    {state.capitalGrid.map((row, y) =>
+>>>>>>> jules-7468165478531852990-94aa9d18
                         row.map((lot, x) => (
                             <button
                                 key={`cap-${x}-${y}`}
@@ -289,8 +326,13 @@ function App() {
                         {!state.capitalGrid[selectedLot.y][selectedLot.x] ? (
                             <div className="grid grid-cols-2 gap-2 mt-2">
                                 {Object.keys(STRUCTURES_DB).map(key => (
+<<<<<<< HEAD
                                     <button
                                         key={key}
+=======
+                                    <button
+                                        key={key}
+>>>>>>> jules-7468165478531852990-94aa9d18
                                         onClick={() => handleBuild(key)}
                                         className="text-left px-2 py-1 bg-gray-800 hover:bg-gray-600 rounded text-xs flex justify-between"
                                         title={STRUCTURES_DB[key].desc}
@@ -308,7 +350,11 @@ function App() {
                     </div>
                 )}
             </div>
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
             {/* Advisors Section */}
             <div className="bg-gray-800 rounded p-4 shadow flex justify-between">
                 <div>
@@ -354,10 +400,17 @@ function App() {
                 })}
                 <div ref={logEndRef} />
             </div>
+<<<<<<< HEAD
 
             {/* Quick Actions / Reset */}
             <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between">
                 <button
+=======
+
+            {/* Quick Actions / Reset */}
+            <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between">
+                <button
+>>>>>>> jules-7468165478531852990-94aa9d18
                     onClick={() => {
                         if(window.confirm('Are you sure you want to abdicate? This will reset your kingdom.')) {
                             localStorage.removeItem('darkKingdomState');

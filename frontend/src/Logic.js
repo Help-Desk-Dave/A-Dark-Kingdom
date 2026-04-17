@@ -56,7 +56,11 @@ export class Pop {
         this.intelligence = Math.floor(Math.random() * 6) + 8;
         this.charisma = Math.floor(Math.random() * 6) + 8;
     }
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     getModifier(stat) {
         return Math.floor((stat - 10) / 2);
     }
@@ -118,10 +122,17 @@ export function processTick(state) {
     let newLog = [];
     let bpChange = 5; // Base BP
     let foodChange = 0;
+<<<<<<< HEAD
 
     // Tax base (1 BP per 2 Pops)
     bpChange += Math.floor(state.pops.length / 2);
 
+=======
+
+    // Tax base (1 BP per 2 Pops)
+    bpChange += Math.floor(state.pops.length / 2);
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     // Food Consumption
     foodChange -= state.pops.length;
 
@@ -130,7 +141,11 @@ export function processTick(state) {
         const tMod = Math.floor((state.advisors.treasurer.intelligence - 10) / 2);
         bpChange += tMod;
     }
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     if (state.advisors.general) {
         const gMod = Math.floor((state.advisors.general.strength - 10) / 2);
         if (gMod > 0 && Math.random() < 0.2) { // 20% chance to reduce unrest each month if strong
@@ -146,14 +161,22 @@ export function processTick(state) {
             const hex = state.world[y][x];
             if (hex.status === 2) { // Claimed
                 foodChange += 1; // Base wilderness foraging
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
                 // Terrain Specialization
                 if (hex.terrain === "Mountain" || hex.terrain === "Hill") {
                     bpChange += 1;
                 } else if (hex.terrain === "Forest") {
                     bpChange += 1;
                     // Check if lumberyard built (simplification: assume lumberyard affects all forests if one exists? Or map grid?)
+<<<<<<< HEAD
                     // The instructions said "Lumberyard: If built in a hex with a Forest...".
+=======
+                    // The instructions said "Lumberyard: If built in a hex with a Forest...".
+>>>>>>> jules-7468165478531852990-94aa9d18
                     // Let's abstract this: if the capital has a lumberyard, all claimed forests get +1 BP.
                 } else if (hex.terrain === "Swamp") {
                     foodChange += 2;
@@ -194,7 +217,11 @@ export function processTick(state) {
     // Apply resource changes
     state.bp += bpChange;
     state.food += foodChange;
+<<<<<<< HEAD
 
+=======
+
+>>>>>>> jules-7468165478531852990-94aa9d18
     if (state.food < 0) {
         state.food = 0;
         state.unrest += 1;
@@ -210,10 +237,17 @@ export function processTick(state) {
              const dMod = Math.floor((state.advisors.diplomat.charisma - 10) / 2);
              if (dMod > 0) baseMigrants += dMod;
         }
+<<<<<<< HEAD
 
         let spaceLeft = housingCapacity - state.pops.length;
         let migrants = Math.min(spaceLeft, baseMigrants);
 
+=======
+
+        let spaceLeft = housingCapacity - state.pops.length;
+        let migrants = Math.min(spaceLeft, baseMigrants);
+
+>>>>>>> jules-7468165478531852990-94aa9d18
         for (let i = 0; i < migrants; i++) {
              let p = new Pop();
              state.pops.push(p);
