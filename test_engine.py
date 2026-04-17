@@ -92,5 +92,43 @@ class TestEngineReconnoiter(unittest.TestCase):
                     break
             self.assertTrue(found, "Should render icy mountain with cyan style.")
 
+class TestEngineCitizens(unittest.TestCase):
+    def setUp(self):
+        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+
+    def test_monthly_tick_increments_turn(self):
+        initial_turn = self.game.turn
+        self.game.monthly_tick()
+        self.assertEqual(self.game.turn, initial_turn + 1)
+        self.assertTrue(any(f"--- Month {initial_turn + 1} Begins ---" in entry for entry in self.game.log))
+
+    def test_kingdom_founded_citizen_trigger(self):
+        # We start with level 1, so "Kingdom founded" condition is always true.
+        self.game.monthly_tick()
+        self.assertIn("Edrist Hanvaki", self.game.spawned_citizens)
+        self.assertTrue(any("Edrist Hanvaki" in entry for entry in self.game.log))
+
+    def test_structure_citizen_trigger(self):
+        # Edrist spawns immediately so clear spawned list for clear test
+        self.game.spawned_citizens.clear()
+
+        # Test "Build a Lumberyard" condition
+        self.assertNotIn("Stas", self.game.spawned_citizens)
+
+        # Manually create a settlement and a lumberyard
+        # Ensure we don't accidentally pick the capital at 5,5
+        x, y = 1, 1
+        self.game.world[y][x].settlement = Engine.Settlement("Test Village")
+
+        # Lumberyard takes 2 lots, place it on the settlement grid
+        self.game.world[y][x].settlement.grid[0][0] = "lumberyard"
+        self.game.world[y][x].settlement.grid[0][1] = "lumberyard"
+
+        self.game.monthly_tick()
+
+        # Check if the lumberjack spawned
+        self.assertIn("Stas", self.game.spawned_citizens)
+        self.assertTrue(any("Stas" in entry for entry in self.game.log))
+
 if __name__ == '__main__':
     unittest.main()

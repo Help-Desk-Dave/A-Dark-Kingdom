@@ -9,10 +9,10 @@ from library import STRUCTURES_DB, PROMINENT_CITIZENS
 
 # Define FLAVORS since it wasn't in library.py but was imported
 FLAVORS = {
-    "swamp": {"farm_art": " 🌾"},
-    "forest": {"farm_art": " 🌲"},
-    "plain": {"farm_art": " 🌿"},
-    "mountain": {"farm_art": " ⛰️"}
+    "swamp": {"farm_art": " 🌾", "text_suffix": "in the swamp", "color": "green"},
+    "forest": {"farm_art": " 🌲", "text_suffix": "in the forest", "color": "green"},
+    "plain": {"farm_art": " 🌿", "text_suffix": "on the plains", "color": "yellow"},
+    "mountain": {"farm_art": " ⛰️", "text_suffix": "in the mountains", "color": "white"}
 }
 
 console = Console()
@@ -149,6 +149,8 @@ class Kingdom:
         self.unrest = 0
         self.xp = 0
         self.level = 1
+        self.turn = 1
+        self.spawned_citizens = set()
         
         # Flavor Set Config
         self.style = FLAVORS[flavor]
@@ -171,6 +173,73 @@ class Kingdom:
         for y in range(10):
             row = [Hex(random.choice(terrain_types)) for x in range(10)]
             self.world.append(row)
+
+    def check_prominent_citizens(self):
+        for citizen in PROMINENT_CITIZENS:
+            name = citizen["name"]
+            if name in self.spawned_citizens:
+                continue
+
+            trigger = citizen["trigger"]
+            conditions_met = False
+
+            if trigger == "Kingdom founded":
+                conditions_met = True
+            elif trigger == "Build a Pier":
+                conditions_met = self.count_structures("pier") >= 1
+            elif trigger == "Build a Lumberyard":
+                conditions_met = self.count_structures("lumberyard") >= 1
+            elif trigger == "Build a Manor/Craft Luxuries":
+                conditions_met = self.count_structures("manor") >= 1
+            elif trigger == "Build an Academy or Museum":
+                conditions_met = self.count_structures("academy") >= 1 or self.count_structures("museum") >= 1
+            elif trigger == "Build a Noble Villa":
+                conditions_met = self.count_structures("noble villa") >= 1
+            elif trigger == "Build 3 Breweries":
+                conditions_met = self.count_structures("brewery") >= 3
+            elif trigger == "Kingdom Level 17":
+                conditions_met = self.level >= 17
+            elif trigger == "Claim a swamp hex":
+                swamp_claimed = False
+                for row in self.world:
+                    for hex_obj in row:
+                        if hex_obj.status == 2 and hex_obj.terrain.lower() == "swamp":
+                            swamp_claimed = True
+                            break
+                    if swamp_claimed:
+                        break
+                conditions_met = swamp_claimed
+            elif trigger == "Random Event":
+                conditions_met = random.random() < 0.05 # 5% chance per turn
+
+            if conditions_met:
+                self.spawned_citizens.add(name)
+                title = citizen["title"]
+                quest = citizen["quest"]
+                self.log.append(f"[*] PROMINENT CITIZEN ARRIVES: {name}, {title}. Quest: {quest}")
+
+    def monthly_tick(self):
+        self.turn += 1
+        self.log.append(f"--- Month {self.turn} Begins ---")
+        self.check_prominent_citizens()
+
+    def count_structures(self, structure_name):
+        structure_name = structure_name.lower()
+        if structure_name not in STRUCTURES_DB:
+            return 0
+
+        lots_per_building = STRUCTURES_DB[structure_name]["lots"]
+        total_lots_found = 0
+
+        for row in self.world:
+            for hex_obj in row:
+                if hex_obj.settlement:
+                    for sy in range(5):
+                        for sx in range(5):
+                            if hex_obj.settlement.grid[sy][sx] == structure_name:
+                                total_lots_found += 1
+
+        return total_lots_found // lots_per_building
 
     def reconnoiter(self, x, y):
         """Note: Pathfinder Rule - Surveying a hex reveals its contents but costs resources."""
@@ -331,6 +400,8 @@ if __name__ == "__main__":
         if not action: continue
 
         if action[0] == 'q': break
+        if action[0] in ['n', 'next']:
+            my_game.monthly_tick()
         if action[0] == 'r' and len(action) == 2:
             try:
                 coords = action[1].split(',')
