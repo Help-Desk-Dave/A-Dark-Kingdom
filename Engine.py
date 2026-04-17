@@ -7,7 +7,7 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from library import STRUCTURES_DB, PROMINENT_CITIZENS, RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY
+from library import STRUCTURES_DB, PROMINENT_CITIZENS, RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, get_random_citizen
 
 # Define FLAVORS since it wasn't in library.py but was imported
 FLAVORS = {
@@ -133,6 +133,22 @@ class Settlement:
             map_display.append("\n")
         return map_display
 
+class Pop:
+    def __init__(self, name):
+        self.name = name
+        self.hunger = 0
+        self.happiness = 100
+        self.is_alive = True
+
+        # Determine alignment based on pathfinder
+        alignments = ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
+        self.alignment = random.choice(alignments)
+
+        # Stats ranging from 8 to 18
+        self.strength = random.randint(8, 18)
+        self.intelligence = random.randint(8, 18)
+        self.charisma = random.randint(8, 18)
+
 class Hex:
     def __init__(self, terrain):
         self.terrain = terrain
@@ -172,6 +188,12 @@ class Kingdom:
 
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
+
+        self.loyalty = 0
+        self.citizens = [Pop(get_random_citizen()) for _ in range(5)]
+        self.advisors = {"general": None, "treasurer": None, "diplomat": None}
+
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
         self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
@@ -184,6 +206,28 @@ class Kingdom:
 
             self.tick_count += 1
 
+            # Passive Shield Mechanic
+            if self.loyalty > 10 and self.unrest > 0:
+                if random.random() < 0.5: # 50% chance
+                    self.unrest = max(0, self.unrest - 1)
+                    self.log.append("[+] High Loyalty automatically reduced Unrest by 1.")
+
+            # Advisor Modifiers
+            if self.advisors.get("treasurer") and self.advisors["treasurer"].is_alive:
+                bonus = self.advisors["treasurer"].intelligence // 4
+                self.bp += bonus
+                self.log.append(f"[+] Treasurer {self.advisors['treasurer'].name} collected {bonus} extra BP.")
+
+            if self.advisors.get("general") and self.advisors["general"].is_alive:
+                reduction = self.advisors["general"].strength // 4
+                if self.unrest > 0:
+                    self.unrest = max(0, self.unrest - reduction)
+                    self.log.append(f"[+] General {self.advisors['general'].name} reduced Unrest by {reduction}.")
+
+            if self.advisors.get("diplomat") and self.advisors["diplomat"].is_alive:
+                boost = self.advisors["diplomat"].charisma // 4
+                self.loyalty += boost
+                self.log.append(f"[+] Diplomat {self.advisors['diplomat'].name} improved Loyalty by {boost}.")
             # Advisor Modifiers (Attribute // 4)
             treasurer_bonus = self.advisors.get("Treasurer", {}).get("attribute", 0) // 4
             self.bp += treasurer_bonus
@@ -282,6 +326,7 @@ class Kingdom:
         """Note: Pathfinder Rule - Surveying a hex reveals its contents but costs resources."""
         if self.stage < 2: return
         # Treasurer's Warning: Using a check to prevent overspending
+        cost = 5
         cost = RECON_COST
 
         # Guardrail check
@@ -312,6 +357,8 @@ class Kingdom:
         sx, sy = self.current_view
         hex_obj = self.world[sy][sx]
         if hex_obj.settlement is None:
+            self.log.append("[!] No settlement exists here to build in.")
+            return
             if hex_obj.status == 2: # Claimed
                 # Auto-initialize a settlement if claimed but empty
                 hex_obj.settlement = Settlement(f"Settlement ({sx},{sy})")
@@ -527,4 +574,5 @@ if __name__ == "__main__":
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
+            except Exception: pass
             except (ValueError, IndexError): pass
