@@ -7,6 +7,7 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
+from data_libraries import STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen
 from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
 
 console = Console()
@@ -97,6 +98,22 @@ class Settlement:
             display.append("\n")
         return display
 
+class Pop:
+    def __init__(self, name):
+        self.name = name
+        self.hunger = 0
+        self.happiness = 100
+        self.is_alive = True
+
+        # Determine alignment based on pathfinder
+        alignments = ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil"]
+        self.alignment = random.choice(alignments)
+
+        # Stats ranging from 8 to 18
+        self.strength = random.randint(8, 18)
+        self.intelligence = random.randint(8, 18)
+        self.charisma = random.randint(8, 18)
+
 class Hex:
     def __init__(self, terrain):
         self.terrain = terrain
@@ -132,6 +149,12 @@ class Kingdom:
         
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
+        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
+
+        self.loyalty = 0
+        self.citizens = [Pop(get_random_citizen()) for _ in range(5)]
+        self.advisors = {"general": None, "treasurer": None, "diplomat": None}
+
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
 
         # Establish Capital Settlement automatically
@@ -180,6 +203,7 @@ class Kingdom:
                 self.pops.append(new_pop)
                 self.log.append(f"[+] Migrant arrived: {new_pop.name}")
 
+
     def monthly_tick(self):
         """Processes monthly updates."""
         # Ensure we are in a high enough stage
@@ -195,6 +219,7 @@ class Kingdom:
                   self.log.append("[!] Overcrowded settlements caused Unrest to increase.")
              self.log.append("[+] A month has passed.")
 
+
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
         terrain_types = ["Forest", "Plain", "Mountain", "Hill", "Swamp"]
@@ -206,7 +231,9 @@ class Kingdom:
         """Note: Pathfinder Rule - Surveying a hex reveals its contents but costs resources."""
         # Treasurer's Warning: Using a check to prevent overspending
         cost = 5
+
         if self.bp < cost:
+
             self.log.append("[-] Treasurer: 'We literally cannot afford to map that area right now.'")
             return
 
@@ -219,6 +246,8 @@ class Kingdom:
                 self.log.append("[!] That area is already mapped.")
         else:
             self.log.append(f"[!] ({x},{y}) is out of bounds!")
+
+
 
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
@@ -431,6 +460,8 @@ if __name__ == "__main__":
                     my_game.build_structure(structure_name, bx, by)
             except Exception:
                 pass
+
+
         if action[0] in ['flavor', 'f'] and len(action) == 2:
             new_flavor = action[1]
             if new_flavor in FLAVORS:
