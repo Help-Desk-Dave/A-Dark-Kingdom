@@ -500,7 +500,6 @@ def draw_ui(game):
          stats.add_row("Kingdom XP:", "???")
     
     layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
-    layout["footer"].update(Panel("Commands: [R]econnoiter x,y | [C]laim x,y | [V]iew x,y / world | [B]uild <name> x,y | Flavor <name> | [N]ext | [Q]uit"))
 
     # Render log
     log_content = "\n".join(game.log[-5:])
@@ -510,8 +509,10 @@ def draw_ui(game):
         layout["footer"].update(Panel("Commands: [E]stablish Camp | [Q]uit"))
     elif game.stage == 2:
         layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | [Q]uit"))
+    elif game.stage == 3:
+        layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | Sign Charter | [Q]uit"))
     else:
-        layout["footer"].update(Panel("Commands: [V]iew x,y | [R]econnoiter x,y | [C]laim x,y | [B]uild <structure> x,y | [Q]uit"))
+        layout["footer"].update(Panel("Commands: [V]iew x,y / world | [R]econnoiter x,y | [C]laim x,y | [B]uild <structure> x,y | Flavor <name> | [N]ext | [Q]uit"))
     
     console.print(layout)
 
@@ -560,8 +561,11 @@ if __name__ == "__main__":
             except Exception: pass
         if action[0] == 'v' and len(action) == 2:
             if action[1] == 'world':
-                my_game.current_view = 'world'
-                my_game.log.append('[+] Viewing World Map.')
+                if my_game.stage >= 4:
+                    my_game.current_view = 'world'
+                    my_game.log.append('[+] Viewing World Map.')
+                else:
+                    my_game.log.append('[-] World map is restricted until the Charter is signed.')
             else:
                 try:
                     coords = action[1].split(',')
