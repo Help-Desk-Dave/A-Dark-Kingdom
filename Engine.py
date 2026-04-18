@@ -7,7 +7,7 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from data_libraries import (
+from library import (
     FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen,
     RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY
 )
