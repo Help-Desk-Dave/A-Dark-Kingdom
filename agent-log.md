@@ -13,3 +13,11 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 
 ## 2026-04-18: Rename data_libraries.py to library.py
 - **Import Normalization**: Renamed `data_libraries.py` to `library.py` and updated `Engine.py` and `test_engine.py` to import from `library` instead of `data_libraries`.
+
+## Update: The Monarch's Dashboard Refactor
+- Eliminated all `window.prompt()` and `window.alert()` calls in the React frontend, strictly adhering to the architectural standard requiring custom context windows.
+- Replaced legacy prompts with a custom multi-tiered Build Menu Overlay managed via standard `useState` hooks. Menu dynamically categorizes structures from `STRUCTURES_DB` using traits (e.g. "Residential", "Edifice").
+- Added a Context-Sensitive Window ("Inspector" Tool) to the primary UI grid. Implemented state bindings `inspectorHex` and `inspectorPop` to display detailed Hex parameters (Terrain, Foraging Yield) and Advisor RPG stats cleanly upon user selection.
+- Integrated progressive disclosure UI techniques leveraging `tailwind.config.js` and `transition-all` classes in `App.jsx`, ensuring that elements like the Settlement Map and Ledger smoothly transition and fade based on the unfolding Kingdom stages.
+- Added visual feedback triggers, explicitly a "Treasurer's Gavel" scale-and-color flash bound to BP state changes, and a `shake` error animation indicating failed financial checks.
+- Confirmed thread-safe React logic structure and generated a production-ready Web build without compilation errors.
