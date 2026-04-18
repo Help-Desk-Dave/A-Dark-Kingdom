@@ -77,7 +77,7 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertTrue(any("[!] (10,10) is out of bounds!" in entry for entry in self.game.log))
 
     def test_flavor_switching(self):
-        from data_libraries import FLAVORS
+        from library import FLAVORS
         # Switch to icy
         self.game.flavor = "icy"
         self.game.style = FLAVORS["icy"]
