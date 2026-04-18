@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle } from 'lucide-react';
-import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB } from './library';
+import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS } from './library';
 
 const App = () => {
   // --- Game State ---
@@ -87,41 +87,114 @@ const App = () => {
     if (stage < 3) return;
 
     const interval = setInterval(() => {
-      setTickCount(prevTick => {
-        const nextTick = prevTick + 1;
-
-        setBp(currentBp => {
-          const treasurerBonus = Math.floor((advisors.Treasurer?.attribute || 0) / 4);
-          let newBp = currentBp + treasurerBonus;
-
-          if (nextTick % 12 === 0) {
-            newBp -= ANNUAL_UPKEEP;
-          }
-          return newBp;
-        });
-
-        // Handle side effects outside of the setState functional updater to avoid React StrictMode double-logging
-        if (nextTick % 12 === 0) {
-           addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
-           // We have to estimate the BP change outside of the setBp closure,
-           // but since it's an async update, we can just use the state value directly in a timeout or effect,
-           // or calculate it deterministically here:
-           setBp(currentBp => {
-               const expectedBp = currentBp + Math.floor((advisors.Treasurer?.attribute || 0) / 4) - ANNUAL_UPKEEP;
-               if (expectedBp < 0) {
-                   setUnrest(u => u + 1);
-                   addLog("[!] Debt causes unrest!");
-               }
-               return currentBp; // don't mutate here
-           })
-        }
-
-        return nextTick;
-      });
+      setTickCount(prevTick => prevTick + 1);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [stage, advisors]);
+  }, [stage]);
+
+  // Prominent Citizens Observer
+  const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
+
+  useEffect(() => {
+    if (stage < 2) return; // World not generated yet
+
+    const checkProminentCitizens = () => {
+        let newSpawned = new Set(spawnedCitizens);
+        let spawnedAny = false;
+
+        const countStructures = (name) => {
+            let count = 0;
+            const targetStructure = name.toLowerCase();
+            world.forEach(row => {
+                row.forEach(hex => {
+                    if (hex.status === 2 && hex.settlement) {
+                        hex.settlement.grid.forEach(sRow => {
+                            sRow.forEach(cell => {
+                                if (cell && cell.toLowerCase() === targetStructure) {
+                                    count++;
+                                }
+                            });
+                        });
+                    }
+                });
+            });
+            const lots = STRUCTURES_DB[targetStructure] ? STRUCTURES_DB[targetStructure].lots : 1;
+            return Math.floor(count / lots);
+        };
+
+        PROMINENT_CITIZENS.forEach(citizen => {
+            if (newSpawned.has(citizen.name)) return;
+
+            let conditionsMet = false;
+            const trigger = citizen.trigger;
+
+            if (trigger === "Kingdom founded" && stage >= 3) {
+                conditionsMet = true;
+            } else if (trigger === "Build a Pier") {
+                conditionsMet = countStructures("pier") >= 1;
+            } else if (trigger === "Build a Lumberyard") {
+                conditionsMet = countStructures("lumberyard") >= 1;
+            } else if (trigger === "Build a Manor/Craft Luxuries") {
+                conditionsMet = countStructures("manor") >= 1;
+            } else if (trigger === "Build an Academy or Museum") {
+                conditionsMet = countStructures("academy") >= 1 || countStructures("museum") >= 1;
+            } else if (trigger === "Build a Noble Villa") {
+                conditionsMet = countStructures("noble villa") >= 1;
+            } else if (trigger === "Build 3 Breweries") {
+                conditionsMet = countStructures("brewery") >= 3;
+            } else if (trigger === "Kingdom Level 17") {
+                conditionsMet = false; // No level concept yet, ignoring
+            } else if (trigger === "Claim a swamp hex") {
+                conditionsMet = world.some(row => row.some(hex => hex.status === 2 && hex.terrain.toLowerCase() === "swamp"));
+            } else if (trigger === "Random Event") {
+                conditionsMet = Math.random() < 0.05;
+            }
+
+            if (conditionsMet) {
+                newSpawned.add(citizen.name);
+                spawnedAny = true;
+                addLog(`[*] PROMINENT CITIZEN ARRIVES: ${citizen.name}, ${citizen.title}. Quest: ${citizen.quest}`);
+            }
+        });
+
+        if (spawnedAny) {
+            setSpawnedCitizens(newSpawned);
+        }
+    };
+
+    checkProminentCitizens();
+  }, [tickCount, stage, world, spawnedCitizens]);
+
+  // Handle Tick Side Effects
+  useEffect(() => {
+    if (stage < 3 || tickCount === 0) return;
+
+    let treasurerBonus = 0;
+    if (advisors.Treasurer) {
+        treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
+    }
+
+    setBp(currentBp => {
+        let newBp = currentBp + treasurerBonus;
+
+        if (tickCount % 12 === 0) {
+            newBp -= ANNUAL_UPKEEP;
+        }
+
+        return newBp;
+    });
+
+    if (tickCount % 12 === 0) {
+        addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
+        const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
+        if (expectedBp < 0) {
+            setUnrest(u => u + 1);
+            addLog("[!] Debt causes unrest!");
+        }
+    }
+
+  }, [tickCount]);
 
   const [treasurerWarning, setTreasurerWarning] = useState(null);
 
@@ -275,7 +348,7 @@ const App = () => {
   const renderWorldGrid = () => {
     const style = FLAVORS[flavor];
     return (
-        <div className="grid grid-cols-10 gap-1 w-fit bg-black p-4 border border-green-800">
+        <div className={`grid grid-cols-10 gap-1 w-fit bg-black p-4 border ${FLAVORS[flavor].border}`}>
             {world.map((row, y) => (
                 row.map((hex, x) => {
                     let char = "??";
@@ -284,13 +357,13 @@ const App = () => {
                         char = style[hex.terrain] || ".";
                         colorClass = style.color;
                     } else if (hex.status === 2) {
-                        char = "[C]";
+                        char = style[hex.terrain] ? `[${style[hex.terrain].trim()}]` : "[C]";
                         colorClass = "text-yellow-500 font-bold";
                     }
                     return (
                         <div
                             key={`${x}-${y}`}
-                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer hover:border border-green-400 ${colorClass}`}
+                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer hover:border ${FLAVORS[flavor].color.replace("text-", "border-").replace("500", "400")} ${colorClass}`}
                             onClick={() => {
                                 if (stage >= 3) {
                                     if (hex.status === 0) {
@@ -324,7 +397,7 @@ const App = () => {
                 row.map((cell, x) => (
                     <div
                         key={`${x}-${y}`}
-                        className="w-12 h-12 border border-gray-700 flex items-center justify-center bg-gray-900 text-xs cursor-pointer hover:border-green-400"
+                        className={`w-12 h-12 border border-gray-700 flex items-center justify-center bg-gray-900 text-xs cursor-pointer ${FLAVORS[flavor].hover}`}
                         onClick={() => {
                             if (stage >= 2 && cell === null) {
                                 const b = prompt("Build what? (e.g. houses, farm, lumberyard)");
@@ -341,7 +414,7 @@ const App = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-green-400 p-4 font-mono flex flex-col items-center relative">
+    <div className={`min-h-screen bg-gray-900 ${FLAVORS[flavor].color} p-4 font-mono flex flex-col items-center relative`}>
         {treasurerWarning && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
                 <div className="bg-gray-900 border-2 border-red-500 p-6 max-w-md">
@@ -361,7 +434,7 @@ const App = () => {
 
         <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {/* Map Area */}
-            <div className="col-span-2 bg-black border border-green-800 p-4 rounded flex flex-col items-center justify-center">
+            <div className={`col-span-2 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col items-center justify-center`}>
                 <h2 className="text-xl font-bold mb-2">
                     {currentView === "world" ? "World Map" : `Settlement at ${currentView}`}
                     {currentView !== "world" && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.resLots < Math.floor(world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.otherLots / HOUSING_CAPACITY) && (
@@ -369,22 +442,22 @@ const App = () => {
                     )}
                 </h2>
                 {stage >= 2 && (
-                    currentView === "world" ? renderWorldGrid() : renderSettlementGrid(...currentView.split(',').map(Number))
+                    currentView === "world" ? (stage >= 4 ? renderWorldGrid() : <div className={`text-gray-500 p-8 border ${FLAVORS[flavor].border}`}>World Map is restricted until the Charter is signed.</div>) : renderSettlementGrid(...currentView.split(',').map(Number))
                 )}
             </div>
 
             {/* Ledger Area */}
-            <div className="col-span-1 bg-black border border-green-800 p-4 rounded flex flex-col gap-2">
-                <h2 className="text-xl font-bold border-b border-green-800 pb-2">Kingdom Ledger</h2>
+            <div className={`col-span-1 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2`}>
+                <h2 className={`text-xl font-bold border-b ${FLAVORS[flavor].border} pb-2`}>Kingdom Ledger</h2>
                 <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
-                <div className="flex justify-between"><span>BP:</span> <span>{stage >= 3 ? bp : "???"}</span></div>
-                <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 3 ? unrest : "???"}</span></div>
-                <div className="flex justify-between"><span>XP:</span> <span>{stage >= 3 ? xp : "???"}</span></div>
-                <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 3 ? tickCount : "???"}</span></div>
+                <div className="flex justify-between"><span>BP:</span> <span>{stage >= 4 ? bp : "???"}</span></div>
+                <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
+                <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
+                <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
 
                 {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
                     <>
-                        <div className="border-t border-green-800 mt-2 pt-2"></div>
+                        <div className={`border-t ${FLAVORS[flavor].border} mt-2 pt-2`}></div>
                         <div className="flex justify-between"><span>Res. Lots:</span> <span>{world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.resLots}</span></div>
                         <div className="flex justify-between"><span>Other Lots:</span> <span>{world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.otherLots}</span></div>
                     </>
@@ -393,7 +466,7 @@ const App = () => {
         </div>
 
         {/* Log Area */}
-        <div className="w-full max-w-4xl bg-black border border-green-800 p-4 rounded h-48 overflow-y-auto mb-4">
+        <div className={`w-full max-w-4xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4`}>
             {logs.map((log, i) => (
                 <div key={i} className="mb-1">{log}</div>
             ))}
@@ -402,6 +475,30 @@ const App = () => {
 
         {/* Controls */}
         <div className="w-full max-w-4xl flex justify-center gap-4">
+            {stage === 3 && (() => {
+                let pop = 0;
+                world.forEach(row => {
+                    row.forEach(hex => {
+                        if (hex.status === 2 && hex.settlement) {
+                            pop += hex.settlement.resLots * HOUSING_CAPACITY;
+                        }
+                    });
+                });
+                if (pop >= 5) {
+                    return (
+                        <button
+                            onClick={() => {
+                                setStage(4);
+                                addLog("[+] The Charter has been signed. The World Map is now open.");
+                            }}
+                            className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
+                        >
+                            <User size={16} /> Sign the Charter
+                        </button>
+                    );
+                }
+                return null;
+            })()}
             {stage === 1 && (
                 <button
                     onClick={() => {

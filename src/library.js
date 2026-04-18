@@ -11,6 +11,8 @@ export const FLAVORS = {
         Hill: " m ",
         Swamp: " ~ ",
         color: "text-green-500",
+        border: "border-green-800",
+        hover: "hover:border-green-400",
         text_suffix: "of the Glades"
     },
     icy: {
@@ -20,6 +22,8 @@ export const FLAVORS = {
         Hill: " ^ ",
         Swamp: " 🧊 ",
         color: "text-cyan-500",
+        border: "border-cyan-800",
+        hover: "hover:border-cyan-400",
         text_suffix: "of the Frozen North"
     },
     necromancy: {
@@ -29,6 +33,8 @@ export const FLAVORS = {
         Hill: " ☖ ",
         Swamp: " ☣ ",
         color: "text-fuchsia-500",
+        border: "border-fuchsia-800",
+        hover: "hover:border-fuchsia-400",
         text_suffix: "of the Grave"
     },
     desert: {
@@ -38,6 +44,8 @@ export const FLAVORS = {
         Hill: " n ",
         Swamp: " ♒ ",
         color: "text-yellow-500",
+        border: "border-yellow-800",
+        hover: "hover:border-yellow-400",
         text_suffix: "of the Burning Sands"
     }
 };
@@ -77,3 +85,16 @@ export const STRUCTURES_DB = {
     "tenement": {lots: 1, cost_rp: 1, traits: ["building", "residential"], desc: "Hastily built shantytowns. Cheap, but increases a Ruin."},
     "watchtower": {lots: 1, cost_rp: 12, traits: ["building"], desc: "A guard post that grants advance warning to events."}
 };
+
+export const PROMINENT_CITIZENS = [
+    {name: "Arven", title: "The Fisher", trigger: "Build a Pier", quest: "Wants you to clear a monster from his secret fishing hole."},
+    {name: "Stas", title: "The Lumberjack", trigger: "Build a Lumberyard", quest: "Lost his magical spear and needs it retrieved."},
+    {name: "Lily Teskertin", title: "The Aristocrat", trigger: "Build a Manor/Craft Luxuries", quest: "Fascinated with elven artistry and ruins."},
+    {name: "Edrist Hanvaki", title: "The Merchant", trigger: "Kingdom founded", quest: "His brother Temin travels without guards and needs rescuing."},
+    {name: "Jemanda Orlashen", title: "The Detective", trigger: "Random Event", quest: "Seeking an instructor who caused a scandal at the Kitharodian Academy."},
+    {name: "Tamerak Elenark", title: "The Scholar", trigger: "Build an Academy or Museum", quest: "Researching the ancient cyclopes empire in Iobaria."},
+    {name: "Chundis", title: "The Swamper", trigger: "Claim a swamp hex", quest: "Tells tales of real swamp monsters that need dealing with."},
+    {name: "Jennavieve Kensen", title: "The Collector", trigger: "Build a Noble Villa", quest: "Wants to build a stable and collect exotic mounts."},
+    {name: "Bixen Libixyten", title: "The Brewer", trigger: "Build 3 Breweries", quest: "Needs a public feat of glory performed after drinking his new blackberry mead."},
+    {name: "Loris Shadwest", title: "The Taxidermist", trigger: "Kingdom Level 17", quest: "Wants to taxidermy a real winged owlbear."}
+];

@@ -7,7 +7,7 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from data_libraries import (
+from library import (
     FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen,
     RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY
 )
@@ -436,7 +436,8 @@ class Kingdom:
                     char = self.style.get(hex_obj.terrain, " . ")
                     map_display.append(char, style=self.style["color"])
                 elif hex_obj.status == 2:
-                    map_display.append(" [C]", style="bold gold1")
+                    char = self.style.get(hex_obj.terrain, " . ")
+                    map_display.append(f"[{char.strip()}]", style="bold gold1")
             map_display.append("\n")
         return map_display
 
@@ -461,8 +462,10 @@ def draw_ui(game):
     header_color = game.style["color"]
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
-    if game.current_view == "world":
+    if game.current_view == "world" and game.stage >= 4:
         layout["main"]["map_and_stats"]["map"].update(Panel(game.render_map(), title="World Map (Stolen Lands)", border_style=header_color))
+    elif game.current_view == "world" and game.stage < 4:
+        layout["main"]["map_and_stats"]["map"].update(Panel(Text("World Map is restricted until the Charter is signed.", style="dim"), title="World Map (Restricted)", border_style=header_color))
     else:
         sx, sy = game.current_view
         hex_obj = game.world[sy][sx]
@@ -479,7 +482,7 @@ def draw_ui(game):
     # Stats Table
     stats = Table.grid(expand=True)
 
-    if game.stage >= 3:
+    if game.stage >= 4:
         stats.add_row("BP (Treasury):", str(game.bp))
         stats.add_row("Unrest:", str(game.unrest))
         stats.add_row("Kingdom XP:", str(game.xp))
@@ -536,6 +539,18 @@ if __name__ == "__main__":
         if not action: continue
 
         if action[0] == 'q': break
+
+        if action[0] == 'sign' and len(action) > 1 and action[1] == 'charter':
+            with my_game.lock:
+                if my_game.stage == 3 and len(my_game.citizens) >= 5:
+                    my_game.stage = 4
+                    my_game.log.append("[+] The Charter has been signed. The World Map is now open.")
+                elif my_game.stage >= 4:
+                    my_game.log.append("[-] The Charter is already signed.")
+                else:
+                    my_game.log.append("[-] You are not ready to sign the Charter yet (requires Stage 3 and Population >= 5).")
+            continue
+
         if action[0] in ['n', 'next']:
             my_game.monthly_tick()
         if action[0] == 'r' and len(action) == 2:
@@ -575,23 +590,6 @@ if __name__ == "__main__":
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
             except Exception: pass
-            except (ValueError, IndexError): pass
-        if action[0] == 'v' and len(action) == 2:
-            if action[1] == 'world':
-                my_game.current_view = "world"
-            else:
-                try:
-                    coords = action[1].split(',')
-                    x, y = int(coords[0]), int(coords[1])
-                    if 0 <= x < 10 and 0 <= y < 10:
-                        my_game.current_view = (x, y)
-                except (ValueError, IndexError): pass
-        if action[0] == 'b' and len(action) >= 3:
-            try:
-                coords = action[-1].split(',')
-                x, y = int(coords[0]), int(coords[1])
-                structure_name = " ".join(action[1:-1])
-                my_game.build_structure(structure_name, x, y)
             except (ValueError, IndexError): pass
         if action[0] in ['flavor', 'f'] and len(action) == 2:
             new_flavor = action[1]
