@@ -22,3 +22,7 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 - Integrated progressive disclosure UI techniques leveraging `tailwind.config.js` and `transition-all` classes in `App.jsx`, ensuring that elements like the Settlement Map and Ledger smoothly transition and fade based on the unfolding Kingdom stages.
 - Added visual feedback triggers, explicitly a "Treasurer's Gavel" scale-and-color flash bound to BP state changes, and a `shake` error animation indicating failed financial checks.
 - Confirmed thread-safe React logic structure and generated a production-ready Web build without compilation errors.
+## 2026-04-18 - Palette: ARIA Labels
+
+**Learning:** Added ARIA labels to the close buttons in the custom modal interfaces.
+**Action:** Always ensure interactive elements with no text content have proper accessible names.

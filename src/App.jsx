@@ -454,7 +454,7 @@ const App = () => {
                       <h2 className="text-xl font-bold text-blue-400">
                           {buildMenuCategory ? `Build ${buildMenuCategory} at (${x},${y})` : `Select Category to Build at (${x},${y})`}
                       </h2>
-                      <button onClick={closeBuildMenu} className="text-red-500 hover:text-red-300 font-bold">X</button>
+                      <button onClick={closeBuildMenu} aria-label="Close build menu" className="text-red-500 hover:text-red-300 font-bold">X</button>
                   </div>
 
                   {!buildMenuCategory ? (
@@ -592,7 +592,7 @@ const App = () => {
                 <div className={`col-span-1 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
                     <div className="flex justify-between items-center border-b ${FLAVORS[flavor].border} pb-2">
                         <h2 className="text-xl font-bold text-blue-400">Inspector</h2>
-                        <button onClick={() => { setInspectorHex(null); setInspectorPop(null); }} className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
+                        <button onClick={() => { setInspectorHex(null); setInspectorPop(null); }} aria-label="Close inspector" className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
                     </div>
 
                     {inspectorHex && (
