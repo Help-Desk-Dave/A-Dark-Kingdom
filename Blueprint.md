@@ -34,6 +34,16 @@ class Kingdom: The central brain. Tracks BP, Food, Unrest, and holds the 2D arra
 
 3. Core Mechanics
 
+The "Awakening" Early Game Loop (A Dark Room Style)
+
+To faithfully emulate *A Dark Room*, the game begins in a restricted, mysterious state before expanding into the hex-crawling kingdom sim:
+
+- **State 0 (The Wilderness):** The UI is completely blank except for a single option: `[Stoke Campfire]`. The text log reads: *"The Stolen Lands are dark and freezing."* Stoking the fire provides temporary warmth.
+- **State 1 (Survival Mode):** The player is forced to manually `[Gather Timber]` and `[Hunt for Rations]` on timers to survive the early nights.
+- **State 2 (The First Companions):** A stranger arrives (e.g., *"A weary Brevic Outcast stumbles into the light."*). They become your first resident, unlocking the ability to construct primary survival structures (`Pioneer Tent`, `Supply Wagon`).
+- **State 3 (Automation):** As more tents are built, more outcasts, Rostlanders, or Local Brigands arrive at your camp. You can assign these 'Pops' to automate gathering (e.g., as Woodcutters or Trappers).
+- **State 4 (Unfurling the Charter):** Once enough basic infrastructure is built and a compass/scouting map is crafted, the player can `[Unfurl the Royal Charter]`. This triggers the "Kingdom mode", revealing the Hex Map, Ledger, and transforming raw resources into BP (Build Points).
+
 The "Dark Room" Exploration Engine
 
 The world is a 2D grid (e.g., 10x10) of Hex objects.
@@ -80,8 +90,10 @@ Command Prompt (Footer): Where the user types commands (r 5,5 to reconnoiter, bu
 
 [x] Phase 3: The Dark Map - Implement the 10x10 grid, the Hex class state machine (Hidden -> Reconnoitered -> Claimed), and coordinate commands.
 
-[ ] Phase 4: Flavor Sets - Hook the FLAVORS dictionary into the Map Panel to swap ASCII art and rich text styles dynamically.
+[ ] Phase 4: The Awakening Prologue (A Dark Room Early Game) - Implement the isolated start state where the UI is hidden except for the fire and basic gathering. Add unlocking triggers (manual gathering -> companion arrival -> worker assignment -> revealing the Royal Charter and Hex Map).
 
-[ ] Phase 5: Structures & Grids - Allow the build command to place items from STRUCTURES_DB into claimed hexes, deducting BP safely via the Treasurer check.
+[ ] Phase 5: Flavor Sets - Hook the FLAVORS dictionary into the Map Panel to swap ASCII art and rich text styles dynamically.
 
-[ ] Phase 6: Prominent Citizens - Build the "Trigger Observer". A function that runs every turn to check if conditions are met to spawn a quest-giving NPC from the database.
+[ ] Phase 6: Structures & Grids - Allow the build command to place items from STRUCTURES_DB into claimed hexes, deducting BP safely via the Treasurer check.
+
+[ ] Phase 7: Prominent Citizens - Build the "Trigger Observer". A function that runs every turn to check if conditions are met to spawn a quest-giving NPC from the database.
