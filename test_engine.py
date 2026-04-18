@@ -13,6 +13,8 @@ sys.modules['rich.text'] = MagicMock()
 
 import Engine
 
+# --- TEST SUITE: WORLD MAP EXPLORATION ---
+# Verifies that the 'reconnoiter' command correctly maps hexes and deducts BP.
 class TestEngineReconnoiter(unittest.TestCase):
     def setUp(self):
         # Initialize Kingdom with a fixed seed if possible,
@@ -21,6 +23,7 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.game.stage = 3 # Bypass stage progression for recon checks
         self.game.bp = 60 # Ensure enough BP for tests
 
+    # Tests that the engine handles negative coordinate inputs gracefully without crashing.
     def test_reconnoiter_out_of_bounds_negative(self):
         initial_bp = self.game.bp
         self.game.reconnoiter(-1, -1)
@@ -37,6 +40,7 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertFalse(any("[+] Reconnoitered" in entry for entry in self.game.log if "(10,10)" in entry))
         self.assertTrue(any("[!] (10,10) is out of bounds!" in entry for entry in self.game.log))
 
+    # Tests a successful recon operation, verifying BP deduction and status change.
     def test_reconnoiter_valid(self):
         # Find a hex that is hidden (status 0)
         x, y = 0, 0
