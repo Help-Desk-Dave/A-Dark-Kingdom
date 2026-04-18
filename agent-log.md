@@ -13,3 +13,4 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 
 ## 2026-04-18: Rename data_libraries.py to library.py
 - **Import Normalization**: Renamed `data_libraries.py` to `library.py` and updated `Engine.py` and `test_engine.py` to import from `library` instead of `data_libraries`.
+- Fixed a soft lock issue where users could navigate to the World Map before Stage 4 and become trapped. Blocked navigation in Engine.py and added a 'Return to Camp' fallback button in App.jsx.

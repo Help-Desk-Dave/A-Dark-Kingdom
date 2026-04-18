@@ -442,7 +442,17 @@ const App = () => {
                     )}
                 </h2>
                 {stage >= 2 && (
-                    currentView === "world" ? (stage >= 4 ? renderWorldGrid() : <div className={`text-gray-500 p-8 border ${FLAVORS[flavor].border}`}>World Map is restricted until the Charter is signed.</div>) : renderSettlementGrid(...currentView.split(',').map(Number))
+                    currentView === "world" ? (stage >= 4 ? renderWorldGrid() : (
+                        <div className="flex flex-col items-center justify-center gap-4">
+                            <div className={`text-gray-500 p-8 border ${FLAVORS[flavor].border}`}>World Map is restricted until the Charter is signed.</div>
+                            <button
+                                onClick={() => setCurrentView("5,5")}
+                                className="bg-green-900 text-white px-4 py-2 font-bold hover:bg-green-700 rounded flex items-center gap-2"
+                            >
+                                <Home size={16} /> Return to Camp
+                            </button>
+                        </div>
+                    )) : renderSettlementGrid(...currentView.split(',').map(Number))
                 )}
             </div>
 
@@ -515,7 +525,7 @@ const App = () => {
                     <Home size={16} /> Establish Camp
                 </button>
             )}
-            {stage >= 2 && currentView !== "world" && (
+            {stage >= 4 && currentView !== "world" && (
                 <button
                     onClick={() => setCurrentView("world")}
                     className="bg-blue-900 text-white px-4 py-2 font-bold hover:bg-blue-700 rounded flex items-center gap-2"
