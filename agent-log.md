@@ -13,6 +13,7 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 
 ## 2026-04-18: Rename data_libraries.py to library.py
 - **Import Normalization**: Renamed `data_libraries.py` to `library.py` and updated `Engine.py` and `test_engine.py` to import from `library` instead of `data_libraries`.
+- Fixed a soft lock issue where users could navigate to the World Map before Stage 4 and become trapped. Blocked navigation in Engine.py and added a 'Return to Camp' fallback button in App.jsx.
 
 ## Update: The Monarch's Dashboard Refactor
 - Eliminated all `window.prompt()` and `window.alert()` calls in the React frontend, strictly adhering to the architectural standard requiring custom context windows.
@@ -22,3 +23,12 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 - Added visual feedback triggers, explicitly a "Treasurer's Gavel" scale-and-color flash bound to BP state changes, and a `shake` error animation indicating failed financial checks.
 - Confirmed thread-safe React logic structure and generated a production-ready Web build without compilation errors.
 Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx, src/library.js, and test_engine.py. Added commenting requirement to AGENTS.md. Cleaned up __pycache__.
+
+## 2024-05-24: Optimize grid lookups for triggers
+* **Changes**: Implemented hash map lookups to pre-calculate structure counts across the 10x10 hex map and 5x5 internal grids for both `src/App.jsx` and `Engine.py`.
+* **Fixes**: Fixed an N+1 problem resulting from checking multiple `PROMINENT_CITIZENS` triggers against the entire map sequentially (O(N*M)).
+* **Findings**: Cleaned up the `dist/` and `__pycache__/` folders that were accidentally prepared for commit. Updated the Bolt Journal with findings on the codebase architecture's susceptibility to lookup bottlenecks in tick-based triggers.
+## 2026-04-18 - Palette: ARIA Labels
+
+**Learning:** Added ARIA labels to the close buttons in the custom modal interfaces.
+**Action:** Always ensure interactive elements with no text content have proper accessible names.

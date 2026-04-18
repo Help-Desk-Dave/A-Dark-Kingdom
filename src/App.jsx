@@ -120,22 +120,26 @@ const App = () => {
         let newSpawned = new Set(spawnedCitizens);
         let spawnedAny = false;
 
-        const countStructures = (name) => {
-            let count = 0;
-            const targetStructure = name.toLowerCase();
-            world.forEach(row => {
-                row.forEach(hex => {
-                    if (hex.status === 2 && hex.settlement) {
-                        hex.settlement.grid.forEach(sRow => {
-                            sRow.forEach(cell => {
-                                if (cell && cell.toLowerCase() === targetStructure) {
-                                    count++;
-                                }
-                            });
+        // Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
+        const structureCounts = {};
+        world.forEach(row => {
+            row.forEach(hex => {
+                if (hex.status === 2 && hex.settlement) {
+                    hex.settlement.grid.forEach(sRow => {
+                        sRow.forEach(cell => {
+                            if (cell) {
+                                const name = cell.toLowerCase();
+                                structureCounts[name] = (structureCounts[name] || 0) + 1;
+                            }
                         });
-                    }
-                });
+                    });
+                }
             });
+        });
+
+        const getStructureCount = (name) => {
+            const targetStructure = name.toLowerCase();
+            const count = structureCounts[targetStructure] || 0;
             const lots = STRUCTURES_DB[targetStructure] ? STRUCTURES_DB[targetStructure].lots : 1;
             return Math.floor(count / lots);
         };
@@ -149,17 +153,17 @@ const App = () => {
             if (trigger === "Kingdom founded" && stage >= 3) {
                 conditionsMet = true;
             } else if (trigger === "Build a Pier") {
-                conditionsMet = countStructures("pier") >= 1;
+                conditionsMet = getStructureCount("pier") >= 1;
             } else if (trigger === "Build a Lumberyard") {
-                conditionsMet = countStructures("lumberyard") >= 1;
+                conditionsMet = getStructureCount("lumberyard") >= 1;
             } else if (trigger === "Build a Manor/Craft Luxuries") {
-                conditionsMet = countStructures("manor") >= 1;
+                conditionsMet = getStructureCount("manor") >= 1;
             } else if (trigger === "Build an Academy or Museum") {
-                conditionsMet = countStructures("academy") >= 1 || countStructures("museum") >= 1;
+                conditionsMet = getStructureCount("academy") >= 1 || getStructureCount("museum") >= 1;
             } else if (trigger === "Build a Noble Villa") {
-                conditionsMet = countStructures("noble villa") >= 1;
+                conditionsMet = getStructureCount("noble villa") >= 1;
             } else if (trigger === "Build 3 Breweries") {
-                conditionsMet = countStructures("brewery") >= 3;
+                conditionsMet = getStructureCount("brewery") >= 3;
             } else if (trigger === "Kingdom Level 17") {
                 conditionsMet = false; // No level concept yet, ignoring
             } else if (trigger === "Claim a swamp hex") {
@@ -465,7 +469,7 @@ const App = () => {
                       <h2 className="text-xl font-bold text-blue-400">
                           {buildMenuCategory ? `Build ${buildMenuCategory} at (${x},${y})` : `Select Category to Build at (${x},${y})`}
                       </h2>
-                      <button onClick={closeBuildMenu} className="text-red-500 hover:text-red-300 font-bold">X</button>
+                      <button onClick={closeBuildMenu} aria-label="Close build menu" className="text-red-500 hover:text-red-300 font-bold">X</button>
                   </div>
 
                   {!buildMenuCategory ? (
@@ -551,7 +555,17 @@ const App = () => {
                     )}
                 </h2>
                 {stage >= 2 && (
-                    currentView === "world" ? (stage >= 4 ? renderWorldGrid() : <div className={`text-gray-500 p-8 border ${FLAVORS[flavor].border}`}>World Map is restricted until the Charter is signed.</div>) : renderSettlementGrid(...currentView.split(',').map(Number))
+                    currentView === "world" ? (stage >= 4 ? renderWorldGrid() : (
+                        <div className="flex flex-col items-center justify-center gap-4">
+                            <div className={`text-gray-500 p-8 border ${FLAVORS[flavor].border}`}>World Map is restricted until the Charter is signed.</div>
+                            <button
+                                onClick={() => setCurrentView("5,5")}
+                                className="bg-green-900 text-white px-4 py-2 font-bold hover:bg-green-700 rounded flex items-center gap-2"
+                            >
+                                <Home size={16} /> Return to Camp
+                            </button>
+                        </div>
+                    )) : renderSettlementGrid(...currentView.split(',').map(Number))
                 )}
             </div>
 
@@ -596,7 +610,7 @@ const App = () => {
                 <div className={`col-span-1 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
                     <div className="flex justify-between items-center border-b ${FLAVORS[flavor].border} pb-2">
                         <h2 className="text-xl font-bold text-blue-400">Inspector</h2>
-                        <button onClick={() => { setInspectorHex(null); setInspectorPop(null); }} className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
+                        <button onClick={() => { setInspectorHex(null); setInspectorPop(null); }} aria-label="Close inspector" className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
                     </div>
 
                     {inspectorHex && (
@@ -692,7 +706,7 @@ const App = () => {
                     <Home size={16} /> Establish Camp
                 </button>
             )}
-            {stage >= 2 && currentView !== "world" && (
+            {stage >= 4 && currentView !== "world" && (
                 <button
                     onClick={() => setCurrentView("world")}
                     className="bg-blue-900 text-white px-4 py-2 font-bold hover:bg-blue-700 rounded flex items-center gap-2"
