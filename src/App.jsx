@@ -2,38 +2,49 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS } from './library';
 
+// --- REACT COMPONENT: APP ---
+// This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
 const App = () => {
-  // --- Game State ---
+  // --- GAME STATE & LOCALSTORAGE ---
+  // All crucial variables persist via lazy initializers reading from localStorage.
+  // This ensures refreshing the browser doesn't wipe progress.
+  // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
   const [stage, setStage] = useState(() => {
     const saved = localStorage.getItem('adk_stage');
     return saved ? parseInt(saved) : 1;
   });
 
+  // `logs`: The main event ledger. Acts as the user's primary feedback mechanism instead of console.logs.
   const [logs, setLogs] = useState(() => {
     const saved = localStorage.getItem('adk_logs');
     return saved ? JSON.parse(saved) : ["[!] Expedition landed in the Stolen Lands. Awaiting orders to establish camp."];
   });
 
+  // `bp` (Build Points): The kingdom's main currency. Cannot drop below 0.
   const [bp, setBp] = useState(() => {
     const saved = localStorage.getItem('adk_bp');
     return saved ? parseInt(saved) : 60;
   });
 
+  // `tickCount`: Tracks elapsed 'months'. Every 12 ticks triggers an Annual Upkeep.
   const [tickCount, setTickCount] = useState(() => {
     const saved = localStorage.getItem('adk_tickCount');
     return saved ? parseInt(saved) : 0;
   });
 
+  // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
   const [unrest, setUnrest] = useState(() => {
     const saved = localStorage.getItem('adk_unrest');
     return saved ? parseInt(saved) : 0;
   });
 
+  // `xp`: Kingdom Experience. Awarded for claiming hexes and surviving annual upkeeps.
   const [xp, setXp] = useState(() => {
     const saved = localStorage.getItem('adk_xp');
     return saved ? parseInt(saved) : 0;
   });
 
+  // `world`: The 10x10 hex grid. Represents the Stolen Lands. Generated once and saved.
   const [world, setWorld] = useState(() => {
     const saved = localStorage.getItem('adk_world');
     if (saved) return JSON.parse(saved);
@@ -511,6 +522,9 @@ const App = () => {
       );
   };
 
+  // --- RENDER (JSX) ---
+  // The main layout uses Tailwind CSS for a dashboard-style interface.
+  // Conditional rendering blocks elements based on the current `stage`.
   return (
     <div className={`min-h-screen bg-gray-900 ${FLAVORS[flavor].color} p-4 font-mono flex flex-col items-center relative`}>
         {renderBuildMenu()}

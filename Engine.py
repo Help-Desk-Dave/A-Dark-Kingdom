@@ -14,31 +14,45 @@ from library import (
 
 console = Console()
 
+# --- LOGIC LAYER: SETTLEMENTS ---
+# Represents a physical settlement on the world map, featuring a 5x5 buildable grid.
 class Settlement:
+    # Initializes a new settlement with an empty 5x5 grid and tracks lot usage.
     def __init__(self, name="Unnamed Settlement"):
         self.name = name
         # 5x5 Grid for structures. None means empty.
+        # 5x5 Grid for structures. None means empty.
+        # Used to spatially track building placement, critical for multi-lot structures.
         self.grid = [[None for _ in range(5)] for _ in range(5)]
+        # Tracks how many lots are occupied by residential structures (e.g., houses, barracks).
         self.residential_lots = 0
+        # Tracks how many lots are occupied by non-residential structures.
         self.other_lots = 0
 
+    # Computed property to check if the settlement is overcrowded based on residential vs non-residential lots.
     @property
     def is_overcrowded(self):
         # Overcrowded if residential lots are less than 1 for every HOUSING_CAPACITY other lots
+        # Overcrowded if residential lots are less than 1 for every HOUSING_CAPACITY other lots.
         return self.residential_lots < (self.other_lots // HOUSING_CAPACITY)
 
+    # Attempts to construct a building at the specified (x,y) coordinates within the settlement's 5x5 grid.
     def build(self, structure_name, x, y, logs):
+        # Normalize the name to ensure it matches the keys in STRUCTURES_DB.
         structure_name = structure_name.lower()
+        # Guard clause: Abort if the structure does not exist in the database.
         if structure_name not in STRUCTURES_DB:
             logs.append(f"[-] Unknown structure: '{structure_name}'.")
             return False
 
+        # Retrieve structure details (lots required, cost, traits, etc.)
         structure = STRUCTURES_DB[structure_name]
+        # The footprint size of the building (e.g., 1, 2, or 4 lots).
         lots_needed = structure["lots"]
+        # Check if the building provides housing to mitigate overcrowding.
         is_residential = "residential" in structure["traits"]
 
         # ---------------------------------------------------------
-        # Text Note: Coordinate-check logic for Multi-Lot Buildings
         # ---------------------------------------------------------
         # We need to verify that the required space starting at (x, y)
         # is completely within the 5x5 grid boundaries and that every
@@ -128,6 +142,8 @@ class Settlement:
             map_display.append("\n")
         return map_display
 
+# --- LOGIC LAYER: POPULATION ---
+# Represents an individual citizen (Agent) within the kingdom with RPG-style stats.
 class Pop:
     def __init__(self, name):
         self.name = name
@@ -144,6 +160,8 @@ class Pop:
         self.intelligence = random.randint(8, 18)
         self.charisma = random.randint(8, 18)
 
+# --- LOGIC LAYER: WORLD MAP ---
+# Represents a single hexagonal tile on the 10x10 world map.
 class Hex:
     def __init__(self, terrain):
         self.terrain = terrain
@@ -153,6 +171,8 @@ class Hex:
         self.status = 0 
         self.building = None
 
+# --- LOGIC LAYER: CORE ENGINE ---
+# The main game engine handling the kingdom's state, resources, UI rendering, and simulation loop.
 class Kingdom:
     def __init__(self, name, flavor="swamp"):
         self.name = name
@@ -194,6 +214,7 @@ class Kingdom:
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
         self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
 
+    # The main real-time simulation tick. Advances the game clock, calculates resources, and triggers events.
     def tick(self):
         with self.lock:
             if self.stage < 3:
@@ -303,13 +324,16 @@ class Kingdom:
                 quest = citizen["quest"]
                 self.log.append(f"[*] PROMINENT CITIZEN ARRIVES: {name}, {title}. Quest: {quest}")
 
+    # Manually forces a simulation tick (1 Month) for testing or CLI interaction without waiting 5 seconds.
     def monthly_tick(self):
         self.turn += 1
         self.log.append(f"--- Month {self.turn} Begins ---")
         self.check_prominent_citizens()
 
     def count_structures(self, structure_name):
+        # Normalize the name to ensure it matches the keys in STRUCTURES_DB.
         structure_name = structure_name.lower()
+        # Guard clause: Abort if the structure does not exist in the database.
         if structure_name not in STRUCTURES_DB:
             return 0
 
@@ -326,6 +350,7 @@ class Kingdom:
 
         return total_lots_found // lots_per_building
 
+    # Action: Spend BP to map an unexplored hex (status 0 -> 1), making it eligible to be claimed.
     def get_structure_counts(self):
         """Returns a dictionary of structure counts to optimize check_prominent_citizens."""
         counts = {}
@@ -365,6 +390,7 @@ class Kingdom:
         else:
             self.log.append(f"[!] ({x},{y}) is out of bounds!")
 
+    # Action: Routes a build command to the settlement currently active in the view.
     def build_structure(self, structure_name, x, y):
         if self.stage < 2: return
         # We need to be viewing a settlement to build
@@ -383,11 +409,14 @@ class Kingdom:
                 self.log.append("[!] You must claim this hex before building a settlement here.")
                 return
 
+        # Normalize the name to ensure it matches the keys in STRUCTURES_DB.
         structure_name = structure_name.lower()
+        # Guard clause: Abort if the structure does not exist in the database.
         if structure_name not in STRUCTURES_DB:
             self.log.append(f"[-] Unknown structure: '{structure_name}'.")
             return
 
+        # Retrieve structure details (lots required, cost, traits, etc.)
         structure = STRUCTURES_DB[structure_name]
         cost = structure["cost_rp"]
 
@@ -421,6 +450,7 @@ class Kingdom:
                 self.stage = 3
                 self.log.append("[!] Citizens arrive and build houses. The Kingdom expands!")
 
+    # Action: Spend BP to annex a mapped hex (status 1 -> 2), expanding the kingdom's borders.
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
         if self.stage < 2: return
@@ -464,6 +494,8 @@ class Kingdom:
             map_display.append("\n")
         return map_display
 
+# --- UI LAYER: RICH DASHBOARD ---
+# Renders the terminal interface using the 'rich' library.
 def draw_ui(game):
     layout = Layout()
     layout.split_column(
@@ -539,6 +571,8 @@ def draw_ui(game):
     
     console.print(layout)
 
+# --- THREADING: BACKGROUND LOOP ---
+# Runs the game.tick() in the background every 5 seconds to simulate real-time progression.
 def simulation_loop(game):
     while True:
         time.sleep(5)
@@ -548,9 +582,15 @@ def simulation_loop(game):
 
 # --- Logic Phase ---
 # Since you're a Floridian, I've defaulted it to Swamp flavor!
+# ---------------------------------------------------------
+# MAIN EXECUTION BLOCK (CLI APP)
+# Protects the interactive CLI from running when Engine.py is imported for testing.
+# ---------------------------------------------------------
 if __name__ == "__main__":
+    # Instantiate the Kingdom singleton with the default Swamp flavor.
     my_game = Kingdom("The Sunken Glades", flavor="swamp")
 
+    # Start the background real-time simulation thread as a daemon (closes when main thread closes).
     sim_thread = threading.Thread(target=simulation_loop, args=(my_game,), daemon=True)
     sim_thread.start()
 
@@ -559,9 +599,11 @@ if __name__ == "__main__":
         with my_game.lock:
             draw_ui(my_game)
 
+        # Prompt the user for input, convert to lowercase, and split into arguments.
         action = input("\n> ").lower().split()
         if not action: continue
 
+        # Command [Q]: Quit the game loop and exit the application.
         if action[0] == 'q': break
 
         if action[0] == 'sign' and len(action) > 1 and action[1] == 'charter':
@@ -575,13 +617,16 @@ if __name__ == "__main__":
                     my_game.log.append("[-] You are not ready to sign the Charter yet (requires Stage 3 and Population >= 5).")
             continue
 
+        # Command [N]: Forcibly advance the game clock by 1 month immediately.
         if action[0] in ['n', 'next']:
             my_game.monthly_tick()
+        # Command [R] x,y: Reconnoiter (map) a target hex coordinate.
         if action[0] == 'r' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
             except Exception: pass
+        # Command [V] x,y or world: Toggle the UI view between the world map or a specific settlement grid.
         if action[0] == 'v' and len(action) == 2:
             if action[1] == 'world':
                 if my_game.stage >= 4:
@@ -603,6 +648,7 @@ if __name__ == "__main__":
                         my_game.log.append(f'[!] ({vx},{vy}) is out of bounds!')
                 except Exception:
                     pass
+        # Command [B] <name> x,y: Build a structure on the active settlement grid at coordinate (x,y).
         if action[0] == 'b' and len(action) >= 3:
             try:
                 structure_name = ' '.join(action[1:-1])
@@ -612,12 +658,14 @@ if __name__ == "__main__":
             except Exception:
                 pass
             except (ValueError, IndexError): pass
+        # Command [C] x,y: Claim a previously reconnoitered hex coordinate.
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
             except Exception: pass
             except (ValueError, IndexError): pass
+        # Command [Flavor] <name>: Dynamically switch the kingdom's visual theme (e.g., swamp, icy).
         if action[0] in ['flavor', 'f'] and len(action) == 2:
             new_flavor = action[1]
             if new_flavor in FLAVORS:

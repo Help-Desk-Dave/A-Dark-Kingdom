@@ -22,6 +22,7 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 - Integrated progressive disclosure UI techniques leveraging `tailwind.config.js` and `transition-all` classes in `App.jsx`, ensuring that elements like the Settlement Map and Ledger smoothly transition and fade based on the unfolding Kingdom stages.
 - Added visual feedback triggers, explicitly a "Treasurer's Gavel" scale-and-color flash bound to BP state changes, and a `shake` error animation indicating failed financial checks.
 - Confirmed thread-safe React logic structure and generated a production-ready Web build without compilation errors.
+Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx, src/library.js, and test_engine.py. Added commenting requirement to AGENTS.md. Cleaned up __pycache__.
 
 ## 2024-05-24: Optimize grid lookups for triggers
 * **Changes**: Implemented hash map lookups to pre-calculate structure counts across the 10x10 hex map and 5x5 internal grids for both `src/App.jsx` and `Engine.py`.

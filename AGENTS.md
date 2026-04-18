@@ -16,6 +16,7 @@ A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fort
 * **Source of Truth**: All mechanical values (costs, bonuses, DC checks) must align with the Kingmaker Second Edition Player's Guide. AI should reference the provided PDF or `library.py` before suggesting balance changes.
 
 ## 💻 Technical Standards
+* **Commenting & Documentation**: Agents must write highly detailed, line-by-line comments for all code changes. The entire codebase should read like a book, explaining the "why" and "how" of the logic at a granular level.
 * **Thread Safety**: Use `threading.Lock` in Python for all state changes to prevent race conditions during the real-time tick.
 * **UI First**: Use the `rich` library for CLI visuals and Tailwind for Web visuals. (No incompatible libraries like tkinter or pygame).
 * **Error Handling**: Log errors to the in-game "Event Log" rather than crashing the process.
