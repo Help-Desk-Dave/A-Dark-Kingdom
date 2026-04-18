@@ -27,3 +27,7 @@ All agents operating within "A Dark Kingdom" must record their significant findi
 * **Changes**: Implemented hash map lookups to pre-calculate structure counts across the 10x10 hex map and 5x5 internal grids for both `src/App.jsx` and `Engine.py`.
 * **Fixes**: Fixed an N+1 problem resulting from checking multiple `PROMINENT_CITIZENS` triggers against the entire map sequentially (O(N*M)).
 * **Findings**: Cleaned up the `dist/` and `__pycache__/` folders that were accidentally prepared for commit. Updated the Bolt Journal with findings on the codebase architecture's susceptibility to lookup bottlenecks in tick-based triggers.
+## 2026-04-18 - Palette: ARIA Labels
+
+**Learning:** Added ARIA labels to the close buttons in the custom modal interfaces.
+**Action:** Always ensure interactive elements with no text content have proper accessible names.
