@@ -251,6 +251,15 @@ class Kingdom:
             self.world.append(row)
 
     def check_prominent_citizens(self):
+        # Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
+        structure_counts = self.get_structure_counts()
+
+        def get_structure_count(structure_name):
+            target = structure_name.lower()
+            count = structure_counts.get(target, 0)
+            lots = STRUCTURES_DB.get(target, {}).get("lots", 1)
+            return count // lots
+
         for citizen in PROMINENT_CITIZENS:
             name = citizen["name"]
             if name in self.spawned_citizens:
@@ -262,17 +271,17 @@ class Kingdom:
             if trigger == "Kingdom founded":
                 conditions_met = True
             elif trigger == "Build a Pier":
-                conditions_met = self.count_structures("pier") >= 1
+                conditions_met = get_structure_count("pier") >= 1
             elif trigger == "Build a Lumberyard":
-                conditions_met = self.count_structures("lumberyard") >= 1
+                conditions_met = get_structure_count("lumberyard") >= 1
             elif trigger == "Build a Manor/Craft Luxuries":
-                conditions_met = self.count_structures("manor") >= 1
+                conditions_met = get_structure_count("manor") >= 1
             elif trigger == "Build an Academy or Museum":
-                conditions_met = self.count_structures("academy") >= 1 or self.count_structures("museum") >= 1
+                conditions_met = get_structure_count("academy") >= 1 or get_structure_count("museum") >= 1
             elif trigger == "Build a Noble Villa":
-                conditions_met = self.count_structures("noble villa") >= 1
+                conditions_met = get_structure_count("noble villa") >= 1
             elif trigger == "Build 3 Breweries":
-                conditions_met = self.count_structures("brewery") >= 3
+                conditions_met = get_structure_count("brewery") >= 3
             elif trigger == "Kingdom Level 17":
                 conditions_met = self.level >= 17
             elif trigger == "Claim a swamp hex":
@@ -316,6 +325,20 @@ class Kingdom:
                                 total_lots_found += 1
 
         return total_lots_found // lots_per_building
+
+    def get_structure_counts(self):
+        """Returns a dictionary of structure counts to optimize check_prominent_citizens."""
+        counts = {}
+        for row in self.world:
+            for hex_obj in row:
+                if hex_obj.settlement:
+                    for sy in range(5):
+                        for sx in range(5):
+                            cell = hex_obj.settlement.grid[sy][sx]
+                            if cell is not None:
+                                name = cell.lower()
+                                counts[name] = counts.get(name, 0) + 1
+        return counts
 
     def reconnoiter(self, x, y):
         """Note: Pathfinder Rule - Surveying a hex reveals its contents but costs resources."""
