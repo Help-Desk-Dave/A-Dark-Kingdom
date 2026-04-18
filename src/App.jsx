@@ -109,22 +109,26 @@ const App = () => {
         let newSpawned = new Set(spawnedCitizens);
         let spawnedAny = false;
 
-        const countStructures = (name) => {
-            let count = 0;
-            const targetStructure = name.toLowerCase();
-            world.forEach(row => {
-                row.forEach(hex => {
-                    if (hex.status === 2 && hex.settlement) {
-                        hex.settlement.grid.forEach(sRow => {
-                            sRow.forEach(cell => {
-                                if (cell && cell.toLowerCase() === targetStructure) {
-                                    count++;
-                                }
-                            });
+        // Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
+        const structureCounts = {};
+        world.forEach(row => {
+            row.forEach(hex => {
+                if (hex.status === 2 && hex.settlement) {
+                    hex.settlement.grid.forEach(sRow => {
+                        sRow.forEach(cell => {
+                            if (cell) {
+                                const name = cell.toLowerCase();
+                                structureCounts[name] = (structureCounts[name] || 0) + 1;
+                            }
                         });
-                    }
-                });
+                    });
+                }
             });
+        });
+
+        const getStructureCount = (name) => {
+            const targetStructure = name.toLowerCase();
+            const count = structureCounts[targetStructure] || 0;
             const lots = STRUCTURES_DB[targetStructure] ? STRUCTURES_DB[targetStructure].lots : 1;
             return Math.floor(count / lots);
         };
@@ -138,17 +142,17 @@ const App = () => {
             if (trigger === "Kingdom founded" && stage >= 3) {
                 conditionsMet = true;
             } else if (trigger === "Build a Pier") {
-                conditionsMet = countStructures("pier") >= 1;
+                conditionsMet = getStructureCount("pier") >= 1;
             } else if (trigger === "Build a Lumberyard") {
-                conditionsMet = countStructures("lumberyard") >= 1;
+                conditionsMet = getStructureCount("lumberyard") >= 1;
             } else if (trigger === "Build a Manor/Craft Luxuries") {
-                conditionsMet = countStructures("manor") >= 1;
+                conditionsMet = getStructureCount("manor") >= 1;
             } else if (trigger === "Build an Academy or Museum") {
-                conditionsMet = countStructures("academy") >= 1 || countStructures("museum") >= 1;
+                conditionsMet = getStructureCount("academy") >= 1 || getStructureCount("museum") >= 1;
             } else if (trigger === "Build a Noble Villa") {
-                conditionsMet = countStructures("noble villa") >= 1;
+                conditionsMet = getStructureCount("noble villa") >= 1;
             } else if (trigger === "Build 3 Breweries") {
-                conditionsMet = countStructures("brewery") >= 3;
+                conditionsMet = getStructureCount("brewery") >= 3;
             } else if (trigger === "Kingdom Level 17") {
                 conditionsMet = false; // No level concept yet, ignoring
             } else if (trigger === "Claim a swamp hex") {
