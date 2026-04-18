@@ -7,18 +7,10 @@ from rich.layout import Layout
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
-from library import STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen
-from data_libraries import FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS
-from library import STRUCTURES_DB, PROMINENT_CITIZENS
-from data_libraries import FLAVORS
-
-# Define FLAVORS since it wasn't in library.py but was imported
-FLAVORS = {
-    "swamp": {"farm_art": " 🌾", "text_suffix": "in the swamp", "color": "green"},
-    "forest": {"farm_art": " 🌲", "text_suffix": "in the forest", "color": "green"},
-    "plain": {"farm_art": " 🌿", "text_suffix": "on the plains", "color": "yellow"},
-    "mountain": {"farm_art": " ⛰️", "text_suffix": "in the mountains", "color": "white"}
-}
+from data_libraries import (
+    FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen,
+    RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY
+)
 
 console = Console()
 
@@ -360,8 +352,6 @@ class Kingdom:
         sx, sy = self.current_view
         hex_obj = self.world[sy][sx]
         if hex_obj.settlement is None:
-            self.log.append("[!] No settlement exists here to build in.")
-            return
             if hex_obj.status == 2: # Claimed
                 # Auto-initialize a settlement if claimed but empty
                 hex_obj.settlement = Settlement(f"Settlement ({sx},{sy})")
@@ -410,37 +400,28 @@ class Kingdom:
 
     def claim_hex(self, x, y):
         """Note: You must Reconnoiter a hex (status 1) before you can Claim it (status 2)."""
-        cost = 10
-        if 0 <= x < 10 and 0 <= y < 10:
-            if self.world[y][x].status == 1:
-                if self.bp >= cost:
-                    self.bp -= cost
-                    self.world[y][x].status = 2
-                    self.xp += 10 # Milestone: 10 XP per hex
-                    self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
-                else:
-                    self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
-            else:
-                self.log.append("[!] You must map this area before claiming it!")
         if self.stage < 2: return
         cost = CLAIM_COST
 
-        # Guardrail check
-        if self.bp - cost < 0:
-            self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
-            return
-        elif self.bp - cost < 15:
-             self.log.append("[-] Treasurer WARNING: Funds are critically low! Reconsidering claim.")
-             return
+        if 0 <= x < 10 and 0 <= y < 10:
+            if self.world[y][x].status == 1:
+                # Guardrail check
+                if self.bp - cost < 0:
+                    self.log.append("[-] Treasurer: 'Claiming land requires BP we don't have.'")
+                    return
+                elif self.bp - cost < 15:
+                     self.log.append("[-] Treasurer WARNING: Funds are critically low! Reconsidering claim.")
+                     return
 
-        if self.world[y][x].status == 1:
-            if self.bp >= cost:
                 self.bp -= cost
                 self.world[y][x].status = 2
                 self.xp += 10 # Milestone: 10 XP per hex
                 self.log.append(f"[+] Claimed ({x},{y}). Kingdom Size +1.")
+            else:
+                self.log.append("[!] You must map this area before claiming it!")
         else:
             self.log.append(f"[!] ({x},{y}) is out of bounds!")
+
 
     def render_map(self):
         """Note: This logic checks the 'status' of every hex to decide what to show Jules."""

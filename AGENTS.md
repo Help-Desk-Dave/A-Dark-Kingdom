@@ -30,3 +30,6 @@ A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fort
 ## 🌟 Additional Information
 * **Flavor Extensibility**: The UI must support "Flavor Sets" (Swamp, Icy, Necromancy). Do not hardcode specific flavor strings (like "Swamp") if the logic should be dynamic.
 * **Dual-Track Sync**: Any logic change in the Python engine should be mirrored in the React/Vite application to keep the two versions identical in difficulty and feel.
+
+## 📝 Agent Logging Protocol
+* **Activity Log (`agent-log.md`)**: Any AI agent modifying this project **MUST** actively log their session's structural changes, file modifications, and significant debugging resolutions at the end of `agent-log.md`. This creates a persistent trail of context across multi-session interactions.

@@ -77,7 +77,7 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertTrue(any("[!] (10,10) is out of bounds!" in entry for entry in self.game.log))
 
     def test_flavor_switching(self):
-        from library import FLAVORS
+        from data_libraries import FLAVORS
         # Switch to icy
         self.game.flavor = "icy"
         self.game.style = FLAVORS["icy"]
@@ -168,6 +168,7 @@ class TestStructures(unittest.TestCase):
         game = Engine.Kingdom("Test Kingdom", flavor="swamp")
         game.bp = 100
         game.current_view = (5, 5) # Assuming we are viewing the capital
+        game.stage = 3 # Bypass stage limitation for building test
 
         # We need a settlement
         game.world[5][5].settlement = Engine.Settlement("Capital")
