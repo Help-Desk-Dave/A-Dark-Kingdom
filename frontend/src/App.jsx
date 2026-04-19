@@ -99,6 +99,14 @@ const App = () => {
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
 
+    // --- VIBE MODE STATE ---
+    // Secret Dev Tool: Toggled by clicking the Terminal icon 3 times within 2 seconds.
+    const [vibeMode, setVibeMode] = useState(() => {
+        const saved = localStorage.getItem('adk_vibeMode');
+        return saved ? JSON.parse(saved) : false;
+    });
+    const terminalClickTimestamps = useRef([]);
+
     // --- GAME MENU STATE ---
     // Controls the visibility of the absolute positioned dropdown menu in the top right.
     // Toggled by clicking the Menu icon. Defaults to false (hidden).
@@ -109,7 +117,6 @@ const App = () => {
         // Automatically show the hero selection screen if there is no ruler saved
         return !localStorage.getItem('adk_ruler');
     });
-    const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
         return saved ? JSON.parse(saved) : null;
@@ -117,6 +124,25 @@ const App = () => {
 
     // Ref for log auto-scrolling
     const logEndRef = useRef(null);
+
+    const handleTerminalClick = () => {
+        const now = Date.now();
+        terminalClickTimestamps.current = terminalClickTimestamps.current.filter(t => now - t <= 2000);
+        terminalClickTimestamps.current.push(now);
+
+        if (terminalClickTimestamps.current.length === 3) {
+            setVibeMode(prev => {
+                const newVibe = !prev;
+                if (newVibe) {
+                    addLog("[!] RAD: Vibe Mode Enabled. The Muse is watching.");
+                } else {
+                    addLog("[!] Vibe Mode Disabled.");
+                }
+                return newVibe;
+            });
+            terminalClickTimestamps.current = [];
+        }
+    };
 
     const addLog = (msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
@@ -159,7 +185,6 @@ const App = () => {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
     }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, ruler, constructionQueue]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -562,9 +587,10 @@ const App = () => {
 
             setBp(prev => prev - cost);
 
-            const newJob = {
+            const isRes = structure.traits.includes("residential");
+
             // Queue the construction instead of instantly building
-            setConstructionQueue(prev => [...prev, {
+            const newJob = {
                 id: Date.now(),
                 structureName,
                 x,
@@ -573,18 +599,15 @@ const App = () => {
                 sy,
                 progress: 0,
                 requiredProgress: cost * 2,
+                active: false,
+                isRes,
+                lotsNeeded,
                 positionsToFill
             };
 
             setConstructionQueue(prev => [...prev, newJob]);
             addLog(`[*] Started construction of ${structureName} at ${x},${y}.`);
-                active: false,
-                isRes,
-                lotsNeeded,
-                positionsToFill
-            }]);
 
-            addLog(`[+] Construction started: ${structureName} at ${x},${y}.`);
         });
     };
 
@@ -697,12 +720,9 @@ const App = () => {
                         return (
                             <div
                                 key={`${x}-${y}`}
-                                className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
-                                onClick={() => {
-                                    if (stage >= 2 && cell === null && !job) {
                                 className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
                                 onClick={() => {
-                                    if (stage >= 2 && cell === null) {
+                                    if (stage >= 2 && cell === null && !job) {
                                         setBuildMenuTarget({ x, y });
                                     }
                                 }}
@@ -943,7 +963,14 @@ const App = () => {
                 </div>
             )}
             {stage >= 2 && (
-                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
+                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
+                    <MapIcon /> A Dark Kingdom
+                    <Terminal
+                        size={20}
+                        className="text-gray-600 hover:text-gray-400 cursor-pointer transition-colors ml-2"
+                        onClick={handleTerminalClick}
+                    />
+                </h1>
             )}
 
             <div className={`w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
@@ -1004,6 +1031,12 @@ const App = () => {
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
+                    {vibeMode && (
+                        <div className="flex justify-between items-center text-xs text-cyan-400 mt-2 border-t border-cyan-900 pt-2">
+                            <span>Vibe Variance:</span>
+                            <span dangerouslySetInnerHTML={{ __html: '$$V_v = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}{n - 1}$$' }} />
+                        </div>
+                    )}
 
                     {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
                         <>
@@ -1066,7 +1099,7 @@ const App = () => {
             </div>
 
             {/* Log Area */}
-            <div className={`w-full max-w-7xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
+            <div className={`w-full max-w-7xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out ${vibeMode ? 'text-cyan-400 font-bold drop-shadow-[0_0_5px_rgba(34,211,238,0.8)]' : ''}`}>
                 {logs.map((log, i) => (
                     <div key={i} className="mb-1">{log}</div>
                 ))}
@@ -1080,8 +1113,10 @@ const App = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                         <button
                             onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setTimber(t => t + amount);
+                                addLog(amount === 2 ? "RAD! Gathered double timber." : "Gathered timber.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
@@ -1089,8 +1124,10 @@ const App = () => {
                         </button>
                         <button
                             onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setRations(r => r + amount);
+                                addLog(amount === 2 ? "RAD! Hunted double rations." : "Hunted for rations.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
@@ -1130,8 +1167,6 @@ const App = () => {
 
             {/* Controls */}
             <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out mb-8">
-                {stage === 3 && !showHeroSelection && (() => {
-            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
                 {stage === 3 && (() => {
                     let pop = 0;
                     world.forEach(row => {
@@ -1185,8 +1220,10 @@ const App = () => {
                     <>
                         <button
                             onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setTimber(t => t + amount);
+                                addLog(amount === 2 ? "RAD! Gathered double timber." : "Gathered timber.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
@@ -1194,8 +1231,10 @@ const App = () => {
                         </button>
                         <button
                             onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setRations(r => r + amount);
+                                addLog(amount === 2 ? "RAD! Hunted double rations." : "Hunted for rations.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
