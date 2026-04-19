@@ -32,3 +32,18 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 
 **Learning:** Added ARIA labels to the close buttons in the custom modal interfaces.
 **Action:** Always ensure interactive elements with no text content have proper accessible names.
+
+## 2023-11-09 - Added Hero Selection Event
+
+- **Engine.py**:
+  - Added 'pending_hero_selection' intermediate state to halt game ticks.
+  - Implemented logic to map numeric CLI input to 'library.py' backgrounds.
+  - Appended 'ruler' entity to the existing 'self.advisors' dictionary.
+- **src/App.jsx**:
+  - Implemented 'showHeroSelection' state to control an overlay window.
+  - Interrupted standard game loop to wait for player choice.
+  - Added 'ruler' specific state and localStorage persisting mechanics.
+  - Refined UI Ledger panel to parse and gracefully fall back upon newly tracked 'ruler' object.
+- **library.py / src/library.js**:
+  - Centralized single source of truth structure for backgrounds (KINGMAKER_BACKGROUNDS).
+  - Explicitly mapped string 'attribute' to each predefined background.

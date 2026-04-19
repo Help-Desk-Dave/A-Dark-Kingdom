@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer } from 'lucide-react';
-import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS } from './library';
+import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -75,6 +75,13 @@ const App = () => {
   const [bpFlash, setBpFlash] = useState(false);
   const [bpShake, setBpShake] = useState(false);
 
+  // Hero Selection State
+  const [showHeroSelection, setShowHeroSelection] = useState(false);
+  const [ruler, setRuler] = useState(() => {
+    const saved = localStorage.getItem('adk_ruler');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   // Ref for log auto-scrolling
   const logEndRef = useRef(null);
 
@@ -91,7 +98,10 @@ const App = () => {
     localStorage.setItem('adk_xp', xp);
     localStorage.setItem('adk_tickCount', tickCount);
     localStorage.setItem('adk_world', JSON.stringify(world));
-  }, [stage, logs, bp, unrest, xp, tickCount, world]);
+    if (ruler) {
+        localStorage.setItem('adk_ruler', JSON.stringify(ruler));
+    }
+  }, [stage, logs, bp, unrest, xp, tickCount, world, ruler]);
 
   // Simulation Advisors
   const [advisors, setAdvisors] = useState({
@@ -101,14 +111,14 @@ const App = () => {
 
   // Background Tick (every 5 seconds)
   useEffect(() => {
-    if (stage < 3) return;
+    if (stage < 3 || showHeroSelection) return;
 
     const interval = setInterval(() => {
       setTickCount(prevTick => prevTick + 1);
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [stage]);
+  }, [stage, showHeroSelection]);
 
   // Prominent Citizens Observer
   const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
@@ -451,6 +461,41 @@ const App = () => {
       setBuildMenuCategory(null);
   };
 
+  const renderHeroSelection = () => {
+      if (!showHeroSelection) return null;
+
+      return (
+          <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+              <div className="bg-gray-900 border-2 border-yellow-500 p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
+                  <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-yellow-400">Choose your Background</h2>
+                  </div>
+                  <p className="text-gray-300 mb-6 italic">Who shall rule these lands?</p>
+
+                  <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3">
+                      {KINGMAKER_BACKGROUNDS.map((bg, index) => (
+                          <div
+                              key={index}
+                              onClick={() => {
+                                  setRuler(bg);
+                                  setShowHeroSelection(false);
+                                  setStage(4);
+                                  addLog(`[+] The Ruler's history as a ${bg.name} becomes known...`);
+                                  addLog("[+] The Charter has been signed. The World Map is now open.");
+                              }}
+                              className="bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors"
+                          >
+                              <div className="font-bold text-white text-lg">{bg.name}</div>
+                              <div className="text-sm text-cyan-400 mt-1">Skill: {bg.skill} | Bonus: +1 {bg.attribute}</div>
+                              <div className="text-sm text-gray-400 mt-2">{bg.desc}</div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          </div>
+      );
+  };
+
   const renderBuildMenu = () => {
       if (!buildMenuTarget) return null;
       const { x, y } = buildMenuTarget;
@@ -527,6 +572,7 @@ const App = () => {
   // Conditional rendering blocks elements based on the current `stage`.
   return (
     <div className={`min-h-screen bg-gray-900 ${FLAVORS[flavor].color} p-4 font-mono flex flex-col items-center relative`}>
+        {renderHeroSelection()}
         {renderBuildMenu()}
         {treasurerWarning && (
             <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -574,6 +620,14 @@ const App = () => {
                 <h2 className={`text-xl font-bold border-b ${FLAVORS[flavor].border} pb-2`}>Kingdom Ledger</h2>
                 {stage >= 4 && (
                     <div className="flex flex-col gap-1 mb-2">
+                        {ruler && (
+                            <>
+                                <span className="text-yellow-500 font-bold mt-1">Ruler: {ruler.name}</span>
+                                <span className="text-xs text-gray-400 italic">Skill: {ruler.skill}</span>
+                                <span className="text-xs text-green-400">Bonus: +1 {ruler.attribute}</span>
+                                <div className={`border-t ${FLAVORS[flavor].border} mt-1 mb-1`}></div>
+                            </>
+                        )}
                         <span className="text-gray-400 text-sm font-bold mt-2">Advisors (Click to inspect)</span>
                         {Object.entries(advisors).map(([role, advisor]) => (
                             <div
@@ -666,7 +720,7 @@ const App = () => {
 
         {/* Controls */}
         <div className="w-full max-w-5xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
-            {stage === 3 && (() => {
+            {stage === 3 && !showHeroSelection && (() => {
                 let pop = 0;
                 world.forEach(row => {
                     row.forEach(hex => {
@@ -679,8 +733,8 @@ const App = () => {
                     return (
                         <button
                             onClick={() => {
-                                setStage(4);
-                                addLog("[+] The Charter has been signed. The World Map is now open.");
+                                setShowHeroSelection(true);
+                                addLog("[*] Preparing the Charter. Who shall rule these lands?");
                             }}
                             className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
                         >
