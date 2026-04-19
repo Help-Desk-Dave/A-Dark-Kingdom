@@ -78,6 +78,8 @@ const App = () => {
     });
 
     // `xp`: Kingdom Experience. Awarded for claiming hexes and surviving annual upkeeps.
+    const [tickCount, setTickCount] = useState(0);
+
     const [xp, setXp] = useState(() => {
         const saved = localStorage.getItem('adk_xp');
         return saved ? parseInt(saved) : 0;
@@ -220,6 +222,7 @@ const App = () => {
         setGatherProgress(0);
 
         const interval = setInterval(() => {
+            setTickCount(prev => prev + 1);
             setGatherProgress(prev => {
                 if (prev >= 99) {
                     clearInterval(interval);
