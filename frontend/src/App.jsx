@@ -32,11 +32,14 @@ const App = () => {
     const [isGatheringTimber, setIsGatheringTimber] = useState(false);
     const [gatherTimberProgress, setGatherTimberProgress] = useState(0);
 
+    const [isGatheringStone, setIsGatheringStone] = useState(false);
+    const [gatherStoneProgress, setGatherStoneProgress] = useState(0);
+
     const [isHunting, setIsHunting] = useState(false);
     const [huntProgress, setHuntProgress] = useState(0);
 
     const [isHelpingBuild, setIsHelpingBuild] = useState(false);
-    const isRulerBusy = isGatheringSticks || isGatheringTimber || isHunting || isHelpingBuild;
+    const isRulerBusy = isGatheringSticks || isGatheringTimber || isGatheringStone || isHunting || isHelpingBuild;
     const [helpBuildProgress, setHelpBuildProgress] = useState(0);
 
     const [timber, setTimber] = useState(() => {
@@ -61,10 +64,7 @@ const App = () => {
         return saved ? parseInt(saved) : 60;
     });
 
-    const [stone, setStone] = useState(() => {
-        const saved = localStorage.getItem('adk_stone');
-        return saved !== null ? parseInt(saved) : 0;
-    });
+    const [stone, setStone] = useState(() => Number(localStorage.getItem('adk_stone')) || 0);
 
     // `gameTime`: Tracks elapsed time in days, months, years, and hours.
     const [gameTime, setGameTime] = useState(() => {
@@ -241,6 +241,29 @@ const App = () => {
         }, 50);
     };
 
+    const handleGatherStone = () => {
+        if (isRulerBusy) return;
+        setIsGatheringStone(true);
+        setGatherStoneProgress(0);
+
+        const interval = setInterval(() => {
+            setGatherStoneProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(interval);
+                    setIsGatheringStone(false);
+                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                        addLog("[!] Your lack of experience caused a setback. No resources gained.");
+                    } else {
+                        setStone(s => s + 1);
+                        addLog("[+] Gathered stone.");
+                    }
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 80);
+    };
+
     const handleGatherTimber = () => {
         if (isRulerBusy) return;
         setIsGatheringTimber(true);
@@ -334,7 +357,7 @@ const App = () => {
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler, unlockedTechs]);
+    }, [stage, sticks, timber, rations, stone, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler, unlockedTechs]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -1178,9 +1201,20 @@ const App = () => {
                     <div className="flex justify-between"><span>Time:</span> <span>{stage >= 4 ? `Day ${gameTime.day}, Month ${gameTime.month}, Year ${gameTime.year} - ${gameTime.hour}:00` : "???"}</span></div>
                     <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
                     <div className="flex justify-between"><span>BP (Influence):</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
-                    <div className="flex justify-between"><span>Timber:</span> <span>{stage >= 2 ? timber : "???"}</span></div>
-                    <div className="flex justify-between"><span>Rations:</span> <span>{stage >= 2 ? rations : "???"}</span></div>
-                    <div className="flex justify-between"><span>Stone:</span> <span>{stage >= 2 ? stone : "???"}</span></div>
+                    <div className="grid grid-cols-3 gap-2 text-center my-2 text-sm">
+                        <div className="bg-gray-800 p-1 rounded flex flex-col">
+                            <span className="text-xs text-gray-400 font-bold">TIMBER</span>
+                            <span className="font-bold text-amber-600">{stage >= 2 ? timber : "???"}</span>
+                        </div>
+                        <div className="bg-gray-800 p-1 rounded flex flex-col">
+                            <span className="text-xs text-gray-400 font-bold">RATIONS</span>
+                            <span className="font-bold text-red-400">{stage >= 2 ? rations : "???"}</span>
+                        </div>
+                        <div className="bg-gray-800 p-1 rounded flex flex-col">
+                            <span className="text-xs text-gray-400 font-bold">STONE</span>
+                            <span className="font-bold text-gray-400">{stage >= 2 ? stone : "???"}</span>
+                        </div>
+                    </div>
                     <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
@@ -1289,6 +1323,12 @@ const App = () => {
                             progress={huntProgress}
                             label={`Hunt Rations (${rations})`}
                         />
+                        <ProgressBar
+                            onClick={handleGatherStone}
+                            disabled={isRulerBusy}
+                            progress={gatherStoneProgress}
+                            label={`Gather Stone (${stone})`}
+                        />
 
                         <button
                             onClick={() => {
@@ -1379,6 +1419,12 @@ const App = () => {
                                     disabled={isRulerBusy}
                                     progress={huntProgress}
                                     label={`Hunt Rations (${rations})`}
+                                />
+                                <ProgressBar
+                                    onClick={handleGatherStone}
+                                    disabled={isRulerBusy}
+                                    progress={gatherStoneProgress}
+                                    label={`Gather Stone (${stone})`}
                                 />
                             </>
                         ) : (
