@@ -183,6 +183,7 @@ class Kingdom:
         self.food = 40
         self.unrest = 0
         self.xp = 0
+        self.stone = 0
         self.level = 1
         self.turn = 1
         self.spawned_citizens = set()
@@ -321,9 +322,19 @@ class Kingdom:
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
         terrain_types = ["Forest", "Plain", "Mountain", "Hill", "Swamp"]
+        pois = ["Ruins", "Resource Node"]
         for y in range(10):
             row = [Hex(random.choice(terrain_types)) for x in range(10)]
             self.world.append(row)
+
+        # Randomly assign 5 POIs
+        pois_assigned = 0
+        while pois_assigned < 5:
+            px = random.randint(0, 9)
+            py = random.randint(0, 9)
+            if (px != 5 or py != 5) and self.world[py][px].feature is None:
+                self.world[py][px].feature = random.choice(pois)
+                pois_assigned += 1
 
     def check_prominent_citizens(self):
         # Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
@@ -439,6 +450,8 @@ class Kingdom:
                 self.bp -= cost
                 self.world[y][x].status = 1
                 self.log.append(f"[+] Reconnoitered ({x},{y}). It is a {self.world[y][x].terrain}.")
+                if self.world[y][x].feature:
+                    self.log.append(f"[*] Discovery: Found {self.world[y][x].feature} at ({x},{y})!")
             else:
                 self.log.append("[!] That area is already mapped.")
         else:
@@ -474,41 +487,26 @@ class Kingdom:
         structure = STRUCTURES_DB[structure_name]
 
         # Determine cost based on structure and stage
-        cost_rp = structure.get("cost_rp", 0)
         cost_timber = structure.get("cost_timber", 0)
+        cost_rations = structure.get("cost_rations", 0)
+        cost_stone = structure.get("cost_stone", 0)
 
-        # Block purchase if insufficient funds
-        if cost_rp > 0 and self.bp < cost_rp:
-            self.log.append(f"[-] Treasurer: 'We cannot afford {structure_name.capitalize()}! Cost: {cost_rp} BP, Have: {self.bp} BP.'")
-            return
-        if cost_timber > 0 and self.timber < cost_timber:
-            self.log.append(f"[-] We do not have enough timber for {structure_name.capitalize()}! Cost: {cost_timber} Timber, Have: {self.timber} Timber.")
-            return
+        if getattr(self, "stone", None) is None:
+            self.stone = 0
 
-        # Treasurer's Warning - Using < 15 instead of < 10 to match requested spec (only for BP purchases)
-        if cost_rp > 0 and self.bp - cost_rp < 15:
-            os.system('cls' if os.name == 'nt' else 'clear')
-            draw_ui(self)
-            warning_panel = Panel(
-                f"[bold red]WARNING: Building '{structure_name.capitalize()}' will drop the treasury below 15 BP![/]\n"
-                f"Current BP: {self.bp}\nCost: {cost_rp}\nRemaining BP: {self.bp - cost_rp}\n\n"
-                f"Type 'yes' to confirm this purchase, or any other key to cancel.",
-                title="Treasurer's Warning",
-                border_style="bold red"
-            )
-            console.print(warning_panel)
-            confirmation = input("> ").strip().lower()
-            if confirmation != 'yes':
-                self.log.append("[-] Treasurer: 'A wise choice to hold our funds, my liege.'")
-                return
+        if self.timber < cost_timber or self.rations < cost_rations or self.stone < cost_stone:
+            self.log.append(f"[-] Missing materials for {structure_name.capitalize()}! Need {cost_timber} Timber, {cost_rations} Rations, {cost_stone} Stone.")
+            return
 
         # Attempt to build
         success = hex_obj.settlement.build(structure_name, x, y, self.log)
         if success:
-            if cost_rp > 0:
-                self.bp -= cost_rp
             if cost_timber > 0:
                 self.timber -= cost_timber
+            if cost_rations > 0:
+                self.rations -= cost_rations
+            if cost_stone > 0:
+                self.stone -= cost_stone
 
             if self.stage == 2 and structure_name == "houses":
                 self.stage = 3
@@ -630,6 +628,15 @@ def draw_ui(game):
         stats.add_row("Timber:", str(game.timber))
         stats.add_row("Rations:", str(game.rations))
         stats.add_row("Pops:", str(len(game.citizens)))
+
+        stats.add_row("---", "---")
+        stats.add_row("[bold yellow]Charter: Advisors[/]", "")
+        for role, advisor in game.advisors.items():
+            if role != "ruler" and advisor:
+                # Handle dictionary (from old config) or Pop object
+                name = advisor.get('name') if isinstance(advisor, dict) else advisor.name
+                attr = advisor.get('attribute') if isinstance(advisor, dict) else getattr(advisor, role + '_attr', 'N/A')
+                stats.add_row(f"{role.capitalize()}:", f"{name} (Attr: {attr})")
 
         if game.current_view != "world":
             sx, sy = game.current_view

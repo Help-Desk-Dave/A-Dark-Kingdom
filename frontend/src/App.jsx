@@ -16,6 +16,11 @@ const App = () => {
         return saved !== null ? parseInt(saved) : 0;
     });
 
+    const [unlockedTechs, setUnlockedTechs] = useState(() => {
+        const saved = localStorage.getItem('adk_unlockedTechs');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const [sticks, setSticks] = useState(() => {
         const saved = localStorage.getItem('adk_sticks');
         return saved !== null ? parseInt(saved) : 0;
@@ -55,10 +60,15 @@ const App = () => {
         return saved ? parseInt(saved) : 60;
     });
 
-    // `tickCount`: Tracks elapsed 'months'. Every 12 ticks triggers an Annual Upkeep.
-    const [tickCount, setTickCount] = useState(() => {
-        const saved = localStorage.getItem('adk_tickCount');
-        return saved ? parseInt(saved) : 0;
+    const [stone, setStone] = useState(() => {
+        const saved = localStorage.getItem('adk_stone');
+        return saved !== null ? parseInt(saved) : 0;
+    });
+
+    // `gameTime`: Tracks elapsed time in days, months, years, and hours.
+    const [gameTime, setGameTime] = useState(() => {
+        const saved = localStorage.getItem('adk_gameTime');
+        return saved ? JSON.parse(saved) : { day: 1, month: 1, year: 4710, hour: 0 };
     });
 
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
@@ -85,6 +95,7 @@ const App = () => {
 
         // Generate new world
         const terrains = ["Forest", "Plain", "Mountain", "Hill", "Swamp"];
+        const pois = ["Ruins", "Resource Node"];
         const newWorld = [];
         for (let y = 0; y < 10; y++) {
             const row = [];
@@ -92,11 +103,25 @@ const App = () => {
                 row.push({
                     terrain: terrains[Math.floor(Math.random() * terrains.length)],
                     status: 0,
-                    settlement: null
+                    settlement: null,
+                    poi: null
                 });
             }
             newWorld.push(row);
         }
+
+        // Randomly assign 5 POIs
+        let poisAssigned = 0;
+        while (poisAssigned < 5) {
+            let px = Math.floor(Math.random() * 10);
+            let py = Math.floor(Math.random() * 10);
+            // Don't place on capital (5,5) or if already has POI
+            if ((px !== 5 || py !== 5) && newWorld[py][px].poi === null) {
+                newWorld[py][px].poi = pois[Math.floor(Math.random() * pois.length)];
+                poisAssigned++;
+            }
+        }
+
         return newWorld;
     });
 
@@ -108,6 +133,14 @@ const App = () => {
     const [inspectorPop, setInspectorPop] = useState(null);
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
+
+    // --- VIBE MODE STATE ---
+    // Secret Dev Tool: Toggled by clicking the Terminal icon 3 times within 2 seconds.
+    const [vibeMode, setVibeMode] = useState(() => {
+        const saved = localStorage.getItem('adk_vibeMode');
+        return saved ? JSON.parse(saved) : false;
+    });
+    const terminalClickTimestamps = useRef([]);
 
     // --- GAME MENU STATE ---
     // Controls the visibility of the absolute positioned dropdown menu in the top right.
@@ -124,11 +157,64 @@ const App = () => {
     // Ref for log auto-scrolling
     const logEndRef = useRef(null);
 
-    const addLog = (msg) => {
-        setLogs(prev => [...prev.slice(-19), msg]);
+    const addLog = React.useCallback((msg) => {
+    const handleTerminalClick = () => {
+        const now = Date.now();
+        terminalClickTimestamps.current = terminalClickTimestamps.current.filter(t => now - t <= 2000);
+        terminalClickTimestamps.current.push(now);
+
+        if (terminalClickTimestamps.current.length === 3) {
+            setVibeMode(prev => {
+                const newVibe = !prev;
+                if (newVibe) {
+                    addLog("[!] RAD: Vibe Mode Enabled. The Muse is watching.");
+                } else {
+                    addLog("[!] Vibe Mode Disabled.");
+                }
+                return newVibe;
+            });
+            terminalClickTimestamps.current = [];
+        }
     };
 
-    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY);
+    const addLog = (msg) => {
+        setLogs(prev => [...prev.slice(-19), msg]);
+    }, []);
+
+    const handlePopsMove = React.useCallback((movedPops) => {
+        setWorld(prevWorld => {
+            // Need a deep clone for the nested settlements and pathValues to actually trigger re-renders properly
+            // without mutating the old state, but for performance we only clone what we change
+            let nextWorld = [...prevWorld];
+            let changed = false;
+
+            movedPops.forEach(pop => {
+                const sx = pop.settlementCoords.sx;
+                const sy = pop.settlementCoords.sy;
+                const cx = pop.currentCoords.x;
+                const cy = pop.currentCoords.y;
+
+                if (nextWorld[sy] && nextWorld[sy][sx] && nextWorld[sy][sx].settlement) {
+                    let settlement = nextWorld[sy][sx].settlement;
+                    if (settlement.pathValues && settlement.pathValues[cy] && settlement.pathValues[cy][cx] !== undefined) {
+                        // Deep clone to avoid mutating old state
+                        if (!changed) {
+                            nextWorld = nextWorld.map(row => [...row]);
+                            nextWorld[sy][sx] = { ...nextWorld[sy][sx], settlement: { ...settlement, pathValues: settlement.pathValues.map(row => [...row]) } };
+                            settlement = nextWorld[sy][sx].settlement;
+                        }
+
+                        settlement.pathValues[cy][cx] = Math.min(10, settlement.pathValues[cy][cx] + 1);
+                        changed = true;
+                    }
+                }
+            });
+
+            return changed ? nextWorld : prevWorld;
+        });
+    }, []);
+
+    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, handlePopsMove);
     const handleGatherSticks = () => {
         if (isGatheringSticks) return;
         setIsGatheringSticks(true);
@@ -235,15 +321,17 @@ const App = () => {
         localStorage.setItem('adk_rations', rations);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
+        localStorage.setItem('adk_stone', stone);
         localStorage.setItem('adk_unrest', unrest);
         localStorage.setItem('adk_xp', xp);
-        localStorage.setItem('adk_tickCount', tickCount);
+        localStorage.setItem('adk_gameTime', JSON.stringify(gameTime));
         localStorage.setItem('adk_world', JSON.stringify(world));
         localStorage.setItem('adk_constructionQueue', JSON.stringify(constructionQueue));
+        localStorage.setItem('adk_unlockedTechs', JSON.stringify(unlockedTechs));
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
+    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler, unlockedTechs]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -251,13 +339,29 @@ const App = () => {
         General: { name: "Amiri", attribute: 14 }
     });
 
-    // Background Tick (every 5 seconds)
+    // Background Tick (every 1 second = 1 hour)
     useEffect(() => {
         if (stage < 3 || showHeroSelection) return;
 
         const interval = setInterval(() => {
-            setTickCount(prevTick => prevTick + 1);
-        }, 5000);
+            setGameTime(prev => {
+                let { day, month, year, hour } = prev;
+                hour += 1;
+                if (hour >= 24) {
+                    hour = 0;
+                    day += 1;
+                    if (day > 30) {
+                        day = 1;
+                        month += 1;
+                        if (month > 12) {
+                            month = 1;
+                            year += 1;
+                        }
+                    }
+                }
+                return { day, month, year, hour };
+            });
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [stage, showHeroSelection]);
@@ -280,7 +384,7 @@ const App = () => {
                         stats.swampClaimed = true;
                     }
                     if (hex.settlement) {
-                        stats.totalPop += hex.settlement.resLots * HOUSING_CAPACITY;
+                        // We use pops.length for total pop now, but keeping this for logging if needed
                         hex.settlement.grid.forEach(sRow => {
                             sRow.forEach(cell => {
                                 if (cell) {
@@ -295,6 +399,8 @@ const App = () => {
         });
         return stats;
     }, [world, stage]);
+
+    const totalPop = pops.length;
 
     // Handle Completed Constructions (Side-Effects)
     useEffect(() => {
@@ -346,7 +452,7 @@ const App = () => {
                 if (prevQueue.length === 0) return prevQueue;
 
                 const assignedPops = 0; // Pops assigned to jobs/gatherers (to be implemented)
-                let availableBuilders = worldStats.totalPop === 0 ? 1 : Math.max(0, worldStats.totalPop - assignedPops);
+                let availableBuilders = totalPop === 0 ? 1 : Math.max(0, totalPop - assignedPops);
 
                 return prevQueue.map(job => {
                     if (availableBuilders > 0 && job.progress < job.requiredProgress) {
@@ -359,7 +465,7 @@ const App = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [stage, worldStats.totalPop]);
+    }, [stage, totalPop]);
 
     // Prominent Citizens Observer
     const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
@@ -419,37 +525,61 @@ const App = () => {
         };
 
         checkProminentCitizens();
-    }, [tickCount, stage, worldStats, spawnedCitizens]);
+    }, [gameTime.hour, stage, worldStats, spawnedCitizens]);
 
-    // Handle Tick Side Effects
+    // Handle Tick Side Effects (Every Day and Year)
     useEffect(() => {
-        if (stage < 3 || tickCount === 0) return;
+        if (stage < 3) return;
 
-        let treasurerBonus = 0;
-        if (advisors.Treasurer) {
-            treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
-        }
-
-        setBp(currentBp => {
-            let newBp = currentBp + treasurerBonus;
-
-            if (tickCount % 12 === 0) {
-                newBp -= ANNUAL_UPKEEP;
+        if (gameTime.hour === 0) {
+            let treasurerBonus = 0;
+            if (advisors.Treasurer) {
+                treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
             }
 
-            return newBp;
-        });
+            // Daily Production Calculation
+            let dailyTimber = 0;
+            let dailyRations = 0;
+            let dailyStone = 0;
 
-        if (tickCount % 12 === 0) {
-            addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
-            const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
-            if (expectedBp < 0) {
-                setUnrest(u => u + 1);
-                addLog("[!] Debt causes unrest!");
+            // worldStats.structureCounts counts cells, so we divide by lots to get structure count.
+            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+                const structData = STRUCTURES_DB[structName];
+                if (structData && structData.production) {
+                    const actualCount = Math.floor(cellCount / structData.lots);
+                    if (structData.production.timber) dailyTimber += structData.production.timber * actualCount;
+                    if (structData.production.rations) dailyRations += structData.production.rations * actualCount;
+                    if (structData.production.stone) dailyStone += structData.production.stone * actualCount;
+                }
+            });
+
+            if (dailyTimber > 0) setTimber(t => t + dailyTimber);
+            if (dailyRations > 0) setRations(r => r + dailyRations);
+            if (dailyStone > 0) setStone(s => s + dailyStone);
+
+            if (dailyTimber > 0 || dailyRations > 0 || dailyStone > 0) {
+                addLog(`[+] Daily Yield: +${dailyTimber} Timber, +${dailyRations} Rations, +${dailyStone} Stone`);
+            }
+
+            if (gameTime.day === 1) {
+                // Monthly BP bonus from treasurer
+                setBp(currentBp => currentBp + treasurerBonus);
+            }
+
+            if (gameTime.day === 1 && gameTime.month === 1 && gameTime.year > 4710) {
+                // Annual Upkeep
+                setBp(currentBp => currentBp - ANNUAL_UPKEEP);
+                addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
+
+                const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
+                if (expectedBp < 0) {
+                    setUnrest(u => u + 1);
+                    addLog("[!] Debt causes unrest!");
+                }
             }
         }
 
-    }, [tickCount]);
+    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]);
 
     const [treasurerWarning, setTreasurerWarning] = useState(null);
 
@@ -495,6 +625,9 @@ const App = () => {
                 setBp(prev => prev - RECON_COST);
                 setWorld(newWorld);
                 addLog(`[+] Reconnoitered (${x},${y}). It is a ${newWorld[y][x].terrain}.`);
+                if (newWorld[y][x].poi) {
+                    addLog(`[*] Discovery: Found ${newWorld[y][x].poi} at (${x},${y})!`);
+                }
             } else {
                 addLog("[!] That area is already mapped.");
             }
@@ -507,7 +640,7 @@ const App = () => {
             const newWorld = [...world];
             if (newWorld[y][x].status === 1) {
                 newWorld[y][x].status = 2;
-                newWorld[y][x].settlement = { name: "New Settlement", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
+                newWorld[y][x].settlement = { name: "New Settlement", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0, pathValues: Array(5).fill(0).map(() => Array(5).fill(0)) };
                 setBp(prev => prev - CLAIM_COST);
                 setXp(prev => prev + 10);
                 setWorld(newWorld);
@@ -538,9 +671,23 @@ const App = () => {
             return;
         }
 
-        const cost = structure.cost_rp;
+        const cost_timber = structure.cost_timber || 0;
+        const cost_rations = structure.cost_rations || 0;
+        const cost_stone = structure.cost_stone || 0;
 
-        handleAction(cost, structureName, () => {
+        if (timber < cost_timber || rations < cost_rations || stone < cost_stone) {
+            addLog(`[-] Cannot afford ${structureName}. Need: ${cost_timber} Timber, ${cost_rations} Rations, ${cost_stone} Stone.`);
+            return;
+        }
+
+        // Action handles the BP cost. If there are no BP costs for structures anymore, we don't pass cost.
+        // Wait, the prompt says "Structures in STRUCTURES_DB should now cost timber, rations, and a new variable stone."
+        // We will deduct the materials here.
+        handleAction(0, structureName, () => {
+            setTimber(t => t - cost_timber);
+            setRations(r => r - cost_rations);
+            setStone(s => s - cost_stone);
+
             const lotsNeeded = structure.lots;
             let positionsToFill = [];
 
@@ -712,11 +859,12 @@ const App = () => {
                             );
                         }
                         const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
+                        const isPath = settlement.pathValues && settlement.pathValues[y] && settlement.pathValues[y][x] > 5;
 
                         return (
                             <div
                                 key={`${x}-${y}`}
-                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover}`}
                                 onClick={() => {
                                     if (stage >= 2 && cell === null && !job) {
                                         setBuildMenuTarget({ x, y });
@@ -842,7 +990,7 @@ const App = () => {
                                                 }}
                                                 className="bg-green-900 hover:bg-green-700 text-white px-3 py-1 font-bold border border-green-500 whitespace-nowrap ml-4"
                                             >
-                                                {struct.cost_rp} BP
+                                                Build
                                             </button>
                                         </div>
                                     ))}
@@ -959,7 +1107,14 @@ const App = () => {
                 </div>
             )}
             {stage >= 2 && (
-                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
+                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
+                    <MapIcon /> A Dark Kingdom
+                    <Terminal
+                        size={20}
+                        className="text-gray-600 hover:text-gray-400 cursor-pointer transition-colors ml-2"
+                        onClick={handleTerminalClick}
+                    />
+                </h1>
             )}
 
             {stage >= 2 && (
@@ -1010,17 +1165,29 @@ const App = () => {
                                     }}
                                     className="text-sm cursor-pointer hover:text-yellow-400 text-gray-300"
                                 >
-                                    - {role}: {advisor.name}
+                                    - {role}: {advisor.name} <span className="text-gray-500 text-xs">(Attr: {advisor.attribute})</span>
                                 </div>
                             ))}
                             <div className={`border-t ${FLAVORS[flavor].border} mt-1 mb-1`}></div>
                         </div>
                     )}
                     <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
-                    <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Time:</span> <span>{stage >= 4 ? `Day ${gameTime.day}, Month ${gameTime.month}, Year ${gameTime.year} - ${gameTime.hour}:00` : "???"}</span></div>
+                    <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
+                    <div className="flex justify-between"><span>BP (Influence):</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Timber:</span> <span>{stage >= 2 ? timber : "???"}</span></div>
+                    <div className="flex justify-between"><span>Rations:</span> <span>{stage >= 2 ? rations : "???"}</span></div>
+                    <div className="flex justify-between"><span>Stone:</span> <span>{stage >= 2 ? stone : "???"}</span></div>
+                    <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
+                    {vibeMode && (
+                        <div className="flex justify-between items-center text-xs text-cyan-400 mt-2 border-t border-cyan-900 pt-2">
+                            <span>Vibe Variance:</span>
+                            <span dangerouslySetInnerHTML={{ __html: '$$V_v = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}{n - 1}$$' }} />
+                        </div>
+                    )}
 
                     {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
                         <>
@@ -1054,10 +1221,16 @@ const App = () => {
                                     <span className="text-gray-400">Foraging:</span>
                                     <span>{inspectorHex.terrain === "Swamp" || inspectorHex.terrain === "Forest" ? "High" : "Low"}</span>
                                 </div>
+                                {inspectorHex.status >= 1 && inspectorHex.poi && (
+                                    <div className="flex justify-between text-orange-400 font-bold">
+                                        <span>POI:</span>
+                                        <span>{inspectorHex.poi}</span>
+                                    </div>
+                                )}
                                 {inspectorHex.settlement && (
                                     <div className="mt-2 p-2 border border-blue-900 bg-blue-900/20">
                                         <div className="font-bold text-blue-300">{inspectorHex.settlement.name}</div>
-                                        <div className="text-xs text-gray-400 mt-1">Pop: {inspectorHex.settlement.resLots * HOUSING_CAPACITY}</div>
+                                        <div className="text-xs text-gray-400 mt-1">Pop: {pops.filter(p => p.settlementCoords.sx === inspectorHex.x && p.settlementCoords.sy === inspectorHex.y).length} / {inspectorHex.settlement.resLots * HOUSING_CAPACITY}</div>
                                     </div>
                                 )}
                             </div>
@@ -1092,6 +1265,10 @@ const App = () => {
                     <div ref={logEndRef} />
                 </div>
 
+            {stage >= 4 && (
+                <TechTree unlockedTechs={unlockedTechs} setUnlockedTechs={setUnlockedTechs} />
+            )}
+
             {/* Ruler's Actions (Stage 2+) */}
             {stage >= 2 && (
                 <div className={`w-full max-w-7xl bg-gray-900 border-t ${FLAVORS[flavor].border} pt-4 pb-4 mb-4 flex flex-col items-center gap-4`}>
@@ -1109,6 +1286,28 @@ const App = () => {
                             progress={huntProgress}
                             label={`Hunt Rations (${rations})`}
                         />
+                        <button
+                            onClick={() => {
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setTimber(t => t + amount);
+                                addLog(amount === 2 ? "RAD! Gathered double timber." : "Gathered timber.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Gather Timber ({timber})
+                        </button>
+                        <button
+                            onClick={() => {
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setRations(r => r + amount);
+                                addLog(amount === 2 ? "RAD! Hunted double rations." : "Hunted for rations.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Hunt Rations ({rations})
+                        </button>
                         <button
                             onClick={() => {
                                 setTimber(t => t - 10);
@@ -1207,7 +1406,7 @@ const App = () => {
                                     addLog("[+] Camp established at (5,5).");
                                     const newWorld = [...world];
                                     newWorld[5][5].status = 2;
-                                    newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
+                                    newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0, pathValues: Array(5).fill(0).map(() => Array(5).fill(0)) };
                                     setCurrentView("5,5");
                                     setWorld(newWorld);
                                 }}
@@ -1227,6 +1426,24 @@ const App = () => {
                     </button>
                 )}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+
+const TechTree = ({ unlockedTechs, setUnlockedTechs }) => {
+    return (
+        <div className="w-full bg-black border border-gray-600 p-4 rounded mb-4">
+            <h2 className="text-xl font-bold text-cyan-400 mb-2">Tech Tree (Stub)</h2>
+            <div className="text-sm text-gray-400">
+                <p>Unlocked Technologies: {unlockedTechs.length > 0 ? unlockedTechs.join(', ') : 'None'}</p>
+                <button
+                    onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
+                    className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
+                >
+                    Unlock Agriculture
+                </button>
             </div>
         </div>
     );
