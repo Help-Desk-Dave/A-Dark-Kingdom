@@ -82,3 +82,7 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - **Frontend Changes**: Moved the Hero Selection modal to Stage 0 (the very beginning of the game). The modal now automatically displays on the first load if no ruler exists in `localStorage`. Background selection now directly places the player into the "Wilderness" (Stage 0) with a specialized starting log rather than skipping to the World Map.
 - **Charter Changes**: Simplified the Stage 3 "Sign the Charter" logic in `frontend/src/App.jsx` to immediately transition to Stage 4 without displaying the Hero Selection prompt again.
 - **Backend Test Suite Alignment**: Adjusted `engine/Engine.py` to match the new flow (initializing `self.pending_hero_selection = True`) and updated `engine/test_engine.py`'s `setUp` blocks by bypassing the hero selection state explicitly (`self.game.pending_hero_selection = False`). This ensures backend unit tests run correctly without getting stalled on the missing CLI input.
+## 2024-04-19 - Calendar and Supply Chain Update
+- Replaced `tickCount` with an hourly `gameTime` clock (1 second = 1 game hour).
+- Overhauled material economy: BP shifted to an 'Influence' role, while structures now cost `Timber`, `Rations`, and a new `Stone` resource.
+- Implemented a daily production cycle where structures like the new 'Pier' produce raw materials at hour 0.
