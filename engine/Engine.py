@@ -232,6 +232,7 @@ class Kingdom:
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
         self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
         self.tick_count = 0
+        self.ruler_is_busy = False
 
     # The main real-time simulation tick. Advances the game clock, calculates resources, and triggers events.
     def tick(self):
@@ -240,6 +241,7 @@ class Kingdom:
                 return
 
             self.tick_count += 1
+            self.ruler_is_busy = False  # Ruler is free at the start of a new tick
 
             # Stage 1: Survival Mode
             if self.stage == 1:
@@ -713,11 +715,15 @@ if __name__ == "__main__":
 
         # Early Survival Mechanics (Stages 0-1)
         if my_game.stage == 0 and action[0] == 'g' and len(action) > 1 and action[1] == 'sticks':
-            my_game.sticks += 1
-            if my_game.sticks >= 10:
-                my_game.log.append("[+] You have enough sticks. You can now build a fire (b fire).")
+            if my_game.ruler_is_busy:
+                my_game.log.append("[-] The Ruler is currently busy. Wait for the next tick.")
             else:
-                my_game.log.append(f"[+] Gathered a stick. ({my_game.sticks}/10)")
+                my_game.ruler_is_busy = True
+                my_game.sticks += 1
+                if my_game.sticks >= 10:
+                    my_game.log.append("[+] You have enough sticks. You can now build a fire (b fire).")
+                else:
+                    my_game.log.append(f"[+] Gathered a stick. ({my_game.sticks}/10)")
             continue
 
         if my_game.stage == 0 and my_game.sticks >= 10 and action[0] == 'b' and len(action) > 1 and action[1] == 'fire':
@@ -727,18 +733,29 @@ if __name__ == "__main__":
                 my_game.log.append("[+] The fire crackles to life. The survival begins.")
             continue
 
-        if my_game.stage == 1:
+        if my_game.stage >= 1:
             if action[0] == 'g' and len(action) > 1 and action[1] == 'timber':
-                # Real-time cooldowns would normally be handled by the UI, but we can just add resources here for CLI
-                my_game.timber += 1
-                my_game.log.append("[+] Gathered 1 Timber.")
+                if my_game.ruler_is_busy:
+                    my_game.log.append("[-] The Ruler is currently busy. Wait for the next tick.")
+                else:
+                    my_game.ruler_is_busy = True
+                    my_game.timber += 1
+                    my_game.log.append("[+] Gathered 1 Timber.")
                 continue
             if action[0] == 'h' and len(action) > 1 and action[1] == 'rations':
-                my_game.rations += 1
-                my_game.log.append("[+] Hunted 1 Ration.")
+                if my_game.ruler_is_busy:
+                    my_game.log.append("[-] The Ruler is currently busy. Wait for the next tick.")
+                else:
+                    my_game.ruler_is_busy = True
+                    my_game.rations += 1
+                    my_game.log.append("[+] Hunted 1 Ration.")
                 continue
-            if action[0] == 's' and len(action) > 1 and action[1] == 'fire':
-                my_game.log.append("[+] You stoked the campfire.")
+            if action[0] == 's' and len(action) > 1 and action[1] == 'fire' and my_game.stage == 1:
+                if my_game.ruler_is_busy:
+                    my_game.log.append("[-] The Ruler is currently busy. Wait for the next tick.")
+                else:
+                    my_game.ruler_is_busy = True
+                    my_game.log.append("[+] You stoked the campfire.")
                 continue
 
         # Automation Assignment (Stage 2+)
