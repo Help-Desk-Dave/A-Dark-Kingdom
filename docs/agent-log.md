@@ -112,3 +112,5 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 ## 2024-05-19 - Fixed syntax errors in React hooks
 **Learning:** Encountered malformed React closures due to incomplete copy-pastes/edits. The `addLog` closure in `App.jsx` was broken, and `usePopulationEngine.jsx` had multiple repeated declarations and misaligned brackets.
 **Action:** Ensure clean diff updates when fixing syntax errors and build warnings. Double-check all React state functional updates for proper parenthesis and brackets to not break standard JavaScript/JSX build parsers.
+- Fixed a crash caused by an undefined `tickCount` state variable in `frontend/src/App.jsx`.
+- Implemented an `ErrorBoundary` component in `frontend/src/ErrorBoundary.jsx` and applied it in `frontend/src/main.jsx` to catch and gracefully display rendering errors, preventing silent white-screen failures.

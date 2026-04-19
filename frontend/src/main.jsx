@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import ErrorBoundary from './ErrorBoundary.jsx'
 import './index.css'
 
 // --- ENTRY POINT ---
@@ -11,6 +12,8 @@ import './index.css'
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     {/* Render the root App component which contains the entirety of the Kingdom Simulator state logic. */}
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>,
 )
