@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer, Menu } from 'lucide-react';
+import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
-import { usePopulationEngine } from './hooks/usePopulationEngine';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -12,25 +11,7 @@ const App = () => {
     // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
     const [stage, setStage] = useState(() => {
         const saved = localStorage.getItem('adk_stage');
-        return saved !== null ? parseInt(saved) : 0;
-    });
-
-    const [sticks, setSticks] = useState(() => {
-        const saved = localStorage.getItem('adk_sticks');
-        return saved !== null ? parseInt(saved) : 0;
-    });
-
-    const [isGatheringSticks, setIsGatheringSticks] = useState(false);
-    const [gatherProgress, setGatherProgress] = useState(0);
-
-    const [timber, setTimber] = useState(() => {
-        const saved = localStorage.getItem('adk_timber');
-        return saved !== null ? parseInt(saved) : 0;
-    });
-
-    const [rations, setRations] = useState(() => {
-        const saved = localStorage.getItem('adk_rations');
-        return saved !== null ? parseInt(saved) : 0;
+        return saved ? parseInt(saved) : 1;
     });
 
     // `logs`: The main event ledger. Acts as the user's primary feedback mechanism instead of console.logs.
@@ -43,6 +24,12 @@ const App = () => {
     const [bp, setBp] = useState(() => {
         const saved = localStorage.getItem('adk_bp');
         return saved ? parseInt(saved) : 60;
+    });
+
+    // `timber`: Basic building resource for early game.
+    const [timber, setTimber] = useState(() => {
+        const saved = localStorage.getItem('adk_timber');
+        return saved ? parseInt(saved) : 0;
     });
 
     // `tickCount`: Tracks elapsed 'months'. Every 12 ticks triggers an Annual Upkeep.
@@ -63,10 +50,14 @@ const App = () => {
         return saved ? parseInt(saved) : 0;
     });
 
-    const [constructionQueue, setConstructionQueue] = useState(() => {
-        const saved = localStorage.getItem('adk_constructionQueue');
+    // `unlocks`: Tracks granular feature progression unlocked by the user.
+    const [unlocks, setUnlocks] = useState(() => {
+        const saved = localStorage.getItem('adk_unlocks');
         return saved ? JSON.parse(saved) : [];
     });
+
+    // Helper function to check if a specific feature is unlocked
+    const hasUnlock = (id) => unlocks.includes(id);
 
     // `world`: The 10x10 hex grid. Represents the Stolen Lands. Generated once and saved.
     const [world, setWorld] = useState(() => {
@@ -99,13 +90,8 @@ const App = () => {
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
 
-    // --- GAME MENU STATE ---
-    // Controls the visibility of the absolute positioned dropdown menu in the top right.
-    // Toggled by clicking the Menu icon. Defaults to false (hidden).
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-
     // Hero Selection State
-    const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
+    const [showHeroSelection, setShowHeroSelection] = useState(false);
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
         return saved ? JSON.parse(saved) : null;
@@ -118,43 +104,21 @@ const App = () => {
         setLogs(prev => [...prev.slice(-19), msg]);
     };
 
-    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY);
-    const handleGatherSticks = () => {
-        if (isGatheringSticks) return;
-        setIsGatheringSticks(true);
-        setGatherProgress(0);
-
-        const interval = setInterval(() => {
-            setGatherProgress(prev => {
-                if (prev >= 99) {
-                    clearInterval(interval);
-                    setSticks(s => s + 1);
-                    addLog("[+] Gathered a stick from the freezing dark.");
-                    setIsGatheringSticks(false);
-                    return 100;
-                }
-                return prev + 1;
-            });
-        }, 50);
-    };
-
     // Save State
     useEffect(() => {
         localStorage.setItem('adk_stage', stage);
-        localStorage.setItem('adk_sticks', sticks);
-        localStorage.setItem('adk_timber', timber);
-        localStorage.setItem('adk_rations', rations);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
+        localStorage.setItem('adk_timber', timber);
         localStorage.setItem('adk_unrest', unrest);
         localStorage.setItem('adk_xp', xp);
         localStorage.setItem('adk_tickCount', tickCount);
         localStorage.setItem('adk_world', JSON.stringify(world));
-        localStorage.setItem('adk_constructionQueue', JSON.stringify(constructionQueue));
+        localStorage.setItem('adk_unlocks', JSON.stringify(unlocks));
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
+    }, [stage, logs, bp, timber, unrest, xp, tickCount, world, ruler, unlocks]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -206,71 +170,6 @@ const App = () => {
         });
         return stats;
     }, [world, stage]);
-
-    // Handle Completed Constructions (Side-Effects)
-    useEffect(() => {
-        const completedJobs = constructionQueue.filter(job => job.progress >= job.requiredProgress);
-
-        if (completedJobs.length > 0) {
-            setWorld(prevWorld => {
-                const nextWorld = [...prevWorld];
-                completedJobs.forEach(job => {
-                    const { sx, sy, structureName, isRes, lotsNeeded, positionsToFill } = job;
-                    if (nextWorld[sy][sx].settlement) {
-                        const newSettlement = {
-                            ...nextWorld[sy][sx].settlement,
-                            grid: nextWorld[sy][sx].settlement.grid.map(row => [...row])
-                        };
-
-                        positionsToFill.forEach(([px, py]) => {
-                            newSettlement.grid[py][px] = structureName;
-                        });
-
-                        if (isRes) newSettlement.resLots += lotsNeeded;
-                        else newSettlement.otherLots += lotsNeeded;
-
-                        nextWorld[sy][sx] = { ...nextWorld[sy][sx], settlement: newSettlement };
-                    }
-                });
-                return nextWorld;
-            });
-
-            completedJobs.forEach(job => {
-                addLog(`[+] Construction complete: ${job.structureName}.`);
-                if (stage === 2 && job.structureName === "houses") {
-                    setStage(3);
-                    addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
-                }
-            });
-
-            // Clean up completed jobs
-            setConstructionQueue(prevQueue => prevQueue.filter(job => job.progress < job.requiredProgress));
-        }
-    }, [constructionQueue, stage]);
-
-    // Construction Loop (every 1 second)
-    useEffect(() => {
-        if (stage < 2) return; // Settlements don't exist before stage 2
-
-        const interval = setInterval(() => {
-            setConstructionQueue(prevQueue => {
-                if (prevQueue.length === 0) return prevQueue;
-
-                const assignedPops = 0; // Pops assigned to jobs/gatherers (to be implemented)
-                let availableBuilders = worldStats.totalPop === 0 ? 1 : Math.max(0, worldStats.totalPop - assignedPops);
-
-                return prevQueue.map(job => {
-                    if (availableBuilders > 0 && job.progress < job.requiredProgress) {
-                        availableBuilders -= 1;
-                        return { ...job, active: true, progress: job.progress + 1 };
-                    }
-                    return { ...job, active: false };
-                });
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [stage, worldStats.totalPop]);
 
     // Prominent Citizens Observer
     const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
@@ -452,31 +351,27 @@ const App = () => {
         const cost = structure.cost_rp;
 
         handleAction(cost, structureName, () => {
+            const isRes = structure.traits.includes("residential");
             const lotsNeeded = structure.lots;
             let positionsToFill = [];
 
-            // Helper to check if a cell is blocked by existing structures OR active construction jobs
-            const isBlocked = (cx, cy) => {
-                if (cx < 0 || cx >= 5 || cy < 0 || cy >= 5) return true;
-                if (settlement.grid[cy][cx] !== null) return true;
-                return constructionQueue.some(job =>
-                    job.sx === sx && job.sy === sy && job.positionsToFill.some(p => p[0] === cx && p[1] === cy)
-                );
-            };
-
             if (lotsNeeded === 1) {
-                if (isBlocked(x, y)) {
+                if (x < 0 || x >= 5 || y < 0 || y >= 5 || settlement.grid[y][x] !== null) {
                     addLog(`[-] Cannot build at ${x},${y}: Space is blocked or out of bounds.`);
                     return;
                 }
                 positionsToFill.push([x, y]);
             } else if (lotsNeeded === 2) {
-                let horizontalClear = !isBlocked(x, y) && !isBlocked(x + 1, y);
+                let horizontalClear = true;
+                if (x < 0 || x + 1 >= 5 || y < 0 || y >= 5) horizontalClear = false;
+                else if (settlement.grid[y][x] !== null || settlement.grid[y][x + 1] !== null) horizontalClear = false;
 
                 if (horizontalClear) {
                     positionsToFill = [[x, y], [x + 1, y]];
                 } else {
-                    let verticalClear = !isBlocked(x, y) && !isBlocked(x, y + 1);
+                    let verticalClear = true;
+                    if (x < 0 || x >= 5 || y < 0 || y + 1 >= 5) verticalClear = false;
+                    else if (settlement.grid[y][x] !== null || settlement.grid[y + 1][x] !== null) verticalClear = false;
 
                     if (verticalClear) {
                         positionsToFill = [[x, y], [x, y + 1]];
@@ -486,35 +381,33 @@ const App = () => {
                     }
                 }
             } else if (lotsNeeded === 4) {
-                if (isBlocked(x, y) || isBlocked(x + 1, y) || isBlocked(x, y + 1) || isBlocked(x + 1, y + 1)) {
-                    addLog(`[-] Cannot build ${structureName} at ${x},${y}: 2x2 area is not clear or goes out of bounds.`);
+                if (x < 0 || x + 1 >= 5 || y < 0 || y + 1 >= 5) {
+                    addLog(`[-] Cannot build ${structureName} at ${x},${y}: 2x2 area goes out of bounds.`);
+                    return;
+                }
+                if (settlement.grid[y][x] !== null || settlement.grid[y][x + 1] !== null ||
+                    settlement.grid[y + 1][x] !== null || settlement.grid[y + 1][x + 1] !== null) {
+                    addLog(`[-] Cannot build ${structureName} at ${x},${y}: 2x2 area is not clear.`);
                     return;
                 }
                 positionsToFill = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
             }
 
+            positionsToFill.forEach(([px, py]) => {
+                settlement.grid[py][px] = structureName;
+            });
+
+            if (isRes) settlement.resLots += lotsNeeded;
+            else settlement.otherLots += lotsNeeded;
+
             setBp(prev => prev - cost);
+            setWorld(newWorld);
+            addLog(`[+] Built ${structureName} at ${x},${y}.`);
 
-            const isRes = structure.traits.includes("residential");
-
-            const newJob = {
-                id: Date.now(),
-                structureName,
-                x,
-                y,
-                sx,
-                sy,
-                progress: 0,
-                requiredProgress: cost * 2,
-                positionsToFill,
-                active: false,
-                isRes,
-                lotsNeeded
-            };
-
-            // Queue the construction instead of instantly building
-            setConstructionQueue(prev => [...prev, newJob]);
-            addLog(`[*] Started construction of ${structureName} at ${x},${y}.`);
+            if (stage === 2 && structureName === "houses") {
+                setStage(3);
+                addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
+            }
         });
     };
 
@@ -575,79 +468,22 @@ const App = () => {
 
         const isOvercrowded = settlement.resLots < Math.floor(settlement.otherLots / HOUSING_CAPACITY);
 
-        const localPops = pops.filter(p => p.settlementCoords.sx === sx && p.settlementCoords.sy === sy);
-
         return (
             <div className={`grid grid-cols-5 gap-2 w-fit bg-black p-4 border ${isOvercrowded ? 'border-red-600' : 'border-blue-800'}`}>
                 {settlement.grid.map((row, y) => (
-                    row.map((cell, x) => {
-                        const activeJob = constructionQueue.find(job =>
-                            job.sx === sx && job.sy === sy && job.positionsToFill.some(p => p[0] === x && p[1] === y)
-                        );
-
-                        if (activeJob) {
-                            const percent = Math.floor((activeJob.progress / activeJob.requiredProgress) * 100);
-                            return (
-                                <div
-                                    key={`${x}-${y}`}
-                                    className="w-16 h-16 border-2 border-yellow-500 bg-yellow-900 flex items-center justify-center text-xs font-bold text-yellow-100 cursor-not-allowed bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.2)_10px,rgba(0,0,0,0.2)_20px)]"
-                                    title={`Building ${activeJob.structureName}: ${percent}%`}
-                                >
-                                    {percent}%
-                                </div>
-                            );
-                        }
-                        // Check if cell is under construction
-                        const job = constructionQueue.find(q =>
-                            q.sx === sx &&
-                            q.sy === sy &&
-                            q.positionsToFill.some(([px, py]) => px === x && py === y)
-                        );
-
-                        if (job) {
-                            const percent = Math.floor((job.progress / job.requiredProgress) * 100);
-                            return (
-                                <div
-                                    key={`${x}-${y}`}
-                                    className="w-16 h-16 border border-yellow-500 flex items-center justify-center bg-yellow-900 text-xs text-center cursor-not-allowed flex-col"
-                                    style={{
-                                        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.2) 5px, rgba(0,0,0,0.2) 10px)"
-                                    }}
-                                >
-                                    {job.active ? (
-                                        <span className="text-white font-bold bg-black/50 px-1 rounded">{percent}%</span>
-                                    ) : (
-                                        <span className="text-red-500 font-bold leading-tight bg-black/50 px-1 rounded">Awaiting Builder</span>
-                                    )}
-                                </div>
-                            );
-                        }
-                        const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
-
-                        return (
-                            <div
-                                key={`${x}-${y}`}
-                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
-                                onClick={() => {
-                                    if (stage >= 2 && cell === null && !job) {
-                                        setBuildMenuTarget({ x, y });
-                                    }
-                                }}
-                            >
-                                {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
-                                {cellPops.map((p, idx) => (
-                                    <div key={p.id} className="absolute flex flex-col items-center" style={{ bottom: `${2 + idx * 4}px`, right: `${2 + idx * 4}px` }}>
-                                        {p.dialogue && (
-                                            <div className="absolute bottom-full mb-1 text-[10px] bg-white text-black p-1 rounded whitespace-nowrap z-10 font-bold border border-gray-400">
-                                                {p.dialogue}
-                                            </div>
-                                        )}
-                                        <div className="w-2 h-2 bg-yellow-400 rounded-full border border-yellow-700" title={`${p.name} (${p.state})`} />
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    })
+                    row.map((cell, x) => (
+                        <div
+                            key={`${x}-${y}`}
+                            className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                            onClick={() => {
+                                if (stage >= 2 && cell === null) {
+                                    setBuildMenuTarget({ x, y });
+                                }
+                            }}
+                        >
+                            {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
+                        </div>
+                    ))
                 ))}
             </div>
         );
@@ -677,9 +513,9 @@ const App = () => {
                                 onClick={() => {
                                     setRuler(bg);
                                     setShowHeroSelection(false);
-                                    // Set stage to 0 to start the "Dark Room" gathering sequence
-                                    setStage(0);
-                                    addLog(`[+] You remember your past as a ${bg.name}... but right now, you are alone in the freezing dark.`);
+                                    setStage(4);
+                                    addLog(`[+] The Ruler's history as a ${bg.name} becomes known...`);
+                                    addLog("[+] The Charter has been signed. The World Map is now open.");
                                 }}
                                 className="bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors"
                             >
@@ -765,93 +601,11 @@ const App = () => {
         );
     };
 
-    // --- RENDER GAME MENU ---
-    // This function creates a fixed/absolute positioned overlay in the top right corner.
-    // It provides system-level controls to the user, such as restarting the game or
-    // accessing debug shortcuts for rapid testing.
-    const renderGameMenu = () => {
-        return (
-            // Position the wrapper in the absolute top right corner. z-50 ensures it floats above the main UI.
-            <div className="absolute top-4 right-4 z-50">
-                {/*
-                  Menu Toggle Button
-                  Clicking this button toggles the boolean `isMenuOpen` state.
-                  It displays the imported `Menu` icon from lucide-react.
-                */}
-                <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="p-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-white transition-colors"
-                    aria-label="Toggle Game Menu"
-                >
-                    <Menu size={24} />
-                </button>
-
-                {/*
-                  Conditional Dropdown
-                  If `isMenuOpen` is true, render the dropdown menu containing the options.
-                */}
-                {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-600 rounded shadow-xl flex flex-col p-2 gap-2">
-                        {/*
-                          Option 1: Restart Game
-                          This button iterates through all items in localStorage.
-                          Any key starting with the prefix 'adk_' is removed to clear the kingdom simulator's saved state.
-                          After clearing, it calls window.location.reload() to forcefully refresh the application
-                          and re-initialize all default states.
-                        */}
-                        <button
-                            onClick={() => {
-                                // Iterate backwards or gather keys first to safely remove while iterating.
-                                const keysToRemove = [];
-                                for (let i = 0; i < localStorage.length; i++) {
-                                    const key = localStorage.key(i);
-                                    if (key && key.startsWith('adk_')) {
-                                        keysToRemove.push(key);
-                                    }
-                                }
-                                // Remove all gathered 'adk_' prefixed keys.
-                                keysToRemove.forEach(k => localStorage.removeItem(k));
-                                // Reload the window to guarantee a clean slate.
-                                window.location.reload();
-                            }}
-                            className="w-full text-left p-2 hover:bg-red-900 text-red-400 font-bold border border-transparent hover:border-red-500 rounded transition-colors"
-                        >
-                            Restart Game
-                        </button>
-
-                        {/*
-                          Option 2: Debug - Skip to Hero Selection
-                          This debug shortcut fast-forwards the simulation for testing late-game mechanics.
-                          It forces the `stage` to 3, directly shows the Hero Selection screen,
-                          closes the menu to clean up the UI, and logs the debug action.
-                        */}
-                        <button
-                            onClick={() => {
-                                // Force stage to 3, skipping the early game sequence.
-                                setStage(3);
-                                // Trigger the hero selection overlay, bypassing the normal population trigger.
-                                setShowHeroSelection(true);
-                                // Close the game menu after selection to keep the view unobstructed.
-                                setIsMenuOpen(false);
-                                // Inform the user via the in-game event ledger that a debug action occurred.
-                                addLog("[*] DEBUG: Fast-forwarded to Hero Selection via Game Menu.");
-                            }}
-                            className="w-full text-left p-2 hover:bg-yellow-900 text-yellow-400 font-bold border border-transparent hover:border-yellow-500 rounded transition-colors"
-                        >
-                            Debug: Skip to Hero Selection
-                        </button>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     // --- RENDER (JSX) ---
     // The main layout uses Tailwind CSS for a dashboard-style interface.
     // Conditional rendering blocks elements based on the current `stage`.
     return (
         <div className={`min-h-screen bg-gray-900 ${FLAVORS[flavor].color} p-4 font-mono flex flex-col items-center relative`}>
-            {renderGameMenu()}
             {renderHeroSelection()}
             {renderBuildMenu()}
             {treasurerWarning && (
@@ -869,14 +623,11 @@ const App = () => {
                     </div>
                 </div>
             )}
-            {stage >= 2 && (
-                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
-            )}
+            <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
 
-            {stage >= 2 && (
-            <div className="w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out">
+            <div className={`w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
                 {/* Map Area */}
-                <div className={`flex-grow bg-black border ${FLAVORS[flavor].border} p-6 rounded flex flex-col items-center transition-all duration-1000 ease-in-out overflow-x-auto`}>
+                <div className={`flex-grow bg-black border ${FLAVORS[flavor].border} p-6 rounded flex flex-col items-center transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full hidden'} overflow-x-auto`}>
                     <h2 className="text-xl font-bold mb-4">
                         {currentView === "world" ? "World Map" : `Settlement at ${currentView}`}
                         {currentView !== "world" && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.resLots < Math.floor(world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.otherLots / HOUSING_CAPACITY) && (
@@ -899,7 +650,7 @@ const App = () => {
                 </div>
 
                 {/* Ledger Area */}
-                <div className={`w-full md:w-64 flex-shrink-0 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
+                <div className={`w-full md:w-64 flex-shrink-0 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${stage >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full hidden'} ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
                     <h2 className={`text-xl font-bold border-b ${FLAVORS[flavor].border} pb-2`}>Kingdom Ledger</h2>
                     {stage >= 4 && (
                         <div className="flex flex-col gap-1 mb-2">
@@ -928,7 +679,8 @@ const App = () => {
                         </div>
                     )}
                     <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
-                    <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 4 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Timber:</span> <span>{timber}</span></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
@@ -992,87 +744,48 @@ const App = () => {
                 )}
 
             </div>
-            )}
 
-            <div className={stage < 2 ? "flex-1 flex flex-col justify-center items-center w-full max-w-7xl" : "w-full flex flex-col items-center max-w-7xl"}>
-                {/* Log Area */}
-                <div className={`w-full bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
-                    {logs.map((log, i) => (
-                        <div key={i} className="mb-1">{log}</div>
-                    ))}
-                    <div ref={logEndRef} />
-                </div>
-
-            {/* Ruler's Actions (Stage 2+) */}
-            {stage >= 2 && (
-                <div className={`w-full max-w-7xl bg-gray-900 border-t ${FLAVORS[flavor].border} pt-4 pb-4 mb-4 flex flex-col items-center gap-4`}>
-                    <h3 className="text-lg font-bold text-gray-300 mb-2">Ruler's Actions</h3>
-                    <div className="flex flex-wrap justify-center gap-4">
-                        <button
-                            onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Gather Timber ({timber})
-                        </button>
-                        <button
-                            onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Hunt Rations ({rations})
-                        </button>
-                        <button
-                            onClick={() => {
-                                setTimber(t => t - 10);
-                                setRations(r => r - 10);
-                                setBp(currentBp => currentBp + 1);
-                                addLog("[+] You sold raw resources to the local market for 1 BP.");
-                            }}
-                            disabled={timber < 10 || rations < 10}
-                            className={`px-4 py-2 font-bold rounded border ${timber >= 10 && rations >= 10 ? 'bg-yellow-900 text-yellow-100 hover:bg-yellow-700 border-yellow-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
-                        >
-                            Sell Resources (10 Timber, 10 Rations -&gt; 1 BP)
-                        </button>
-                        <button
-                            onClick={() => {
-                                if (constructionQueue.length > 0) {
-                                    setConstructionQueue(prev => {
-                                        const newQueue = [...prev];
-                                        newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 2 };
-                                        return newQueue;
-                                    });
-                                    addLog("[+] You rolled up your sleeves and helped speed up construction.");
-                                }
-                            }}
-                            disabled={constructionQueue.length === 0}
-                            className={`px-4 py-2 font-bold rounded border flex items-center gap-2 ${constructionQueue.length > 0 ? 'bg-blue-900 text-blue-100 hover:bg-blue-700 border-blue-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
-                        >
-                            <Hammer size={16} /> Help Build
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Log Area */}
+            <div className={`w-full max-w-7xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
+                {logs.map((log, i) => (
+                    <div key={i} className="mb-1">{log}</div>
+                ))}
+                <div ref={logEndRef} />
+            </div>
 
             {/* Controls */}
-            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out mb-8">
+            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
+                {stage === 3 && !showHeroSelection && !hasUnlock('scouting_map') && (
+                    <button
+                        onClick={() => {
+                            if (timber >= 10) {
+                                setTimber(prev => prev - 10);
+                                setUnlocks(prev => [...prev, 'scouting_map']);
+                                addLog("[+] Crafted a Scouting Map. The Stolen Lands await.");
+                            } else {
+                                addLog("[-] Not enough Timber!");
+                            }
+                        }}
+                        className="bg-orange-900 text-white px-4 py-2 font-bold hover:bg-orange-700 rounded flex items-center gap-2 border border-orange-500"
+                    >
+                        <MapIcon size={16} /> Craft Scouting Map
+                    </button>
+                )}
                 {stage === 3 && !showHeroSelection && (() => {
                     let pop = 0;
                     world.forEach(row => {
                         row.forEach(hex => {
-                            if (hex.status === 2 && hex.settlement) pop += hex.settlement.resLots * HOUSING_CAPACITY;
+                            if (hex.status === 2 && hex.settlement) {
+                                pop += hex.settlement.resLots * HOUSING_CAPACITY;
+                            }
                         });
                     });
-                    if (pop >= 5) {
+                    if (pop >= 5 && hasUnlock('scouting_map')) {
                         return (
                             <button
                                 onClick={() => {
-                                    setStage(4);
-                                    addLog("[+] The Charter is signed. The World Map is now open.");
+                                    setShowHeroSelection(true);
+                                    addLog("[*] Preparing the Charter. Who shall rule these lands?");
                                 }}
                                 className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
                             >
@@ -1082,74 +795,21 @@ const App = () => {
                     }
                     return null;
                 })()}
-                {stage === 0 && (
-                    <>
-                        {sticks < 10 && (
-                            <button
-                                onClick={handleGatherSticks}
-                                disabled={isGatheringSticks}
-                                className={`bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600 relative overflow-hidden ${isGatheringSticks ? 'opacity-75 cursor-not-allowed' : ''}`}
-                            >
-                                <div
-                                    className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-75"
-                                    style={{ width: `${gatherProgress}%` }}
-                                />
-                                <span className="relative z-10">Gather Sticks ({sticks}/10)</span>
-                            </button>
-                        )}
-                        {sticks >= 10 && (
-                            <button
-                                onClick={() => {
-                                    setStage(1);
-                                    addLog("[+] Fire built. A small comfort in the dark.");
-                                }}
-                                className="bg-orange-900 text-white px-4 py-2 font-bold hover:bg-orange-700 rounded flex items-center gap-2 border border-orange-500"
-                            >
-                                Build Fire
-                            </button>
-                        )}
-                    </>
-                )}
                 {stage === 1 && (
-                    <>
-                        {timber < 5 || rations < 5 ? (
-                            <>
-                                <button
-                                    onClick={() => {
-                                        setTimber(t => t + 1);
-                                        addLog("Gathered timber.");
-                                    }}
-                                    className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                                >
-                                    Gather Timber ({timber})
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setRations(r => r + 1);
-                                        addLog("Hunted for rations.");
-                                    }}
-                                    className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                                >
-                                    Hunt Rations ({rations})
-                                </button>
-                            </>
-                        ) : (
-                            <button
-                                onClick={() => {
-                                    setStage(2);
-                                    addLog("[+] Camp established at (5,5).");
-                                    const newWorld = [...world];
-                                    newWorld[5][5].status = 2;
-                                    newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
-                                    setCurrentView("5,5");
-                                    setWorld(newWorld);
-                                }}
-                                className="bg-green-900 text-black px-4 py-2 font-bold hover:bg-green-700 rounded flex items-center gap-2"
-                            >
-                                <Home size={16} /> Establish Camp
-                            </button>
-                        )}
-                    </>
+                    <button
+                        onClick={() => {
+                            setStage(2);
+                            addLog("[+] Camp established at (5,5).");
+                            const newWorld = [...world];
+                            newWorld[5][5].status = 2;
+                            newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
+                            setCurrentView("5,5");
+                            setWorld(newWorld);
+                        }}
+                        className="bg-green-900 text-black px-4 py-2 font-bold hover:bg-green-700 rounded flex items-center gap-2"
+                    >
+                        <Home size={16} /> Establish Camp
+                    </button>
                 )}
                 {stage >= 4 && currentView !== "world" && (
                     <button
@@ -1159,7 +819,6 @@ const App = () => {
                         <Compass size={16} /> Return to World Map
                     </button>
                 )}
-                </div>
             </div>
         </div>
     );

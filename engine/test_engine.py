@@ -18,7 +18,6 @@ import Engine
 class TestEnginePrologue(unittest.TestCase):
     def setUp(self):
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        self.game.pending_hero_selection = False
 
     def test_stage_0_to_1_transition(self):
         self.assertEqual(self.game.stage, 0)
@@ -50,15 +49,16 @@ class TestEnginePrologue(unittest.TestCase):
         initial_timber = self.game.timber
         initial_rations = self.game.rations
 
-        # 1 tick - produce but no consumption
-        self.game.tick()
-        self.assertEqual(self.game.timber, initial_timber + 2)
-        self.assertEqual(self.game.rations, initial_rations + 1)
+        with patch('random.random', return_value=1.0):
+            # 1 tick - produce but no consumption
+            self.game.tick()
+            self.assertEqual(self.game.timber, initial_timber + 2)
+            self.assertEqual(self.game.rations, initial_rations + 1)
 
-        # 2nd tick - produce and consume
-        self.game.tick()
-        self.assertEqual(self.game.timber, initial_timber + 4)
-        self.assertEqual(self.game.rations, initial_rations + 2 - 1)
+            # 2nd tick - produce and consume
+            self.game.tick()
+            self.assertEqual(self.game.timber, initial_timber + 4)
+            self.assertEqual(self.game.rations, initial_rations + 2 - 1)
 
     def test_stage_3_charter_requirement(self):
         self.game.stage = 3
@@ -82,7 +82,6 @@ class TestEngineReconnoiter(unittest.TestCase):
         # Initialize Kingdom with a fixed seed if possible,
         # but here we just want to test logic.
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        self.game.pending_hero_selection = False
         self.game.stage = 3 # Bypass stage progression for recon checks
         self.game.bp = 60 # Ensure enough BP for tests
 
@@ -248,7 +247,6 @@ class TestStructures(unittest.TestCase):
 class TestEngineCitizens(unittest.TestCase):
     def setUp(self):
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        self.game.pending_hero_selection = False
 
     def test_monthly_tick_increments_turn(self):
         initial_turn = self.game.turn
