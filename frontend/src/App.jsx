@@ -157,7 +157,6 @@ const App = () => {
     // Ref for log auto-scrolling
     const logEndRef = useRef(null);
 
-    const addLog = React.useCallback((msg) => {
     const handleTerminalClick = () => {
         const now = Date.now();
         terminalClickTimestamps.current = terminalClickTimestamps.current.filter(t => now - t <= 2000);
@@ -177,7 +176,7 @@ const App = () => {
         }
     };
 
-    const addLog = (msg) => {
+    const addLog = React.useCallback((msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
     }, []);
 

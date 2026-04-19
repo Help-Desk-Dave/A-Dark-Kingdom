@@ -106,3 +106,9 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - Replaced `tickCount` with an hourly `gameTime` clock (1 second = 1 game hour).
 - Overhauled material economy: BP shifted to an 'Influence' role, while structures now cost `Timber`, `Rations`, and a new `Stone` resource.
 - Implemented a daily production cycle where structures like the new 'Pier' produce raw materials at hour 0.
+## 2024-05-19 - Fixed syntax errors in React hooks
+**Learning:** Encountered malformed React closures due to incomplete copy-pastes/edits. The  closure in `App.jsx` was broken, and `usePopulationEngine.jsx` had multiple repeated declarations and misaligned brackets.
+**Action:** Ensure clean diff updates when fixing syntax errors and build warnings. Double-check all React state functional updates for proper parenthesis and brackets to not break standard JavaScript/JSX build parsers.
+## 2024-05-19 - Fixed syntax errors in React hooks
+**Learning:** Encountered malformed React closures due to incomplete copy-pastes/edits. The `addLog` closure in `App.jsx` was broken, and `usePopulationEngine.jsx` had multiple repeated declarations and misaligned brackets.
+**Action:** Ensure clean diff updates when fixing syntax errors and build warnings. Double-check all React state functional updates for proper parenthesis and brackets to not break standard JavaScript/JSX build parsers.
