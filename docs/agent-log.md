@@ -90,3 +90,16 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - Enhanced the Charter Sheet in `engine/Engine.py` and `frontend/src/App.jsx` to explicitly show the Advisors' attributes alongside their names.
 - Added World Map Points of Interest ("Ruins" or "Resource Node") to `frontend/src/App.jsx` and `engine/Engine.py`, generating 5 randomly positioned POIs on the map and showing them during reconnoitering/inspecting.
 - Added a Tech Tree stub to `frontend/src/App.jsx` with an `unlockedTechs` state that persists to `localStorage`.
+## Population Engine Rewrite
+* **Goal**: Sync the visual population with the underlying game data, assign beds within homes to citizens, establish a circadian rhythm, and replace instant spawning with an organic "word of mouth" immigration system.
+* **Changes**:
+    *   Rewrote `usePopulationEngine.js` to manage `gameTime` and assign exact `homeCoords` and `bedId` to pops when housing is available.
+    *   Added a check for organic growth at `hour === 0`, with a 20% chance to spawn 1-2 new pops if housing is available.
+    *   Added a circadian rhythm logic that sends pops home to enter a 'Sleeping' state between 22:00 and 06:00.
+    *   Updated `App.jsx` to pass `unrest` and `addLog` to the population engine.
+    *   Wrapped `addLog` in `React.useCallback` to prevent infinite re-render loops when passed as a dependency.
+    *   Used `pops.length` directly for population count instead of relying on theoretical housing capacity.
+## 2024-04-19 - Calendar and Supply Chain Update
+- Replaced `tickCount` with an hourly `gameTime` clock (1 second = 1 game hour).
+- Overhauled material economy: BP shifted to an 'Influence' role, while structures now cost `Timber`, `Rations`, and a new `Stone` resource.
+- Implemented a daily production cycle where structures like the new 'Pier' produce raw materials at hour 0.
