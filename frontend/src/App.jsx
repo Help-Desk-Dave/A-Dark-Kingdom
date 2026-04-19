@@ -96,7 +96,7 @@ const App = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
-    const [showHeroSelection, setShowHeroSelection] = useState(false);
+    const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
         return saved ? JSON.parse(saved) : null;
@@ -519,9 +519,8 @@ const App = () => {
                                 onClick={() => {
                                     setRuler(bg);
                                     setShowHeroSelection(false);
-                                    setStage(4);
-                                    addLog(`[+] The Ruler's history as a ${bg.name} becomes known...`);
-                                    addLog("[+] The Charter has been signed. The World Map is now open.");
+                                    setStage(0);
+                                    addLog(`[+] You remember your past as a ${bg.name}... but right now, you are alone in the freezing dark.`);
                                 }}
                                 className="bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors"
                             >
@@ -857,8 +856,8 @@ const App = () => {
                         return (
                             <button
                                 onClick={() => {
-                                    setShowHeroSelection(true);
-                                    addLog("[*] Preparing the Charter. Who shall rule these lands?");
+                                    setStage(4);
+                                    addLog("[+] The Charter is signed. The World Map is now open.");
                                 }}
                                 className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
                             >
