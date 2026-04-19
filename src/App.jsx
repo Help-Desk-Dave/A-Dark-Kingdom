@@ -657,7 +657,7 @@ const App = () => {
             </div>
 
         {/* Log Area */}
-        <div className={`w-full max-w-5xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
+        <div role="log" aria-live="polite" aria-atomic="false" className={`w-full max-w-5xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
             {logs.map((log, i) => (
                 <div key={i} className="mb-1">{log}</div>
             ))}
