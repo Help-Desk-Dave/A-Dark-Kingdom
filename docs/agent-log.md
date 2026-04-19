@@ -1,5 +1,7 @@
 # Agent Activity Log
 
+## Midnight Log Summaries
+
 All agents operating within "A Dark Kingdom" must record their significant findings, changes, and fixes to this document at the conclusion of their tasks.
 
 ## 2026-04-17: The Awakening & Logic Stabilization
