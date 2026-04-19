@@ -100,6 +100,10 @@ const App = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
+    const [showHeroSelection, setShowHeroSelection] = useState(() => {
+        // Automatically show the hero selection screen if there is no ruler saved
+        return !localStorage.getItem('adk_ruler');
+    });
     const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
@@ -559,6 +563,7 @@ const App = () => {
                                 onClick={() => {
                                     setRuler(bg);
                                     setShowHeroSelection(false);
+                                    // Set stage to 0 to start the "Dark Room" gathering sequence
                                     setStage(0);
                                     addLog(`[+] You remember your past as a ${bg.name}... but right now, you are alone in the freezing dark.`);
                                 }}
@@ -883,13 +888,11 @@ const App = () => {
 
             {/* Controls */}
             <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
-                {stage === 3 && !showHeroSelection && (() => {
+                {stage === 3 && (() => {
                     let pop = 0;
                     world.forEach(row => {
                         row.forEach(hex => {
-                            if (hex.status === 2 && hex.settlement) {
-                                pop += hex.settlement.resLots * HOUSING_CAPACITY;
-                            }
+                            if (hex.status === 2 && hex.settlement) pop += hex.settlement.resLots * HOUSING_CAPACITY;
                         });
                     });
                     if (pop >= 5) {
@@ -897,6 +900,7 @@ const App = () => {
                             <button
                                 onClick={() => {
                                     setStage(4);
+                                    addLog("[+] The Charter has been signed. The World Map is now open.");
                                     addLog("[+] The Charter is signed. The World Map is now open.");
                                 }}
                                 className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
