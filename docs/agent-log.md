@@ -62,3 +62,15 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
 - **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
 2024-05-18 - Implemented Ruler Actions and Construction Queue in React UI
+## $(date +%Y-%m-%d): Refactor Building Construction Loop in App.jsx
+- **Feature**: Buildings no longer appear instantly upon purchase. Implemented a `constructionQueue` to track active building projects.
+- **Mechanics**: Buildings progress over time, requiring an available "builder" (total Pop minus assigned Pops, defaulting to 1 for the early game).
+- **Architecture**: Separated the state calculation (which ticks progress in a `setInterval`) from side-effects (`setWorld`, `addLog`, `setStage`) using dual `useEffect` hooks. This ensures `setConstructionQueue` remains pure and avoids race conditions or duplicate logs in React 18 Strict Mode.
+- **UI Visuals**: Active constructions render visually as scaffolding cells using dynamic CSS backgrounds (hazard stripes) and percentage indicators. Idle constructions display an "Awaiting Builder" notice.
+## 2026-04-19 - Rewired Hero Selection to Stage 0
+Modified frontend/src/App.jsx to make Hero Selection modal appear immediately for new players by using lazy initialization for 'showHeroSelection' with 'localStorage.getItem("adk_ruler")'. Changed the 'onClick' handler for background cards to transition to Stage 0 with an updated log message instead of Stage 4. Refactored the Stage 3 completion button to directly unlock Stage 4 instead of triggering the hero selection modal.
+
+## 2024-05-24: Refactor Hero Selection
+- **Frontend Changes**: Moved the Hero Selection modal to Stage 0 (the very beginning of the game). The modal now automatically displays on the first load if no ruler exists in `localStorage`. Background selection now directly places the player into the "Wilderness" (Stage 0) with a specialized starting log rather than skipping to the World Map.
+- **Charter Changes**: Simplified the Stage 3 "Sign the Charter" logic in `frontend/src/App.jsx` to immediately transition to Stage 4 without displaying the Hero Selection prompt again.
+- **Backend Test Suite Alignment**: Adjusted `engine/Engine.py` to match the new flow (initializing `self.pending_hero_selection = True`) and updated `engine/test_engine.py`'s `setUp` blocks by bypassing the hero selection state explicitly (`self.game.pending_hero_selection = False`). This ensures backend unit tests run correctly without getting stalled on the missing CLI input.

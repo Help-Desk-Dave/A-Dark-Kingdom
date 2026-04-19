@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer, Menu } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
+import { usePopulationEngine } from './hooks/usePopulationEngine';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -18,6 +19,9 @@ const App = () => {
         const saved = localStorage.getItem('adk_sticks');
         return saved !== null ? parseInt(saved) : 0;
     });
+
+    const [isGatheringSticks, setIsGatheringSticks] = useState(false);
+    const [gatherProgress, setGatherProgress] = useState(0);
 
     const [timber, setTimber] = useState(() => {
         const saved = localStorage.getItem('adk_timber');
@@ -101,7 +105,11 @@ const App = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
-    const [showHeroSelection, setShowHeroSelection] = useState(false);
+    const [showHeroSelection, setShowHeroSelection] = useState(() => {
+        // Automatically show the hero selection screen if there is no ruler saved
+        return !localStorage.getItem('adk_ruler');
+    });
+    const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
         return saved ? JSON.parse(saved) : null;
@@ -112,6 +120,26 @@ const App = () => {
 
     const addLog = (msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
+    };
+
+    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY);
+    const handleGatherSticks = () => {
+        if (isGatheringSticks) return;
+        setIsGatheringSticks(true);
+        setGatherProgress(0);
+
+        const interval = setInterval(() => {
+            setGatherProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(interval);
+                    setSticks(s => s + 1);
+                    addLog("[+] Gathered a stick from the freezing dark.");
+                    setIsGatheringSticks(false);
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 50);
     };
 
     // Save State
@@ -131,6 +159,7 @@ const App = () => {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
     }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
+    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, ruler, constructionQueue]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -244,6 +273,71 @@ const App = () => {
         });
         return stats;
     }, [world, stage]);
+
+    // Handle Completed Constructions (Side-Effects)
+    useEffect(() => {
+        const completedJobs = constructionQueue.filter(job => job.progress >= job.requiredProgress);
+
+        if (completedJobs.length > 0) {
+            setWorld(prevWorld => {
+                const nextWorld = [...prevWorld];
+                completedJobs.forEach(job => {
+                    const { sx, sy, structureName, isRes, lotsNeeded, positionsToFill } = job;
+                    if (nextWorld[sy][sx].settlement) {
+                        const newSettlement = {
+                            ...nextWorld[sy][sx].settlement,
+                            grid: nextWorld[sy][sx].settlement.grid.map(row => [...row])
+                        };
+
+                        positionsToFill.forEach(([px, py]) => {
+                            newSettlement.grid[py][px] = structureName;
+                        });
+
+                        if (isRes) newSettlement.resLots += lotsNeeded;
+                        else newSettlement.otherLots += lotsNeeded;
+
+                        nextWorld[sy][sx] = { ...nextWorld[sy][sx], settlement: newSettlement };
+                    }
+                });
+                return nextWorld;
+            });
+
+            completedJobs.forEach(job => {
+                addLog(`[+] Construction complete: ${job.structureName}.`);
+                if (stage === 2 && job.structureName === "houses") {
+                    setStage(3);
+                    addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
+                }
+            });
+
+            // Clean up completed jobs
+            setConstructionQueue(prevQueue => prevQueue.filter(job => job.progress < job.requiredProgress));
+        }
+    }, [constructionQueue, stage]);
+
+    // Construction Loop (every 1 second)
+    useEffect(() => {
+        if (stage < 2) return; // Settlements don't exist before stage 2
+
+        const interval = setInterval(() => {
+            setConstructionQueue(prevQueue => {
+                if (prevQueue.length === 0) return prevQueue;
+
+                const assignedPops = 0; // Pops assigned to jobs/gatherers (to be implemented)
+                let availableBuilders = worldStats.totalPop === 0 ? 1 : Math.max(0, worldStats.totalPop - assignedPops);
+
+                return prevQueue.map(job => {
+                    if (availableBuilders > 0 && job.progress < job.requiredProgress) {
+                        availableBuilders -= 1;
+                        return { ...job, active: true, progress: job.progress + 1 };
+                    }
+                    return { ...job, active: false };
+                });
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [stage, worldStats.totalPop]);
 
     // Prominent Citizens Observer
     const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
@@ -469,6 +563,8 @@ const App = () => {
             setBp(prev => prev - cost);
 
             const newJob = {
+            // Queue the construction instead of instantly building
+            setConstructionQueue(prev => [...prev, {
                 id: Date.now(),
                 structureName,
                 x,
@@ -482,6 +578,13 @@ const App = () => {
 
             setConstructionQueue(prev => [...prev, newJob]);
             addLog(`[*] Started construction of ${structureName} at ${x},${y}.`);
+                active: false,
+                isRes,
+                lotsNeeded,
+                positionsToFill
+            }]);
+
+            addLog(`[+] Construction started: ${structureName} at ${x},${y}.`);
         });
     };
 
@@ -542,6 +645,8 @@ const App = () => {
 
         const isOvercrowded = settlement.resLots < Math.floor(settlement.otherLots / HOUSING_CAPACITY);
 
+        const localPops = pops.filter(p => p.settlementCoords.sx === sx && p.settlementCoords.sy === sy);
+
         return (
             <div className={`grid grid-cols-5 gap-2 w-fit bg-black p-4 border ${isOvercrowded ? 'border-red-600' : 'border-blue-800'}`}>
                 {settlement.grid.map((row, y) => (
@@ -562,11 +667,40 @@ const App = () => {
                                 </div>
                             );
                         }
+                        // Check if cell is under construction
+                        const job = constructionQueue.find(q =>
+                            q.sx === sx &&
+                            q.sy === sy &&
+                            q.positionsToFill.some(([px, py]) => px === x && py === y)
+                        );
+
+                        if (job) {
+                            const percent = Math.floor((job.progress / job.requiredProgress) * 100);
+                            return (
+                                <div
+                                    key={`${x}-${y}`}
+                                    className="w-16 h-16 border border-yellow-500 flex items-center justify-center bg-yellow-900 text-xs text-center cursor-not-allowed flex-col"
+                                    style={{
+                                        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.2) 5px, rgba(0,0,0,0.2) 10px)"
+                                    }}
+                                >
+                                    {job.active ? (
+                                        <span className="text-white font-bold bg-black/50 px-1 rounded">{percent}%</span>
+                                    ) : (
+                                        <span className="text-red-500 font-bold leading-tight bg-black/50 px-1 rounded">Awaiting Builder</span>
+                                    )}
+                                </div>
+                            );
+                        }
+                        const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
 
                         return (
                             <div
                                 key={`${x}-${y}`}
                                 className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                                onClick={() => {
+                                    if (stage >= 2 && cell === null && !job) {
+                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
                                 onClick={() => {
                                     if (stage >= 2 && cell === null) {
                                         setBuildMenuTarget({ x, y });
@@ -574,6 +708,16 @@ const App = () => {
                                 }}
                             >
                                 {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
+                                {cellPops.map((p, idx) => (
+                                    <div key={p.id} className="absolute flex flex-col items-center" style={{ bottom: `${2 + idx * 4}px`, right: `${2 + idx * 4}px` }}>
+                                        {p.dialogue && (
+                                            <div className="absolute bottom-full mb-1 text-[10px] bg-white text-black p-1 rounded whitespace-nowrap z-10 font-bold border border-gray-400">
+                                                {p.dialogue}
+                                            </div>
+                                        )}
+                                        <div className="w-2 h-2 bg-yellow-400 rounded-full border border-yellow-700" title={`${p.name} (${p.state})`} />
+                                    </div>
+                                ))}
                             </div>
                         );
                     })
@@ -606,9 +750,9 @@ const App = () => {
                                 onClick={() => {
                                     setRuler(bg);
                                     setShowHeroSelection(false);
-                                    setStage(4);
-                                    addLog(`[+] The Ruler's history as a ${bg.name} becomes known...`);
-                                    addLog("[+] The Charter has been signed. The World Map is now open.");
+                                    // Set stage to 0 to start the "Dark Room" gathering sequence
+                                    setStage(0);
+                                    addLog(`[+] You remember your past as a ${bg.name}... but right now, you are alone in the freezing dark.`);
                                 }}
                                 className="bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors"
                             >
@@ -987,20 +1131,21 @@ const App = () => {
             {/* Controls */}
             <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out mb-8">
                 {stage === 3 && !showHeroSelection && (() => {
+            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
+                {stage === 3 && (() => {
                     let pop = 0;
                     world.forEach(row => {
                         row.forEach(hex => {
-                            if (hex.status === 2 && hex.settlement) {
-                                pop += hex.settlement.resLots * HOUSING_CAPACITY;
-                            }
+                            if (hex.status === 2 && hex.settlement) pop += hex.settlement.resLots * HOUSING_CAPACITY;
                         });
                     });
                     if (pop >= 5) {
                         return (
                             <button
                                 onClick={() => {
-                                    setShowHeroSelection(true);
-                                    addLog("[*] Preparing the Charter. Who shall rule these lands?");
+                                    setStage(4);
+                                    addLog("[+] The Charter has been signed. The World Map is now open.");
+                                    addLog("[+] The Charter is signed. The World Map is now open.");
                                 }}
                                 className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
                             >
@@ -1013,13 +1158,15 @@ const App = () => {
                 {stage === 0 && (
                     <>
                         <button
-                            onClick={() => {
-                                setSticks(s => s + 1);
-                                addLog("Gathered a stick.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                            onClick={handleGatherSticks}
+                            disabled={isGatheringSticks}
+                            className={`bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600 relative overflow-hidden ${isGatheringSticks ? 'opacity-75 cursor-not-allowed' : ''}`}
                         >
-                            Gather Sticks ({sticks})
+                            <div
+                                className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-75"
+                                style={{ width: `${gatherProgress}%` }}
+                            />
+                            <span className="relative z-10">Gather Sticks ({sticks}/10)</span>
                         </button>
                         {sticks >= 10 && (
                             <button
