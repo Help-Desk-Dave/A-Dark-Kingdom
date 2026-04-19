@@ -61,3 +61,5 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **Python Engine:** Moved Python core logic (`Engine.py`, `library.py`, `test_engine.py`) to `/engine`.
 - **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
 - **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
+## 2026-04-19 - Rewired Hero Selection to Stage 0
+Modified frontend/src/App.jsx to make Hero Selection modal appear immediately for new players by using lazy initialization for 'showHeroSelection' with 'localStorage.getItem("adk_ruler")'. Changed the 'onClick' handler for background cards to transition to Stage 0 with an updated log message instead of Stage 4. Refactored the Stage 3 completion button to directly unlock Stage 4 instead of triggering the hero selection modal.
