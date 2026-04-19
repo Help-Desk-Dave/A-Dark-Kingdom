@@ -54,3 +54,10 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 ## Enhancements by Palette
 
 - Improved UI accessibility for screen readers in `src/App.jsx` by adding `role="log"`, `aria-live="polite"`, and `aria-atomic="false"` to the main event ledger. This ensures that game state updates and dynamically generated simulation events are properly announced to users relying on assistive technologies.
+
+## 2024-04-19: Project Structural Refactoring
+- **Directory Structure:** Created `/frontend`, `/engine`, and `/docs` root directories to separate concerns.
+- **Frontend Assets:** Moved React and Vite files (e.g. `src/`, `index.html`, `package.json`, config files) to `/frontend`.
+- **Python Engine:** Moved Python core logic (`Engine.py`, `library.py`, `test_engine.py`) to `/engine`.
+- **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
+- **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
