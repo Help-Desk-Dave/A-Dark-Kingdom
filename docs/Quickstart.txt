@@ -1,0 +1,43 @@
+A Dark Kingdom
+
+Welcome to A Dark QKingdom, a real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fortress pop simulation, built with a "Dark Room" survival prologue.
+
+Quick Start for Agents & Developers
+
+This is a dual-track project. Mechanical parity is strictly enforced between the Python backend and the React frontend. When testing changes, you must run and verify both environments:
+
+1. Python CLI Engine
+
+The terminal-based simulation built with rich.
+
+cd engine
+python Engine.py
+
+
+To run the unit tests:
+
+python test_engine.py
+
+
+2. React/Vite Web App
+
+The visual dashboard frontend built with React and Tailwind CSS.
+
+cd frontend
+pnpm install
+pnpm run dev
+
+
+Documentation
+
+Please refer to the /docs folder before writing any code:
+
+AGENTS.md: Core rules, constraints, and anti-patterns for AI agents.
+
+Blueprint.md: The master architectural vision and roadmap.
+
+STATE_MACHINE.md: A breakdown of the sequential UI unlocking logic.
+
+RULEBOOK.md: The board-game style manual for playing the game.
+
+agent-log.md: The historical timeline of structural changes.

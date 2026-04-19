@@ -9,7 +9,8 @@ from rich.table import Table
 from rich.text import Text
 from library import (
     FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen,
-    RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY
+    RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY,
+    KINGMAKER_BACKGROUNDS
 )
 
 console = Console()
@@ -197,12 +198,16 @@ class Kingdom:
         self.current_view = "world"
 
         # Stage Progression
+        # Stage Progression
         # 0: The Wilderness
         # 1: Survival Mode
         # 2: The First Companions
         # 3: Automation
         # 4: The Charter
         self.stage = 0
+
+        # Intercept state for hero selection
+        self.pending_hero_selection = False
 
         # Early game survival resources
         self.sticks = 0
@@ -221,7 +226,7 @@ class Kingdom:
 
         self.loyalty = 0
         self.citizens = []
-        self.advisors = {"general": None, "treasurer": None, "diplomat": None}
+        self.advisors = {"general": None, "treasurer": None, "diplomat": None, "ruler": None}
 
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
         self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
@@ -230,7 +235,7 @@ class Kingdom:
     # The main real-time simulation tick. Advances the game clock, calculates resources, and triggers events.
     def tick(self):
         with self.lock:
-            if self.stage < 1:
+            if self.stage < 1 or self.pending_hero_selection:
                 return
 
             self.tick_count += 1
@@ -579,7 +584,16 @@ def draw_ui(game):
     header_color = game.style["color"]
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
-    if game.stage < 2:
+    if game.pending_hero_selection:
+        # Render Hero Selection Screen
+        options_text = Text("Choose a Background for your Ruler:\n\n", style="bold yellow")
+        for i, bg in enumerate(KINGMAKER_BACKGROUNDS):
+            options_text.append(f"[{i+1}] {bg['name']}\n", style="bold white")
+            options_text.append(f"    Skill: {bg['skill']} | Bonus: +1 {bg['attribute']}\n", style="cyan")
+            options_text.append(f"    {bg['desc']}\n\n", style="dim")
+
+        layout["main"]["map_and_stats"]["map"].update(Panel(options_text, title="Hero Selection", border_style="yellow"))
+    elif game.stage < 2:
         layout["main"]["map_and_stats"]["map"].update(Panel(Text("You are in the dark wilderness.", justify="center", style="dim"), title="The Wilderness", border_style=header_color))
     elif game.current_view == "world" and game.stage >= 4:
         layout["main"]["map_and_stats"]["map"].update(Panel(game.render_map(), title="World Map (Stolen Lands)", border_style=header_color))
@@ -602,6 +616,14 @@ def draw_ui(game):
     stats = Table.grid(expand=True)
 
     if game.stage >= 4:
+        # Ruler Info
+        if game.advisors.get("ruler"):
+            ruler = game.advisors["ruler"]
+            stats.add_row("Ruler:", ruler["name"])
+            stats.add_row("Skill:", ruler["skill"])
+            stats.add_row("Bonus:", f"+1 {ruler['attribute']}")
+            stats.add_row("---", "---")
+
         stats.add_row("BP (Treasury):", str(game.bp))
         stats.add_row("Unrest:", str(game.unrest))
         stats.add_row("Kingdom XP:", str(game.xp))
@@ -632,7 +654,9 @@ def draw_ui(game):
     log_content = "\n".join(game.log[-5:])
     layout["log"].update(Panel(log_content, title="Event Log", border_style="white"))
 
-    if game.stage == 0:
+    if game.pending_hero_selection:
+        layout["footer"].update(Panel("Commands: Enter a number [1-7] to select your background | [Q]uit"))
+    elif game.stage == 0:
         layout["footer"].update(Panel("Commands: [G]ather sticks | [B]uild fire | [Q]uit"))
     elif game.stage == 1:
         layout["footer"].update(Panel("Commands: [G]ather timber | [H]unt rations | [S]toke fire | [Q]uit"))
@@ -775,11 +799,29 @@ if __name__ == "__main__":
                     my_game.log.append("[-] Insufficient Rations to export (requires 100).")
             continue
 
+        # Handle Hero Selection Input
+        if my_game.pending_hero_selection:
+            try:
+                choice = int(action[0])
+                if 1 <= choice <= len(KINGMAKER_BACKGROUNDS):
+                    bg = KINGMAKER_BACKGROUNDS[choice - 1]
+                    with my_game.lock:
+                        my_game.advisors["ruler"] = bg
+                        my_game.pending_hero_selection = False
+                        my_game.stage = 4
+                        my_game.log.append(f"[+] The Ruler's history as a {bg['name']} becomes known...")
+                        my_game.log.append("[+] The Charter has been signed. The World Map is now open.")
+                else:
+                    my_game.log.append("[-] Please select a valid number between 1 and 7.")
+            except ValueError:
+                my_game.log.append("[-] Invalid input. Enter a number to select your background.")
+            continue
+
         if action[0] in ['u', 'sign'] and len(action) > 1 and action[1] == 'charter':
             with my_game.lock:
                 if my_game.stage == 3 and my_game.scouting_map_crafted:
-                    my_game.stage = 4
-                    my_game.log.append("[+] The Charter has been signed. The World Map is now open.")
+                    my_game.pending_hero_selection = True
+                    my_game.log.append("[*] Preparing the Charter. Who shall rule these lands?")
                 elif my_game.stage >= 4:
                     my_game.log.append("[-] The Charter is already signed.")
                 else:

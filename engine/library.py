@@ -60,13 +60,13 @@ SETTLEMENT_NAMES = [
 
 # --- BACKGROUNDS & LINEAGES ---
 KINGMAKER_BACKGROUNDS = [
-    {"name": "Borderlands Pioneer", "skill": "Nature", "desc": "You have long lived along the southern border of Brevoy."},
-    {"name": "Brevic Noble", "skill": "Society", "desc": "You claim a connection to one of Brevoy's noble families (Garess, Lebeda, Lodovka, Medvyed, Orlovsky, Surtova)."},
-    {"name": "Brevic Outcast", "skill": "Politics", "desc": "You have noble blood but no proof, seeking to make a name of your own."},
-    {"name": "Issian Patriot", "skill": "Society", "desc": "You grew up in northern Brevoy, answering the call for heroes."},
-    {"name": "Local Brigand", "skill": "Intimidation", "desc": "You hail from the lawless reaches and are looking to lie low."},
-    {"name": "Rostlander", "skill": "Athletics", "desc": "Raised in the south of Brevoy, you come from hardy stock."},
-    {"name": "Sword Scion", "skill": "Warfare", "desc": "You grew up on tales of the legendary Aldori swordlords."}
+    {"name": "Borderlands Pioneer", "skill": "Nature", "attribute": "Strength", "desc": "You have long lived along the southern border of Brevoy."},
+    {"name": "Brevic Noble", "skill": "Society", "attribute": "Charisma", "desc": "You claim a connection to one of Brevoy's noble families (Garess, Lebeda, Lodovka, Medvyed, Orlovsky, Surtova)."},
+    {"name": "Brevic Outcast", "skill": "Politics", "attribute": "Charisma", "desc": "You have noble blood but no proof, seeking to make a name of your own."},
+    {"name": "Issian Patriot", "skill": "Society", "attribute": "Intelligence", "desc": "You grew up in northern Brevoy, answering the call for heroes."},
+    {"name": "Local Brigand", "skill": "Intimidation", "attribute": "Strength", "desc": "You hail from the lawless reaches and are looking to lie low."},
+    {"name": "Rostlander", "skill": "Athletics", "attribute": "Strength", "desc": "Raised in the south of Brevoy, you come from hardy stock."},
+    {"name": "Sword Scion", "skill": "Warfare", "attribute": "Strength", "desc": "You grew up on tales of the legendary Aldori swordlords."}
 ]
 
 # --- KINGDOM LEADERSHIP & SKILLS ---
