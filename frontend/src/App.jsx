@@ -758,9 +758,11 @@ const App = () => {
                 positionsToFill = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
             }
 
-            setBp(prev => prev - cost);
-
             const isRes = structure.traits.includes("residential");
+
+            // We calculate construction time roughly based on material costs
+            const totalMaterials = cost_timber + cost_rations + cost_stone;
+            const requiredProgress = totalMaterials > 0 ? totalMaterials : 10;
 
             const newJob = {
                 id: Date.now(),
@@ -770,7 +772,7 @@ const App = () => {
                 sx,
                 sy,
                 progress: 0,
-                requiredProgress: cost * 2,
+                requiredProgress: requiredProgress,
                 positionsToFill,
                 active: false,
                 isRes,
