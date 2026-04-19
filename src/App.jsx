@@ -736,21 +736,8 @@ const App = () => {
         </div>
 
         {/* Controls */}
-        <div className="w-full max-w-5xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
-            {stage === 3 && !showHeroSelection && (() => {
-            {stage === 3 && worldStats.totalPop >= 5 && (
-                <button
-                    onClick={() => {
-                        setStage(4);
-                        addLog("[+] The Charter has been signed. The World Map is now open.");
-                    }}
-                    className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
-                >
-                    <User size={16} /> Sign the Charter
-                </button>
-            )}
         <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
-            {stage === 3 && (() => {
+            {stage === 3 && !showHeroSelection && (() => {
                 let pop = 0;
                 world.forEach(row => {
                     row.forEach(hex => {
