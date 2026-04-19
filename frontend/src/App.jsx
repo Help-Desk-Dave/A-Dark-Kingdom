@@ -59,6 +59,11 @@ const App = () => {
         return saved ? parseInt(saved) : 0;
     });
 
+    const [constructionQueue, setConstructionQueue] = useState(() => {
+        const saved = localStorage.getItem('adk_constructionQueue');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     // `world`: The 10x10 hex grid. Represents the Stolen Lands. Generated once and saved.
     const [world, setWorld] = useState(() => {
         const saved = localStorage.getItem('adk_world');
@@ -121,10 +126,11 @@ const App = () => {
         localStorage.setItem('adk_xp', xp);
         localStorage.setItem('adk_tickCount', tickCount);
         localStorage.setItem('adk_world', JSON.stringify(world));
+        localStorage.setItem('adk_constructionQueue', JSON.stringify(constructionQueue));
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, ruler]);
+    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -142,6 +148,68 @@ const App = () => {
 
         return () => clearInterval(interval);
     }, [stage, showHeroSelection]);
+
+    // Construction Loop (every 1 second)
+    useEffect(() => {
+        if (stage < 2 || showHeroSelection) return;
+
+        const interval = setInterval(() => {
+            setConstructionQueue(prevQueue => {
+                if (prevQueue.length === 0) return prevQueue;
+                return prevQueue.map(job => ({ ...job, progress: job.progress + 1 }));
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [stage, showHeroSelection]);
+
+    // Construction Completion Handler
+    useEffect(() => {
+        if (constructionQueue.length === 0) return;
+
+        const completedJobs = constructionQueue.filter(job => job.progress >= job.requiredProgress);
+
+        if (completedJobs.length > 0) {
+            let newWorld = [...world];
+            let shouldUpdateWorld = false;
+            let housesBuilt = false;
+
+            completedJobs.forEach(job => {
+                const { sx, sy, structureName, positionsToFill } = job;
+                const settlement = newWorld[sy][sx].settlement;
+
+                if (settlement) {
+                    shouldUpdateWorld = true;
+                    const structure = STRUCTURES_DB[structureName];
+                    const isRes = structure.traits.includes("residential");
+
+                    positionsToFill.forEach(([px, py]) => {
+                        settlement.grid[py][px] = structureName;
+                    });
+
+                    if (isRes) settlement.resLots += structure.lots;
+                    else settlement.otherLots += structure.lots;
+
+                    addLog(`[+] Construction complete: ${structureName} at ${job.x},${job.y}.`);
+
+                    if (structureName === "houses") {
+                        housesBuilt = true;
+                    }
+                }
+            });
+
+            if (shouldUpdateWorld) {
+                setWorld(newWorld);
+            }
+
+            if (stage === 2 && housesBuilt) {
+                setStage(3);
+                addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
+            }
+
+            setConstructionQueue(prevQueue => prevQueue.filter(job => job.progress < job.requiredProgress));
+        }
+    }, [constructionQueue, world, stage]);
 
     // Pre-compute expensive world stats in one pass
     // This avoids O(N*M) nested loops on every re-render and tick
@@ -357,27 +425,31 @@ const App = () => {
         const cost = structure.cost_rp;
 
         handleAction(cost, structureName, () => {
-            const isRes = structure.traits.includes("residential");
             const lotsNeeded = structure.lots;
             let positionsToFill = [];
 
+            // Helper to check if a cell is blocked by existing structures OR active construction jobs
+            const isBlocked = (cx, cy) => {
+                if (cx < 0 || cx >= 5 || cy < 0 || cy >= 5) return true;
+                if (settlement.grid[cy][cx] !== null) return true;
+                return constructionQueue.some(job =>
+                    job.sx === sx && job.sy === sy && job.positionsToFill.some(p => p[0] === cx && p[1] === cy)
+                );
+            };
+
             if (lotsNeeded === 1) {
-                if (x < 0 || x >= 5 || y < 0 || y >= 5 || settlement.grid[y][x] !== null) {
+                if (isBlocked(x, y)) {
                     addLog(`[-] Cannot build at ${x},${y}: Space is blocked or out of bounds.`);
                     return;
                 }
                 positionsToFill.push([x, y]);
             } else if (lotsNeeded === 2) {
-                let horizontalClear = true;
-                if (x < 0 || x + 1 >= 5 || y < 0 || y >= 5) horizontalClear = false;
-                else if (settlement.grid[y][x] !== null || settlement.grid[y][x + 1] !== null) horizontalClear = false;
+                let horizontalClear = !isBlocked(x, y) && !isBlocked(x + 1, y);
 
                 if (horizontalClear) {
                     positionsToFill = [[x, y], [x + 1, y]];
                 } else {
-                    let verticalClear = true;
-                    if (x < 0 || x >= 5 || y < 0 || y + 1 >= 5) verticalClear = false;
-                    else if (settlement.grid[y][x] !== null || settlement.grid[y + 1][x] !== null) verticalClear = false;
+                    let verticalClear = !isBlocked(x, y) && !isBlocked(x, y + 1);
 
                     if (verticalClear) {
                         positionsToFill = [[x, y], [x, y + 1]];
@@ -387,33 +459,29 @@ const App = () => {
                     }
                 }
             } else if (lotsNeeded === 4) {
-                if (x < 0 || x + 1 >= 5 || y < 0 || y + 1 >= 5) {
-                    addLog(`[-] Cannot build ${structureName} at ${x},${y}: 2x2 area goes out of bounds.`);
-                    return;
-                }
-                if (settlement.grid[y][x] !== null || settlement.grid[y][x + 1] !== null ||
-                    settlement.grid[y + 1][x] !== null || settlement.grid[y + 1][x + 1] !== null) {
-                    addLog(`[-] Cannot build ${structureName} at ${x},${y}: 2x2 area is not clear.`);
+                if (isBlocked(x, y) || isBlocked(x + 1, y) || isBlocked(x, y + 1) || isBlocked(x + 1, y + 1)) {
+                    addLog(`[-] Cannot build ${structureName} at ${x},${y}: 2x2 area is not clear or goes out of bounds.`);
                     return;
                 }
                 positionsToFill = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
             }
 
-            positionsToFill.forEach(([px, py]) => {
-                settlement.grid[py][px] = structureName;
-            });
-
-            if (isRes) settlement.resLots += lotsNeeded;
-            else settlement.otherLots += lotsNeeded;
-
             setBp(prev => prev - cost);
-            setWorld(newWorld);
-            addLog(`[+] Built ${structureName} at ${x},${y}.`);
 
-            if (stage === 2 && structureName === "houses") {
-                setStage(3);
-                addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
-            }
+            const newJob = {
+                id: Date.now(),
+                structureName,
+                x,
+                y,
+                sx,
+                sy,
+                progress: 0,
+                requiredProgress: cost * 2,
+                positionsToFill
+            };
+
+            setConstructionQueue(prev => [...prev, newJob]);
+            addLog(`[*] Started construction of ${structureName} at ${x},${y}.`);
         });
     };
 
@@ -477,19 +545,38 @@ const App = () => {
         return (
             <div className={`grid grid-cols-5 gap-2 w-fit bg-black p-4 border ${isOvercrowded ? 'border-red-600' : 'border-blue-800'}`}>
                 {settlement.grid.map((row, y) => (
-                    row.map((cell, x) => (
-                        <div
-                            key={`${x}-${y}`}
-                            className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
-                            onClick={() => {
-                                if (stage >= 2 && cell === null) {
-                                    setBuildMenuTarget({ x, y });
-                                }
-                            }}
-                        >
-                            {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
-                        </div>
-                    ))
+                    row.map((cell, x) => {
+                        const activeJob = constructionQueue.find(job =>
+                            job.sx === sx && job.sy === sy && job.positionsToFill.some(p => p[0] === x && p[1] === y)
+                        );
+
+                        if (activeJob) {
+                            const percent = Math.floor((activeJob.progress / activeJob.requiredProgress) * 100);
+                            return (
+                                <div
+                                    key={`${x}-${y}`}
+                                    className="w-16 h-16 border-2 border-yellow-500 bg-yellow-900 flex items-center justify-center text-xs font-bold text-yellow-100 cursor-not-allowed bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.2)_10px,rgba(0,0,0,0.2)_20px)]"
+                                    title={`Building ${activeJob.structureName}: ${percent}%`}
+                                >
+                                    {percent}%
+                                </div>
+                            );
+                        }
+
+                        return (
+                            <div
+                                key={`${x}-${y}`}
+                                className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                                onClick={() => {
+                                    if (stage >= 2 && cell === null) {
+                                        setBuildMenuTarget({ x, y });
+                                    }
+                                }}
+                            >
+                                {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
+                            </div>
+                        );
+                    })
                 ))}
             </div>
         );
@@ -842,8 +929,63 @@ const App = () => {
                 <div ref={logEndRef} />
             </div>
 
+            {/* Ruler's Actions (Stage 2+) */}
+            {stage >= 2 && (
+                <div className={`w-full max-w-7xl bg-gray-900 border-t ${FLAVORS[flavor].border} pt-4 pb-4 mb-4 flex flex-col items-center gap-4`}>
+                    <h3 className="text-lg font-bold text-gray-300 mb-2">Ruler's Actions</h3>
+                    <div className="flex flex-wrap justify-center gap-4">
+                        <button
+                            onClick={() => {
+                                setTimber(t => t + 1);
+                                addLog("Gathered timber.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Gather Timber ({timber})
+                        </button>
+                        <button
+                            onClick={() => {
+                                setRations(r => r + 1);
+                                addLog("Hunted for rations.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Hunt Rations ({rations})
+                        </button>
+                        <button
+                            onClick={() => {
+                                setTimber(t => t - 10);
+                                setRations(r => r - 10);
+                                setBp(currentBp => currentBp + 1);
+                                addLog("[+] You sold raw resources to the local market for 1 BP.");
+                            }}
+                            disabled={timber < 10 || rations < 10}
+                            className={`px-4 py-2 font-bold rounded border ${timber >= 10 && rations >= 10 ? 'bg-yellow-900 text-yellow-100 hover:bg-yellow-700 border-yellow-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
+                        >
+                            Sell Resources (10 Timber, 10 Rations -&gt; 1 BP)
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (constructionQueue.length > 0) {
+                                    setConstructionQueue(prev => {
+                                        const newQueue = [...prev];
+                                        newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 2 };
+                                        return newQueue;
+                                    });
+                                    addLog("[+] You rolled up your sleeves and helped speed up construction.");
+                                }
+                            }}
+                            disabled={constructionQueue.length === 0}
+                            className={`px-4 py-2 font-bold rounded border flex items-center gap-2 ${constructionQueue.length > 0 ? 'bg-blue-900 text-blue-100 hover:bg-blue-700 border-blue-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
+                        >
+                            <Hammer size={16} /> Help Build
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Controls */}
-            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
+            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out mb-8">
                 {stage === 3 && !showHeroSelection && (() => {
                     let pop = 0;
                     world.forEach(row => {

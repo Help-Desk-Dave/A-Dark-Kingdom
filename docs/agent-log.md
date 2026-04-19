@@ -61,3 +61,4 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **Python Engine:** Moved Python core logic (`Engine.py`, `library.py`, `test_engine.py`) to `/engine`.
 - **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
 - **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
+2024-05-18 - Implemented Ruler Actions and Construction Queue in React UI
