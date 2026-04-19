@@ -234,6 +234,9 @@ class TestStructures(unittest.TestCase):
     def test_kingdom_build_structure(self):
         game = Engine.Kingdom("Test Kingdom", flavor="swamp")
         game.bp = 100
+        game.timber = 100
+        game.rations = 100
+        game.stone = 100
         game.current_view = (5, 5) # Assuming we are viewing the capital
         game.stage = 3 # Bypass stage limitation for building test
 
