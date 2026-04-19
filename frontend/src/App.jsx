@@ -15,6 +15,11 @@ const App = () => {
         return saved !== null ? parseInt(saved) : 0;
     });
 
+    const [unlockedTechs, setUnlockedTechs] = useState(() => {
+        const saved = localStorage.getItem('adk_unlockedTechs');
+        return saved ? JSON.parse(saved) : [];
+    });
+
     const [sticks, setSticks] = useState(() => {
         const saved = localStorage.getItem('adk_sticks');
         return saved !== null ? parseInt(saved) : 0;
@@ -80,6 +85,7 @@ const App = () => {
 
         // Generate new world
         const terrains = ["Forest", "Plain", "Mountain", "Hill", "Swamp"];
+        const pois = ["Ruins", "Resource Node"];
         const newWorld = [];
         for (let y = 0; y < 10; y++) {
             const row = [];
@@ -87,11 +93,25 @@ const App = () => {
                 row.push({
                     terrain: terrains[Math.floor(Math.random() * terrains.length)],
                     status: 0,
-                    settlement: null
+                    settlement: null,
+                    poi: null
                 });
             }
             newWorld.push(row);
         }
+
+        // Randomly assign 5 POIs
+        let poisAssigned = 0;
+        while (poisAssigned < 5) {
+            let px = Math.floor(Math.random() * 10);
+            let py = Math.floor(Math.random() * 10);
+            // Don't place on capital (5,5) or if already has POI
+            if ((px !== 5 || py !== 5) && newWorld[py][px].poi === null) {
+                newWorld[py][px].poi = pois[Math.floor(Math.random() * pois.length)];
+                poisAssigned++;
+            }
+        }
+
         return newWorld;
     });
 
@@ -151,7 +171,40 @@ const App = () => {
         setLogs(prev => [...prev.slice(-19), msg]);
     }, []);
 
-    const { pops, gameTime } = usePopulationEngine(world, stage, HOUSING_CAPACITY, unrest, ruler, addLog);
+    const handlePopsMove = React.useCallback((movedPops) => {
+        setWorld(prevWorld => {
+            // Need a deep clone for the nested settlements and pathValues to actually trigger re-renders properly
+            // without mutating the old state, but for performance we only clone what we change
+            let nextWorld = [...prevWorld];
+            let changed = false;
+
+            movedPops.forEach(pop => {
+                const sx = pop.settlementCoords.sx;
+                const sy = pop.settlementCoords.sy;
+                const cx = pop.currentCoords.x;
+                const cy = pop.currentCoords.y;
+
+                if (nextWorld[sy] && nextWorld[sy][sx] && nextWorld[sy][sx].settlement) {
+                    let settlement = nextWorld[sy][sx].settlement;
+                    if (settlement.pathValues && settlement.pathValues[cy] && settlement.pathValues[cy][cx] !== undefined) {
+                        // Deep clone to avoid mutating old state
+                        if (!changed) {
+                            nextWorld = nextWorld.map(row => [...row]);
+                            nextWorld[sy][sx] = { ...nextWorld[sy][sx], settlement: { ...settlement, pathValues: settlement.pathValues.map(row => [...row]) } };
+                            settlement = nextWorld[sy][sx].settlement;
+                        }
+
+                        settlement.pathValues[cy][cx] = Math.min(10, settlement.pathValues[cy][cx] + 1);
+                        changed = true;
+                    }
+                }
+            });
+
+            return changed ? nextWorld : prevWorld;
+        });
+    }, []);
+
+    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, handlePopsMove);
     const handleGatherSticks = () => {
         if (isGatheringSticks) return;
         setIsGatheringSticks(true);
@@ -185,10 +238,11 @@ const App = () => {
         localStorage.setItem('adk_gameTime', JSON.stringify(gameTime));
         localStorage.setItem('adk_world', JSON.stringify(world));
         localStorage.setItem('adk_constructionQueue', JSON.stringify(constructionQueue));
+        localStorage.setItem('adk_unlockedTechs', JSON.stringify(unlockedTechs));
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, sticks, timber, rations, logs, bp, stone, unrest, xp, gameTime, world, constructionQueue, ruler]);
+    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler, unlockedTechs]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -482,6 +536,9 @@ const App = () => {
                 setBp(prev => prev - RECON_COST);
                 setWorld(newWorld);
                 addLog(`[+] Reconnoitered (${x},${y}). It is a ${newWorld[y][x].terrain}.`);
+                if (newWorld[y][x].poi) {
+                    addLog(`[*] Discovery: Found ${newWorld[y][x].poi} at (${x},${y})!`);
+                }
             } else {
                 addLog("[!] That area is already mapped.");
             }
@@ -494,7 +551,7 @@ const App = () => {
             const newWorld = [...world];
             if (newWorld[y][x].status === 1) {
                 newWorld[y][x].status = 2;
-                newWorld[y][x].settlement = { name: "New Settlement", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
+                newWorld[y][x].settlement = { name: "New Settlement", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0, pathValues: Array(5).fill(0).map(() => Array(5).fill(0)) };
                 setBp(prev => prev - CLAIM_COST);
                 setXp(prev => prev + 10);
                 setWorld(newWorld);
@@ -713,11 +770,12 @@ const App = () => {
                             );
                         }
                         const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
+                        const isPath = settlement.pathValues && settlement.pathValues[y] && settlement.pathValues[y][x] > 5;
 
                         return (
                             <div
                                 key={`${x}-${y}`}
-                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover}`}
                                 onClick={() => {
                                     if (stage >= 2 && cell === null && !job) {
                                         setBuildMenuTarget({ x, y });
@@ -1018,7 +1076,7 @@ const App = () => {
                                     }}
                                     className="text-sm cursor-pointer hover:text-yellow-400 text-gray-300"
                                 >
-                                    - {role}: {advisor.name}
+                                    - {role}: {advisor.name} <span className="text-gray-500 text-xs">(Attr: {advisor.attribute})</span>
                                 </div>
                             ))}
                             <div className={`border-t ${FLAVORS[flavor].border} mt-1 mb-1`}></div>
@@ -1074,6 +1132,12 @@ const App = () => {
                                     <span className="text-gray-400">Foraging:</span>
                                     <span>{inspectorHex.terrain === "Swamp" || inspectorHex.terrain === "Forest" ? "High" : "Low"}</span>
                                 </div>
+                                {inspectorHex.status >= 1 && inspectorHex.poi && (
+                                    <div className="flex justify-between text-orange-400 font-bold">
+                                        <span>POI:</span>
+                                        <span>{inspectorHex.poi}</span>
+                                    </div>
+                                )}
                                 {inspectorHex.settlement && (
                                     <div className="mt-2 p-2 border border-blue-900 bg-blue-900/20">
                                         <div className="font-bold text-blue-300">{inspectorHex.settlement.name}</div>
@@ -1111,6 +1175,10 @@ const App = () => {
                     ))}
                     <div ref={logEndRef} />
                 </div>
+
+            {stage >= 4 && (
+                <TechTree unlockedTechs={unlockedTechs} setUnlockedTechs={setUnlockedTechs} />
+            )}
 
             {/* Ruler's Actions (Stage 2+) */}
             {stage >= 2 && (
@@ -1253,7 +1321,7 @@ const App = () => {
                                     addLog("[+] Camp established at (5,5).");
                                     const newWorld = [...world];
                                     newWorld[5][5].status = 2;
-                                    newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
+                                    newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0, pathValues: Array(5).fill(0).map(() => Array(5).fill(0)) };
                                     setCurrentView("5,5");
                                     setWorld(newWorld);
                                 }}
@@ -1273,6 +1341,24 @@ const App = () => {
                     </button>
                 )}
                 </div>
+            </div>
+        </div>
+    );
+};
+
+
+const TechTree = ({ unlockedTechs, setUnlockedTechs }) => {
+    return (
+        <div className="w-full bg-black border border-gray-600 p-4 rounded mb-4">
+            <h2 className="text-xl font-bold text-cyan-400 mb-2">Tech Tree (Stub)</h2>
+            <div className="text-sm text-gray-400">
+                <p>Unlocked Technologies: {unlockedTechs.length > 0 ? unlockedTechs.join(', ') : 'None'}</p>
+                <button
+                    onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
+                    className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
+                >
+                    Unlock Agriculture
+                </button>
             </div>
         </div>
     );
