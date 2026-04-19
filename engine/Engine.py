@@ -207,7 +207,7 @@ class Kingdom:
         self.stage = 0
 
         # Intercept state for hero selection
-        self.pending_hero_selection = False
+        self.pending_hero_selection = True
 
         # Early game survival resources
         self.sticks = 0

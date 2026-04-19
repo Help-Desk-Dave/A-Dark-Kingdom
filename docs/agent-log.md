@@ -61,3 +61,8 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **Python Engine:** Moved Python core logic (`Engine.py`, `library.py`, `test_engine.py`) to `/engine`.
 - **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
 - **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
+
+## 2024-05-24: Refactor Hero Selection
+- **Frontend Changes**: Moved the Hero Selection modal to Stage 0 (the very beginning of the game). The modal now automatically displays on the first load if no ruler exists in `localStorage`. Background selection now directly places the player into the "Wilderness" (Stage 0) with a specialized starting log rather than skipping to the World Map.
+- **Charter Changes**: Simplified the Stage 3 "Sign the Charter" logic in `frontend/src/App.jsx` to immediately transition to Stage 4 without displaying the Hero Selection prompt again.
+- **Backend Test Suite Alignment**: Adjusted `engine/Engine.py` to match the new flow (initializing `self.pending_hero_selection = True`) and updated `engine/test_engine.py`'s `setUp` blocks by bypassing the hero selection state explicitly (`self.game.pending_hero_selection = False`). This ensures backend unit tests run correctly without getting stalled on the missing CLI input.
