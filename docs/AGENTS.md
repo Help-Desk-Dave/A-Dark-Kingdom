@@ -34,3 +34,6 @@ A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fort
 
 ## 📝 Agent Logging Protocol
 * **Activity Log (`docs/agent-log.md`)**: Any AI agent modifying this project **MUST** actively log their session's structural changes, file modifications, and significant debugging resolutions at the end of `docs/agent-log.md`. This creates a persistent trail of context across multi-session interactions.
+
+## Ruler Mechanics
+* The Ruler can only perform one action per tick across both engine implementations. Once an action is triggered, all other manual actions are locked until the next simulation tick.

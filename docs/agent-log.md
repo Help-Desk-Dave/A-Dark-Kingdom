@@ -70,7 +70,7 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 
 Successfully built frontend and verified visually with Playwright.
 2024-05-18 - Implemented Ruler Actions and Construction Queue in React UI
-## $(date +%Y-%m-%d): Refactor Building Construction Loop in App.jsx
+## 2024-05-19: Refactor Building Construction Loop in App.jsx
 - **Feature**: Buildings no longer appear instantly upon purchase. Implemented a `constructionQueue` to track active building projects.
 - **Mechanics**: Buildings progress over time, requiring an available "builder" (total Pop minus assigned Pops, defaulting to 1 for the early game).
 - **Architecture**: Separated the state calculation (which ticks progress in a `setInterval`) from side-effects (`setWorld`, `addLog`, `setStage`) using dual `useEffect` hooks. This ensures `setConstructionQueue` remains pure and avoids race conditions or duplicate logs in React 18 Strict Mode.
@@ -114,3 +114,9 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 **Action:** Ensure clean diff updates when fixing syntax errors and build warnings. Double-check all React state functional updates for proper parenthesis and brackets to not break standard JavaScript/JSX build parsers.
 - Fixed a crash caused by an undefined `tickCount` state variable in `frontend/src/App.jsx`.
 - Implemented an `ErrorBoundary` component in `frontend/src/ErrorBoundary.jsx` and applied it in `frontend/src/main.jsx` to catch and gracefully display rendering errors, preventing silent white-screen failures.
+
+## 2024-05-19 - Refactor Ruler/Founder Mechanics
+**Action:** Refactored the Ruler/Founder agent mechanics to fix core gameplay issues:
+- **Consolidated Redundant Actions:** Removed the instant action buttons for gathering timber and hunting rations in the React frontend, leaving only the effort-simulating `ProgressBar` versions to respect the `failMod` attribute.
+- **Enforced Single-Action Limit (Python Engine):** Added an `is_busy` state to the `Kingdom` class. Manual actions (like gathering or hunting) now block further actions until the state resets on the next tick (`tick()` cycle).
+- **Enforced Single-Action Limit (React Frontend):** Implemented an `isRulerBusy` derived state, disabling all manual action buttons (`Gather Sticks`, `Gather Timber`, `Hunt Rations`, `Help Build`) if any task is currently underway.
