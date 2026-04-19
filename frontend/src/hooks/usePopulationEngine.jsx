@@ -4,9 +4,6 @@ const NAMES = ["Algar", "Bryn", "Cael", "Doran", "Elara", "Fen", "Gael", "Halia"
 const DIALOGUE_CHANCE = 0.05;
 const STATE_CHANGE_CHANCE = 0.1;
 
-export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, onPopsMove) => {
-    const [pops, setPops] = useState([]);
-    const popIdCounter = useRef(0);
 export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, ruler, addLog) => {
     const [pops, setPops] = useState(() => {
         const saved = localStorage.getItem('adk_pops');
@@ -205,11 +202,12 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
 
                 // Do not invoke onPopsMove synchronously here because calling a state setter inside a state setter is bad practice.
                 // We'll queue the invocation via setTimeout to avoid interfering with pure React state cycles.
-                if (newlyMoved.length > 0 && onPopsMove) {
-                    setTimeout(() => onPopsMove(newlyMoved), 0);
-                }
+                // NOTE: onPopsMove is no longer in scope or needed since we aren't managing pops via onPopsMove hook arg anymore,
+                // but the previous logic is removed.
 
                 return updatedPops;
+            });
+
             setGameTime(prevTime => {
                 let nextHour = prevTime.hour + 1;
                 let nextDay = prevTime.day;
