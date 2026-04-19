@@ -32,3 +32,7 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 
 **Learning:** Added ARIA labels to the close buttons in the custom modal interfaces.
 **Action:** Always ensure interactive elements with no text content have proper accessible names.
+
+## Enhancements by Palette
+
+- Improved UI accessibility for screen readers in `src/App.jsx` by adding `role="log"`, `aria-live="polite"`, and `aria-atomic="false"` to the main event ledger. This ensures that game state updates and dynamically generated simulation events are properly announced to users relying on assistive technologies.
