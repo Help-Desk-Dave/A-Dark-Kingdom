@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
 
@@ -120,6 +120,40 @@ const App = () => {
     return () => clearInterval(interval);
   }, [stage, showHeroSelection]);
 
+  // Pre-compute expensive world stats in one pass
+  // This avoids O(N*M) nested loops on every re-render and tick
+  const worldStats = useMemo(() => {
+      const stats = {
+          structureCounts: {},
+          swampClaimed: false,
+          totalPop: 0
+      };
+
+      if (stage < 2) return stats;
+
+      world.forEach(row => {
+          row.forEach(hex => {
+              if (hex.status === 2) {
+                  if (hex.terrain.toLowerCase() === "swamp") {
+                      stats.swampClaimed = true;
+                  }
+                  if (hex.settlement) {
+                      stats.totalPop += hex.settlement.resLots * HOUSING_CAPACITY;
+                      hex.settlement.grid.forEach(sRow => {
+                          sRow.forEach(cell => {
+                              if (cell) {
+                                  const name = cell.toLowerCase();
+                                  stats.structureCounts[name] = (stats.structureCounts[name] || 0) + 1;
+                              }
+                          });
+                      });
+                  }
+              }
+          });
+      });
+      return stats;
+  }, [world, stage]);
+
   // Prominent Citizens Observer
   const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
 
@@ -130,26 +164,9 @@ const App = () => {
         let newSpawned = new Set(spawnedCitizens);
         let spawnedAny = false;
 
-        // Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
-        const structureCounts = {};
-        world.forEach(row => {
-            row.forEach(hex => {
-                if (hex.status === 2 && hex.settlement) {
-                    hex.settlement.grid.forEach(sRow => {
-                        sRow.forEach(cell => {
-                            if (cell) {
-                                const name = cell.toLowerCase();
-                                structureCounts[name] = (structureCounts[name] || 0) + 1;
-                            }
-                        });
-                    });
-                }
-            });
-        });
-
         const getStructureCount = (name) => {
             const targetStructure = name.toLowerCase();
-            const count = structureCounts[targetStructure] || 0;
+            const count = worldStats.structureCounts[targetStructure] || 0;
             const lots = STRUCTURES_DB[targetStructure] ? STRUCTURES_DB[targetStructure].lots : 1;
             return Math.floor(count / lots);
         };
@@ -177,7 +194,7 @@ const App = () => {
             } else if (trigger === "Kingdom Level 17") {
                 conditionsMet = false; // No level concept yet, ignoring
             } else if (trigger === "Claim a swamp hex") {
-                conditionsMet = world.some(row => row.some(hex => hex.status === 2 && hex.terrain.toLowerCase() === "swamp"));
+                conditionsMet = worldStats.swampClaimed;
             } else if (trigger === "Random Event") {
                 conditionsMet = Math.random() < 0.05;
             }
@@ -195,7 +212,7 @@ const App = () => {
     };
 
     checkProminentCitizens();
-  }, [tickCount, stage, world, spawnedCitizens]);
+  }, [tickCount, stage, worldStats, spawnedCitizens]);
 
   // Handle Tick Side Effects
   useEffect(() => {
@@ -388,7 +405,7 @@ const App = () => {
   const renderWorldGrid = () => {
     const style = FLAVORS[flavor];
     return (
-        <div className={`grid grid-cols-10 gap-1 w-fit bg-black p-4 border ${FLAVORS[flavor].border}`}>
+        <div className={`grid grid-cols-10 gap-2 min-w-max bg-black p-4 border ${FLAVORS[flavor].border} mx-auto`}>
             {world.map((row, y) => (
                 row.map((hex, x) => {
                     let char = "??";
@@ -403,7 +420,7 @@ const App = () => {
                     return (
                         <div
                             key={`${x}-${y}`}
-                            className={`w-8 h-8 flex items-center justify-center text-xs cursor-pointer hover:border ${FLAVORS[flavor].color.replace("text-", "border-").replace("500", "400")} ${colorClass}`}
+                            className={`w-12 h-12 flex items-center justify-center text-base cursor-pointer hover:border ${FLAVORS[flavor].color.replace("text-", "border-").replace("500", "400")} ${colorClass}`}
                             onClick={() => {
                                 if (stage >= 3) {
                                     setInspectorHex({ x, y, ...hex });
@@ -440,7 +457,7 @@ const App = () => {
                 row.map((cell, x) => (
                     <div
                         key={`${x}-${y}`}
-                        className={`w-12 h-12 border border-gray-700 flex items-center justify-center bg-gray-900 text-xs cursor-pointer ${FLAVORS[flavor].hover}`}
+                        className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
                         onClick={() => {
                             if (stage >= 2 && cell === null) {
                                 setBuildMenuTarget({ x, y });
@@ -591,10 +608,10 @@ const App = () => {
         )}
         <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
 
-        <div className={`w-full max-w-5xl grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
+        <div className={`w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
             {/* Map Area */}
-            <div className={`col-span-1 md:col-span-${(inspectorHex || inspectorPop) ? '2' : '3'} bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col items-center justify-center transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full hidden'}`}>
-                <h2 className="text-xl font-bold mb-2">
+            <div className={`flex-grow bg-black border ${FLAVORS[flavor].border} p-6 rounded flex flex-col items-center transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full hidden'} overflow-x-auto`}>
+                <h2 className="text-xl font-bold mb-4">
                     {currentView === "world" ? "World Map" : `Settlement at ${currentView}`}
                     {currentView !== "world" && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.resLots < Math.floor(world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.otherLots / HOUSING_CAPACITY) && (
                         <span className="text-red-500 text-sm ml-2 font-bold">(OVERCROWDED)</span>
@@ -616,7 +633,7 @@ const App = () => {
             </div>
 
             {/* Ledger Area */}
-            <div className={`col-span-1 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${stage >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full hidden'} ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
+            <div className={`w-full md:w-64 flex-shrink-0 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${stage >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full hidden'} ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
                 <h2 className={`text-xl font-bold border-b ${FLAVORS[flavor].border} pb-2`}>Kingdom Ledger</h2>
                 {stage >= 4 && (
                     <div className="flex flex-col gap-1 mb-2">
@@ -661,7 +678,7 @@ const App = () => {
 
             {/* Inspector Area */}
             {(inspectorHex || inspectorPop) && (
-                <div className={`col-span-1 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
+                <div className={`w-full md:w-64 flex-shrink-0 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
                     <div className="flex justify-between items-center border-b ${FLAVORS[flavor].border} pb-2">
                         <h2 className="text-xl font-bold text-blue-400">Inspector</h2>
                         <button onClick={() => { setInspectorHex(null); setInspectorPop(null); }} aria-label="Close inspector" className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
@@ -711,7 +728,7 @@ const App = () => {
             </div>
 
         {/* Log Area */}
-        <div className={`w-full max-w-5xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
+        <div className={`w-full max-w-7xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
             {logs.map((log, i) => (
                 <div key={i} className="mb-1">{log}</div>
             ))}
@@ -721,6 +738,19 @@ const App = () => {
         {/* Controls */}
         <div className="w-full max-w-5xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
             {stage === 3 && !showHeroSelection && (() => {
+            {stage === 3 && worldStats.totalPop >= 5 && (
+                <button
+                    onClick={() => {
+                        setStage(4);
+                        addLog("[+] The Charter has been signed. The World Map is now open.");
+                    }}
+                    className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
+                >
+                    <User size={16} /> Sign the Charter
+                </button>
+            )}
+        <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
+            {stage === 3 && (() => {
                 let pop = 0;
                 world.forEach(row => {
                     row.forEach(hex => {
