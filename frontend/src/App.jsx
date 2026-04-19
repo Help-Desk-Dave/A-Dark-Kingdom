@@ -114,11 +114,11 @@ const App = () => {
     // Ref for log auto-scrolling
     const logEndRef = useRef(null);
 
-    const addLog = (msg) => {
+    const addLog = React.useCallback((msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
-    };
+    }, []);
 
-    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY);
+    const { pops, gameTime } = usePopulationEngine(world, stage, HOUSING_CAPACITY, unrest, ruler, addLog);
     const handleGatherSticks = () => {
         if (isGatheringSticks) return;
         setIsGatheringSticks(true);
@@ -191,7 +191,7 @@ const App = () => {
                         stats.swampClaimed = true;
                     }
                     if (hex.settlement) {
-                        stats.totalPop += hex.settlement.resLots * HOUSING_CAPACITY;
+                        // We use pops.length for total pop now, but keeping this for logging if needed
                         hex.settlement.grid.forEach(sRow => {
                             sRow.forEach(cell => {
                                 if (cell) {
@@ -206,6 +206,8 @@ const App = () => {
         });
         return stats;
     }, [world, stage]);
+
+    const totalPop = pops.length;
 
     // Handle Completed Constructions (Side-Effects)
     useEffect(() => {
@@ -257,7 +259,7 @@ const App = () => {
                 if (prevQueue.length === 0) return prevQueue;
 
                 const assignedPops = 0; // Pops assigned to jobs/gatherers (to be implemented)
-                let availableBuilders = worldStats.totalPop === 0 ? 1 : Math.max(0, worldStats.totalPop - assignedPops);
+                let availableBuilders = totalPop === 0 ? 1 : Math.max(0, totalPop - assignedPops);
 
                 return prevQueue.map(job => {
                     if (availableBuilders > 0 && job.progress < job.requiredProgress) {
@@ -270,7 +272,7 @@ const App = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [stage, worldStats.totalPop]);
+    }, [stage, totalPop]);
 
     // Prominent Citizens Observer
     const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
@@ -932,6 +934,8 @@ const App = () => {
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
+                    <div className="flex justify-between"><span>Time:</span> <span>{stage >= 4 ? `Day ${gameTime?.day} ${String(gameTime?.hour).padStart(2, '0')}:00` : "???"}</span></div>
+                    <div className="flex justify-between"><span>Pop:</span> <span>{stage >= 4 ? totalPop : "???"}</span></div>
 
                     {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
                         <>
@@ -968,7 +972,7 @@ const App = () => {
                                 {inspectorHex.settlement && (
                                     <div className="mt-2 p-2 border border-blue-900 bg-blue-900/20">
                                         <div className="font-bold text-blue-300">{inspectorHex.settlement.name}</div>
-                                        <div className="text-xs text-gray-400 mt-1">Pop: {inspectorHex.settlement.resLots * HOUSING_CAPACITY}</div>
+                                        <div className="text-xs text-gray-400 mt-1">Pop: {pops.filter(p => p.settlementCoords.sx === inspectorHex.x && p.settlementCoords.sy === inspectorHex.y).length} / {inspectorHex.settlement.resLots * HOUSING_CAPACITY}</div>
                                     </div>
                                 )}
                             </div>

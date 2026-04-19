@@ -82,3 +82,13 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - **Frontend Changes**: Moved the Hero Selection modal to Stage 0 (the very beginning of the game). The modal now automatically displays on the first load if no ruler exists in `localStorage`. Background selection now directly places the player into the "Wilderness" (Stage 0) with a specialized starting log rather than skipping to the World Map.
 - **Charter Changes**: Simplified the Stage 3 "Sign the Charter" logic in `frontend/src/App.jsx` to immediately transition to Stage 4 without displaying the Hero Selection prompt again.
 - **Backend Test Suite Alignment**: Adjusted `engine/Engine.py` to match the new flow (initializing `self.pending_hero_selection = True`) and updated `engine/test_engine.py`'s `setUp` blocks by bypassing the hero selection state explicitly (`self.game.pending_hero_selection = False`). This ensures backend unit tests run correctly without getting stalled on the missing CLI input.
+
+## Population Engine Rewrite
+* **Goal**: Sync the visual population with the underlying game data, assign beds within homes to citizens, establish a circadian rhythm, and replace instant spawning with an organic "word of mouth" immigration system.
+* **Changes**:
+    *   Rewrote `usePopulationEngine.js` to manage `gameTime` and assign exact `homeCoords` and `bedId` to pops when housing is available.
+    *   Added a check for organic growth at `hour === 0`, with a 20% chance to spawn 1-2 new pops if housing is available.
+    *   Added a circadian rhythm logic that sends pops home to enter a 'Sleeping' state between 22:00 and 06:00.
+    *   Updated `App.jsx` to pass `unrest` and `addLog` to the population engine.
+    *   Wrapped `addLog` in `React.useCallback` to prevent infinite re-render loops when passed as a dependency.
+    *   Used `pops.length` directly for population count instead of relying on theoretical housing capacity.
