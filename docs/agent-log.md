@@ -61,3 +61,8 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **Python Engine:** Moved Python core logic (`Engine.py`, `library.py`, `test_engine.py`) to `/engine`.
 - **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
 - **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
+## $(date +%Y-%m-%d): Refactor Building Construction Loop in App.jsx
+- **Feature**: Buildings no longer appear instantly upon purchase. Implemented a `constructionQueue` to track active building projects.
+- **Mechanics**: Buildings progress over time, requiring an available "builder" (total Pop minus assigned Pops, defaulting to 1 for the early game).
+- **Architecture**: Separated the state calculation (which ticks progress in a `setInterval`) from side-effects (`setWorld`, `addLog`, `setStage`) using dual `useEffect` hooks. This ensures `setConstructionQueue` remains pure and avoids race conditions or duplicate logs in React 18 Strict Mode.
+- **UI Visuals**: Active constructions render visually as scaffolding cells using dynamic CSS backgrounds (hazard stripes) and percentage indicators. Idle constructions display an "Awaiting Builder" notice.
