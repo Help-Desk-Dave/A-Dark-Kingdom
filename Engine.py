@@ -175,6 +175,7 @@ class Hex:
 # The main game engine handling the kingdom's state, resources, UI rendering, and simulation loop.
 class Kingdom:
     def __init__(self, name, flavor="swamp"):
+        self.lock = threading.Lock()
         self.name = name
         self.flavor = flavor
         self.bp = 60 # Starting Build Points
@@ -196,31 +197,79 @@ class Kingdom:
         self.current_view = "world"
 
         # Stage Progression
-        # 1: Dark room, only 'establish camp'
-        # 2: Camp established, limited UI
-        # 3: UI fully revealed
-        self.stage = 1
+        # 0: The Wilderness
+        # 1: Survival Mode
+        # 2: The First Companions
+        # 3: Automation
+        # 4: The Charter
+        self.stage = 0
+
+        # Early game survival resources
+        self.sticks = 0
+        self.timber = 0
+        self.rations = 0
+
+        # Worker assignment
+        self.woodcutters = 0
+        self.trappers = 0
+
+        self.scouting_map_crafted = False
 
         # Starting position (Heartland)
         self.start_x, self.start_y = 5, 5
-        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
+        self.log = ["The Stolen Lands are dark and freezing."]
 
         self.loyalty = 0
-        self.citizens = [Pop(get_random_citizen()) for _ in range(5)]
+        self.citizens = []
         self.advisors = {"general": None, "treasurer": None, "diplomat": None}
 
         self.world[self.start_y][self.start_x].status = 2 # Capital is claimed
         self.world[self.start_y][self.start_x].settlement = Settlement("Capital")
-        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Capital founded."]
-        self.log = [f"Expedition landed {self.style['text_suffix']}.", "Awaiting orders to establish camp."]
+        self.tick_count = 0
 
     # The main real-time simulation tick. Advances the game clock, calculates resources, and triggers events.
     def tick(self):
         with self.lock:
-            if self.stage < 3:
+            if self.stage < 1:
                 return
 
             self.tick_count += 1
+
+            # Stage 1: Survival Mode
+            if self.stage == 1:
+                # 20% chance to find an Outcast
+                if random.random() < 0.20:
+                    self.stage = 2
+                    self.citizens.append(Pop("Brevic Outcast"))
+                    self.log.append("[+] A weary Brevic Outcast stumbles into the light. You are no longer alone.")
+                return
+
+            # Stage 2+: The First Companions / Automation
+            if self.stage >= 2 and self.stage < 4:
+                # Produce resources
+                self.timber += self.woodcutters * 1
+                self.rations += self.trappers * 1
+
+                # Consume rations every 2 ticks
+                if self.tick_count % 2 == 0:
+                    consumption = len(self.citizens)
+                    if self.rations >= consumption:
+                        self.rations -= consumption
+                    else:
+                        self.rations = 0
+                        self.unrest += 1
+                        self.log.append("[-] Starvation! Citizens are starving, Unrest increases.")
+
+                # Population growth
+                max_capacity = 2 + (self.count_structures("pioneer tent") * 4)
+                if len(self.citizens) < max_capacity:
+                    # 15% chance to grow
+                    if random.random() < 0.15:
+                        self.citizens.append(Pop(get_random_citizen()))
+                        self.log.append("[+] A new wanderer arrives at the camp.")
+
+            if self.stage < 4:
+                return
 
             # Passive Shield Mechanic
             if self.loyalty > 10 and self.unrest > 0:
@@ -418,20 +467,26 @@ class Kingdom:
 
         # Retrieve structure details (lots required, cost, traits, etc.)
         structure = STRUCTURES_DB[structure_name]
-        cost = structure["cost_rp"]
+
+        # Determine cost based on structure and stage
+        cost_rp = structure.get("cost_rp", 0)
+        cost_timber = structure.get("cost_timber", 0)
 
         # Block purchase if insufficient funds
-        if self.bp < cost:
-            self.log.append(f"[-] Treasurer: 'We cannot afford {structure_name.capitalize()}! Cost: {cost} BP, Have: {self.bp} BP.'")
+        if cost_rp > 0 and self.bp < cost_rp:
+            self.log.append(f"[-] Treasurer: 'We cannot afford {structure_name.capitalize()}! Cost: {cost_rp} BP, Have: {self.bp} BP.'")
+            return
+        if cost_timber > 0 and self.timber < cost_timber:
+            self.log.append(f"[-] We do not have enough timber for {structure_name.capitalize()}! Cost: {cost_timber} Timber, Have: {self.timber} Timber.")
             return
 
-        # Treasurer's Warning - Using < 15 instead of < 10 to match requested spec
-        if self.bp - cost < 15:
+        # Treasurer's Warning - Using < 15 instead of < 10 to match requested spec (only for BP purchases)
+        if cost_rp > 0 and self.bp - cost_rp < 15:
             os.system('cls' if os.name == 'nt' else 'clear')
             draw_ui(self)
             warning_panel = Panel(
                 f"[bold red]WARNING: Building '{structure_name.capitalize()}' will drop the treasury below 15 BP![/]\n"
-                f"Current BP: {self.bp}\nCost: {cost}\nRemaining BP: {self.bp - cost}\n\n"
+                f"Current BP: {self.bp}\nCost: {cost_rp}\nRemaining BP: {self.bp - cost_rp}\n\n"
                 f"Type 'yes' to confirm this purchase, or any other key to cancel.",
                 title="Treasurer's Warning",
                 border_style="bold red"
@@ -445,10 +500,17 @@ class Kingdom:
         # Attempt to build
         success = hex_obj.settlement.build(structure_name, x, y, self.log)
         if success:
-            self.bp -= cost
+            if cost_rp > 0:
+                self.bp -= cost_rp
+            if cost_timber > 0:
+                self.timber -= cost_timber
+
             if self.stage == 2 and structure_name == "houses":
                 self.stage = 3
                 self.log.append("[!] Citizens arrive and build houses. The Kingdom expands!")
+            elif self.stage == 2 and self.count_structures("pioneer tent") >= 3 and self.count_structures("supply wagon") >= 1:
+                self.stage = 3
+                self.log.append("[+] Camp infrastructure is stable. We can now consider automation and exploration.")
 
     # Action: Spend BP to annex a mapped hex (status 1 -> 2), expanding the kingdom's borders.
     def claim_hex(self, x, y):
@@ -517,7 +579,9 @@ def draw_ui(game):
     header_color = game.style["color"]
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
     
-    if game.current_view == "world" and game.stage >= 4:
+    if game.stage < 2:
+        layout["main"]["map_and_stats"]["map"].update(Panel(Text("You are in the dark wilderness.", justify="center", style="dim"), title="The Wilderness", border_style=header_color))
+    elif game.current_view == "world" and game.stage >= 4:
         layout["main"]["map_and_stats"]["map"].update(Panel(game.render_map(), title="World Map (Stolen Lands)", border_style=header_color))
     elif game.current_view == "world" and game.stage < 4:
         layout["main"]["map_and_stats"]["map"].update(Panel(Text("World Map is restricted until the Charter is signed.", style="dim"), title="World Map (Restricted)", border_style=header_color))
@@ -541,6 +605,9 @@ def draw_ui(game):
         stats.add_row("BP (Treasury):", str(game.bp))
         stats.add_row("Unrest:", str(game.unrest))
         stats.add_row("Kingdom XP:", str(game.xp))
+        stats.add_row("Timber:", str(game.timber))
+        stats.add_row("Rations:", str(game.rations))
+        stats.add_row("Pops:", str(len(game.citizens)))
 
         if game.current_view != "world":
             sx, sy = game.current_view
@@ -549,25 +616,32 @@ def draw_ui(game):
                 stats.add_row("---", "---")
                 stats.add_row("Res. Lots:", str(settlement.residential_lots))
                 stats.add_row("Other Lots:", str(settlement.other_lots))
+        layout["main"]["map_and_stats"]["stats"].update(Panel(stats, title="Kingdom Ledger"))
     else:
-         stats.add_row("BP (Treasury):", "???")
-         stats.add_row("Unrest:", "???")
-         stats.add_row("Kingdom XP:", "???")
+        stats.add_row("Sticks:", str(game.sticks) if game.stage == 0 else "---")
+        if game.stage >= 1:
+            stats.add_row("Timber:", str(game.timber))
+            stats.add_row("Rations:", str(game.rations))
+            stats.add_row("Pops:", str(len(game.citizens)))
+        if game.stage >= 2:
+            stats.add_row("Woodcutters:", str(game.woodcutters))
+            stats.add_row("Trappers:", str(game.trappers))
+        layout["main"]["map_and_stats"]["stats"].update(Panel(stats, title="Survival Ledger"))
     
-    layout["stats"].update(Panel(stats, title="Kingdom Ledger"))
-
     # Render log
     log_content = "\n".join(game.log[-5:])
     layout["log"].update(Panel(log_content, title="Event Log", border_style="white"))
 
-    if game.stage == 1:
-        layout["footer"].update(Panel("Commands: [E]stablish Camp | [Q]uit"))
+    if game.stage == 0:
+        layout["footer"].update(Panel("Commands: [G]ather sticks | [B]uild fire | [Q]uit"))
+    elif game.stage == 1:
+        layout["footer"].update(Panel("Commands: [G]ather timber | [H]unt rations | [S]toke fire | [Q]uit"))
     elif game.stage == 2:
-        layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | [Q]uit"))
+        layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | [A]ssign <role> <amount> | [Q]uit"))
     elif game.stage == 3:
-        layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | Sign Charter | [Q]uit"))
+        layout["footer"].update(Panel("Commands: [V]iew x,y | [B]uild <structure> x,y | [A]ssign <role> <amount> | [C]raft map | Sign Charter | [Q]uit"))
     else:
-        layout["footer"].update(Panel("Commands: [V]iew x,y / world | [R]econnoiter x,y | [C]laim x,y | [B]uild <structure> x,y | Flavor <name> | [N]ext | [Q]uit"))
+        layout["footer"].update(Panel("Commands: [V]iew x,y / world | [R]econnoiter x,y | [C]laim x,y | [B]uild <structure> x,y | [E]xport <timber/rations> | Flavor <name> | [N]ext | [Q]uit"))
     
     console.print(layout)
 
@@ -606,15 +680,110 @@ if __name__ == "__main__":
         # Command [Q]: Quit the game loop and exit the application.
         if action[0] == 'q': break
 
-        if action[0] == 'sign' and len(action) > 1 and action[1] == 'charter':
+        # Early Survival Mechanics (Stages 0-1)
+        if my_game.stage == 0 and action[0] == 'g' and len(action) > 1 and action[1] == 'sticks':
+            my_game.sticks += 1
+            if my_game.sticks >= 10:
+                my_game.log.append("[+] You have enough sticks. You can now build a fire (b fire).")
+            else:
+                my_game.log.append(f"[+] Gathered a stick. ({my_game.sticks}/10)")
+            continue
+
+        if my_game.stage == 0 and my_game.sticks >= 10 and action[0] == 'b' and len(action) > 1 and action[1] == 'fire':
             with my_game.lock:
-                if my_game.stage == 3 and len(my_game.citizens) >= 5:
+                my_game.stage = 1
+                my_game.sticks -= 10
+                my_game.log.append("[+] The fire crackles to life. The survival begins.")
+            continue
+
+        if my_game.stage == 1:
+            if action[0] == 'g' and len(action) > 1 and action[1] == 'timber':
+                # Real-time cooldowns would normally be handled by the UI, but we can just add resources here for CLI
+                my_game.timber += 1
+                my_game.log.append("[+] Gathered 1 Timber.")
+                continue
+            if action[0] == 'h' and len(action) > 1 and action[1] == 'rations':
+                my_game.rations += 1
+                my_game.log.append("[+] Hunted 1 Ration.")
+                continue
+            if action[0] == 's' and len(action) > 1 and action[1] == 'fire':
+                my_game.log.append("[+] You stoked the campfire.")
+                continue
+
+        # Automation Assignment (Stage 2+)
+        if my_game.stage >= 2 and action[0] == 'a' and len(action) >= 3:
+            role = action[1]
+            try:
+                amount = int(action[2])
+                available_pops = len(my_game.citizens) - my_game.woodcutters - my_game.trappers
+
+                if role == 'woodcutter':
+                    if amount > 0 and available_pops >= amount:
+                        my_game.woodcutters += amount
+                        my_game.log.append(f"[+] Assigned {amount} Woodcutter(s).")
+                    elif amount < 0 and my_game.woodcutters >= abs(amount):
+                        my_game.woodcutters += amount
+                        my_game.log.append(f"[+] Unassigned {abs(amount)} Woodcutter(s).")
+                    else:
+                        my_game.log.append("[-] Invalid assignment amount.")
+                elif role == 'trapper':
+                    if amount > 0 and available_pops >= amount:
+                        my_game.trappers += amount
+                        my_game.log.append(f"[+] Assigned {amount} Trapper(s).")
+                    elif amount < 0 and my_game.trappers >= abs(amount):
+                        my_game.trappers += amount
+                        my_game.log.append(f"[+] Unassigned {abs(amount)} Trapper(s).")
+                    else:
+                        my_game.log.append("[-] Invalid assignment amount.")
+                else:
+                    my_game.log.append(f"[-] Unknown role: {role}")
+            except ValueError:
+                pass
+            continue
+
+        # Crafting Scouting Map (Stage 3)
+        if my_game.stage == 3 and action[0] == 'c' and len(action) > 1 and action[1] == 'map':
+            if my_game.count_structures("pioneer tent") >= 3 and my_game.count_structures("supply wagon") >= 1:
+                if my_game.timber >= 100 and my_game.rations >= 50:
+                    with my_game.lock:
+                        my_game.timber -= 100
+                        my_game.rations -= 50
+                        my_game.scouting_map_crafted = True
+                        my_game.log.append("[+] The surrounding hexes have been charted. It is time to claim this land.")
+                else:
+                    my_game.log.append("[-] Insufficient resources to craft Scouting Map (requires 100 Timber, 50 Rations).")
+            else:
+                my_game.log.append("[-] You need 3 Pioneer Tents and 1 Supply Wagon to craft a Scouting Map.")
+            continue
+
+        # Export Goods (Stage 4)
+        if my_game.stage == 4 and action[0] == 'e' and len(action) > 1:
+            resource = action[1]
+            if resource == 'timber':
+                if my_game.timber >= 100:
+                    my_game.timber -= 100
+                    my_game.bp += 1
+                    my_game.log.append("[+] Exported 100 Timber for 1 BP.")
+                else:
+                    my_game.log.append("[-] Insufficient Timber to export (requires 100).")
+            elif resource == 'rations':
+                if my_game.rations >= 100:
+                    my_game.rations -= 100
+                    my_game.bp += 1
+                    my_game.log.append("[+] Exported 100 Rations for 1 BP.")
+                else:
+                    my_game.log.append("[-] Insufficient Rations to export (requires 100).")
+            continue
+
+        if action[0] in ['u', 'sign'] and len(action) > 1 and action[1] == 'charter':
+            with my_game.lock:
+                if my_game.stage == 3 and my_game.scouting_map_crafted:
                     my_game.stage = 4
                     my_game.log.append("[+] The Charter has been signed. The World Map is now open.")
                 elif my_game.stage >= 4:
                     my_game.log.append("[-] The Charter is already signed.")
                 else:
-                    my_game.log.append("[-] You are not ready to sign the Charter yet (requires Stage 3 and Population >= 5).")
+                    my_game.log.append("[-] You are not ready to sign the Charter yet (requires Stage 3 and crafting the Scouting Map).")
             continue
 
         # Command [N]: Forcibly advance the game clock by 1 month immediately.
