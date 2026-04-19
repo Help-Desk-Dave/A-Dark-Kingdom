@@ -26,6 +26,12 @@ const App = () => {
         return saved ? parseInt(saved) : 60;
     });
 
+    // `timber`: Basic building resource for early game.
+    const [timber, setTimber] = useState(() => {
+        const saved = localStorage.getItem('adk_timber');
+        return saved ? parseInt(saved) : 0;
+    });
+
     // `tickCount`: Tracks elapsed 'months'. Every 12 ticks triggers an Annual Upkeep.
     const [tickCount, setTickCount] = useState(() => {
         const saved = localStorage.getItem('adk_tickCount');
@@ -43,6 +49,15 @@ const App = () => {
         const saved = localStorage.getItem('adk_xp');
         return saved ? parseInt(saved) : 0;
     });
+
+    // `unlocks`: Tracks granular feature progression unlocked by the user.
+    const [unlocks, setUnlocks] = useState(() => {
+        const saved = localStorage.getItem('adk_unlocks');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    // Helper function to check if a specific feature is unlocked
+    const hasUnlock = (id) => unlocks.includes(id);
 
     // `world`: The 10x10 hex grid. Represents the Stolen Lands. Generated once and saved.
     const [world, setWorld] = useState(() => {
@@ -94,14 +109,16 @@ const App = () => {
         localStorage.setItem('adk_stage', stage);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
+        localStorage.setItem('adk_timber', timber);
         localStorage.setItem('adk_unrest', unrest);
         localStorage.setItem('adk_xp', xp);
         localStorage.setItem('adk_tickCount', tickCount);
         localStorage.setItem('adk_world', JSON.stringify(world));
+        localStorage.setItem('adk_unlocks', JSON.stringify(unlocks));
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, logs, bp, unrest, xp, tickCount, world, ruler]);
+    }, [stage, logs, bp, timber, unrest, xp, tickCount, world, ruler, unlocks]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -663,6 +680,7 @@ const App = () => {
                     )}
                     <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
                     <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 4 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Timber:</span> <span>{timber}</span></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
@@ -737,6 +755,22 @@ const App = () => {
 
             {/* Controls */}
             <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
+                {stage === 3 && !showHeroSelection && !hasUnlock('scouting_map') && (
+                    <button
+                        onClick={() => {
+                            if (timber >= 10) {
+                                setTimber(prev => prev - 10);
+                                setUnlocks(prev => [...prev, 'scouting_map']);
+                                addLog("[+] Crafted a Scouting Map. The Stolen Lands await.");
+                            } else {
+                                addLog("[-] Not enough Timber!");
+                            }
+                        }}
+                        className="bg-orange-900 text-white px-4 py-2 font-bold hover:bg-orange-700 rounded flex items-center gap-2 border border-orange-500"
+                    >
+                        <MapIcon size={16} /> Craft Scouting Map
+                    </button>
+                )}
                 {stage === 3 && !showHeroSelection && (() => {
                     let pop = 0;
                     world.forEach(row => {
@@ -746,7 +780,7 @@ const App = () => {
                             }
                         });
                     });
-                    if (pop >= 5) {
+                    if (pop >= 5 && hasUnlock('scouting_map')) {
                         return (
                             <button
                                 onClick={() => {

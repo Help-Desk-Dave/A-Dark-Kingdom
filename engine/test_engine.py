@@ -49,15 +49,16 @@ class TestEnginePrologue(unittest.TestCase):
         initial_timber = self.game.timber
         initial_rations = self.game.rations
 
-        # 1 tick - produce but no consumption
-        self.game.tick()
-        self.assertEqual(self.game.timber, initial_timber + 2)
-        self.assertEqual(self.game.rations, initial_rations + 1)
+        with patch('random.random', return_value=1.0):
+            # 1 tick - produce but no consumption
+            self.game.tick()
+            self.assertEqual(self.game.timber, initial_timber + 2)
+            self.assertEqual(self.game.rations, initial_rations + 1)
 
-        # 2nd tick - produce and consume
-        self.game.tick()
-        self.assertEqual(self.game.timber, initial_timber + 4)
-        self.assertEqual(self.game.rations, initial_rations + 2 - 1)
+            # 2nd tick - produce and consume
+            self.game.tick()
+            self.assertEqual(self.game.timber, initial_timber + 4)
+            self.assertEqual(self.game.rations, initial_rations + 2 - 1)
 
     def test_stage_3_charter_requirement(self):
         self.game.stage = 3
