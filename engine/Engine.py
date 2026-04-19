@@ -321,9 +321,19 @@ class Kingdom:
     def generate_world(self):
         """Note: Uses a simple nested loop to fill the map with random terrain types."""
         terrain_types = ["Forest", "Plain", "Mountain", "Hill", "Swamp"]
+        pois = ["Ruins", "Resource Node"]
         for y in range(10):
             row = [Hex(random.choice(terrain_types)) for x in range(10)]
             self.world.append(row)
+
+        # Randomly assign 5 POIs
+        pois_assigned = 0
+        while pois_assigned < 5:
+            px = random.randint(0, 9)
+            py = random.randint(0, 9)
+            if (px != 5 or py != 5) and self.world[py][px].feature is None:
+                self.world[py][px].feature = random.choice(pois)
+                pois_assigned += 1
 
     def check_prominent_citizens(self):
         # Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
@@ -439,6 +449,8 @@ class Kingdom:
                 self.bp -= cost
                 self.world[y][x].status = 1
                 self.log.append(f"[+] Reconnoitered ({x},{y}). It is a {self.world[y][x].terrain}.")
+                if self.world[y][x].feature:
+                    self.log.append(f"[*] Discovery: Found {self.world[y][x].feature} at ({x},{y})!")
             else:
                 self.log.append("[!] That area is already mapped.")
         else:
@@ -630,6 +642,15 @@ def draw_ui(game):
         stats.add_row("Timber:", str(game.timber))
         stats.add_row("Rations:", str(game.rations))
         stats.add_row("Pops:", str(len(game.citizens)))
+
+        stats.add_row("---", "---")
+        stats.add_row("[bold yellow]Charter: Advisors[/]", "")
+        for role, advisor in game.advisors.items():
+            if role != "ruler" and advisor:
+                # Handle dictionary (from old config) or Pop object
+                name = advisor.get('name') if isinstance(advisor, dict) else advisor.name
+                attr = advisor.get('attribute') if isinstance(advisor, dict) else getattr(advisor, role + '_attr', 'N/A')
+                stats.add_row(f"{role.capitalize()}:", f"{name} (Attr: {attr})")
 
         if game.current_view != "world":
             sx, sy = game.current_view

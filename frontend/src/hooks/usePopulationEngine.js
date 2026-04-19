@@ -4,7 +4,7 @@ const NAMES = ["Algar", "Bryn", "Cael", "Doran", "Elara", "Fen", "Gael", "Halia"
 const DIALOGUE_CHANCE = 0.05;
 const STATE_CHANGE_CHANCE = 0.1;
 
-export const usePopulationEngine = (world, stage, HOUSING_CAPACITY) => {
+export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, onPopsMove) => {
     const [pops, setPops] = useState([]);
     const popIdCounter = useRef(0);
 
@@ -79,72 +79,87 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY) => {
         if (stage < 2) return;
 
         const interval = setInterval(() => {
-            setPops(prevPops => prevPops.map(pop => {
-                let nextPop = { ...pop };
+            setPops(prevPops => {
+                let newlyMoved = []; // Array to track pop movement
+                const updatedPops = prevPops.map(pop => {
+                    let nextPop = { ...pop };
 
-                // 1. Dialogue Engine
-                if (nextPop.dialogueTimer > 0) {
-                    nextPop.dialogueTimer--;
-                    if (nextPop.dialogueTimer <= 0) {
-                        nextPop.dialogue = null;
-                    }
-                } else if (Math.random() < DIALOGUE_CHANCE) {
-                    // Emit dialogue
-                    let messages = [];
-                    if (nextPop.state === 'home') messages = ["Resting...", "Home sweet home.", "Zzz..."];
-                    else if (nextPop.state === 'working') messages = ["Work work.", "Hard at work.", "Building the kingdom."];
-                    else if (nextPop.state === 'commuting_to_work') messages = ["Off to work.", "Morning commute.", "Late again!"];
-                    else if (nextPop.state === 'commuting_to_home') messages = ["Heading home.", "Long day.", "Finally done."];
+                    // 1. Dialogue Engine
+                    if (nextPop.dialogueTimer > 0) {
+                        nextPop.dialogueTimer--;
+                        if (nextPop.dialogueTimer <= 0) {
+                            nextPop.dialogue = null;
+                        }
+                    } else if (Math.random() < DIALOGUE_CHANCE) {
+                        // Emit dialogue
+                        let messages = [];
+                        if (nextPop.state === 'home') messages = ["Resting...", "Home sweet home.", "Zzz..."];
+                        else if (nextPop.state === 'working') messages = ["Work work.", "Hard at work.", "Building the kingdom."];
+                        else if (nextPop.state === 'commuting_to_work') messages = ["Off to work.", "Morning commute.", "Late again!"];
+                        else if (nextPop.state === 'commuting_to_home') messages = ["Heading home.", "Long day.", "Finally done."];
 
-                    if (messages.length > 0) {
-                        nextPop.dialogue = messages[Math.floor(Math.random() * messages.length)];
-                        nextPop.dialogueTimer = 3; // Keep dialogue for 3 ticks (3 seconds)
+                        if (messages.length > 0) {
+                            nextPop.dialogue = messages[Math.floor(Math.random() * messages.length)];
+                            nextPop.dialogueTimer = 3; // Keep dialogue for 3 ticks (3 seconds)
+                        }
                     }
+
+                    // 2. State Transitions & Pathfinding
+                    if (nextPop.state === 'home') {
+                        if (Math.random() < STATE_CHANGE_CHANCE) {
+                            nextPop.state = 'commuting_to_work';
+                        }
+                    } else if (nextPop.state === 'working') {
+                        if (Math.random() < STATE_CHANGE_CHANCE) {
+                            nextPop.state = 'commuting_to_home';
+                        }
+                    } else if (nextPop.state === 'commuting_to_work') {
+                        let dx = Math.sign(nextPop.workCoords.x - nextPop.currentCoords.x);
+                        let dy = Math.sign(nextPop.workCoords.y - nextPop.currentCoords.y);
+
+                        // Move one tile
+                        if (dx !== 0) {
+                            nextPop.currentCoords.x += dx;
+                            newlyMoved.push({ ...nextPop });
+                        } else if (dy !== 0) {
+                            nextPop.currentCoords.y += dy;
+                            newlyMoved.push({ ...nextPop });
+                        } else {
+                            // Arrived
+                            nextPop.state = 'working';
+                        }
+                    } else if (nextPop.state === 'commuting_to_home') {
+                        let dx = Math.sign(nextPop.homeCoords.x - nextPop.currentCoords.x);
+                        let dy = Math.sign(nextPop.homeCoords.y - nextPop.currentCoords.y);
+
+                        // Move one tile
+                        if (dx !== 0) {
+                            nextPop.currentCoords.x += dx;
+                            newlyMoved.push({ ...nextPop });
+                        } else if (dy !== 0) {
+                            nextPop.currentCoords.y += dy;
+                            newlyMoved.push({ ...nextPop });
+                        } else {
+                            // Arrived
+                            nextPop.state = 'home';
+                        }
+                    }
+
+                    return nextPop;
+                });
+
+                // Do not invoke onPopsMove synchronously here because calling a state setter inside a state setter is bad practice.
+                // We'll queue the invocation via setTimeout to avoid interfering with pure React state cycles.
+                if (newlyMoved.length > 0 && onPopsMove) {
+                    setTimeout(() => onPopsMove(newlyMoved), 0);
                 }
 
-                // 2. State Transitions & Pathfinding
-                if (nextPop.state === 'home') {
-                    if (Math.random() < STATE_CHANGE_CHANCE) {
-                        nextPop.state = 'commuting_to_work';
-                    }
-                } else if (nextPop.state === 'working') {
-                    if (Math.random() < STATE_CHANGE_CHANCE) {
-                        nextPop.state = 'commuting_to_home';
-                    }
-                } else if (nextPop.state === 'commuting_to_work') {
-                    let dx = Math.sign(nextPop.workCoords.x - nextPop.currentCoords.x);
-                    let dy = Math.sign(nextPop.workCoords.y - nextPop.currentCoords.y);
-
-                    // Move one tile
-                    if (dx !== 0) {
-                        nextPop.currentCoords.x += dx;
-                    } else if (dy !== 0) {
-                        nextPop.currentCoords.y += dy;
-                    } else {
-                        // Arrived
-                        nextPop.state = 'working';
-                    }
-                } else if (nextPop.state === 'commuting_to_home') {
-                    let dx = Math.sign(nextPop.homeCoords.x - nextPop.currentCoords.x);
-                    let dy = Math.sign(nextPop.homeCoords.y - nextPop.currentCoords.y);
-
-                    // Move one tile
-                    if (dx !== 0) {
-                        nextPop.currentCoords.x += dx;
-                    } else if (dy !== 0) {
-                        nextPop.currentCoords.y += dy;
-                    } else {
-                        // Arrived
-                        nextPop.state = 'home';
-                    }
-                }
-
-                return nextPop;
-            }));
+                return updatedPops;
+            });
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [stage]);
+    }, [stage, onPopsMove]);
 
     return { pops };
 };
