@@ -4,8 +4,8 @@
 A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fortress pop simulation. Developed as a dual-track project (Python CLI and React Web).
 
 ## 🏗️ Architecture
-* **Data Layer (`library.py`)**: Static templates, structure costs, and naming pools.
-* **Logic Layer (`Engine.py` / `App.jsx`)**: Threaded simulation loops and state management.
+* **Data Layer (`engine/library.py` / `frontend/src/library.js`)**: Static templates, structure costs, and naming pools.
+* **Logic Layer (`engine/Engine.py` / `frontend/src/App.jsx`)**: Threaded simulation loops and state management.
 * **Constraint**: Never hardcode mechanical values in the logic layer. Always reference the Data Layer.
 
 ## ⚖️ The "Law" (Core Rules)
@@ -13,7 +13,7 @@ A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fort
 * **Financial Guardrails**: The "Treasurer" must warn the player if BP < 15. Block purchases if BP is insufficient.
 * **Pathfinder Fidelity**: 5 BP for Recon, 10 BP for Claim, 25 BP for Annual Upkeep.
 * **Advisor Math**: Bonuses are calculated as `Attribute // 4`.
-* **Source of Truth**: All mechanical values (costs, bonuses, DC checks) must align with the Kingmaker Second Edition Player's Guide. AI should reference the provided PDF or `library.py` before suggesting balance changes.
+* **Source of Truth**: All mechanical values (costs, bonuses, DC checks) must align with the Kingmaker Second Edition Player's Guide. AI should reference the provided PDF, `engine/library.py`, or `frontend/src/library.js` before suggesting balance changes.
 
 ## 💻 Technical Standards
 * **Commenting & Documentation**: Agents must write highly detailed, line-by-line comments for all code changes. The entire codebase should read like a book, explaining the "why" and "how" of the logic at a granular level.
@@ -24,7 +24,7 @@ A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fort
 * **Event Logging**: Instead of standard `print()` statements, all game events must be routed through the `log_event()` or `addLog()` methods to ensure they appear in the UI's event ledger.
 
 ## 🧪 Testing & Validation
-* Run `test_engine.py` after changes to resource math. Ensure unit tests exist for the "Monthly Tick" to ensure consumption (Food/Pop) and income (BP/Advisors) are calculating correctly.
+* Run `engine/test_engine.py` after changes to resource math. Ensure unit tests exist for the "Monthly Tick" to ensure consumption (Food/Pop) and income (BP/Advisors) are calculating correctly.
 * Verify that new structures update the "Overcrowded" logic.
 * **State Persistence**: Verify that any new features are added to the localStorage logic in the web version and don't break the `__init__` states in Python.
 
@@ -33,4 +33,4 @@ A real-time kingdom simulator merging Pathfinder: Kingmaker rules and Dwarf Fort
 * **Dual-Track Sync**: Any logic change in the Python engine should be mirrored in the React/Vite application to keep the two versions identical in difficulty and feel.
 
 ## 📝 Agent Logging Protocol
-* **Activity Log (`agent-log.md`)**: Any AI agent modifying this project **MUST** actively log their session's structural changes, file modifications, and significant debugging resolutions at the end of `agent-log.md`. This creates a persistent trail of context across multi-session interactions.
+* **Activity Log (`docs/agent-log.md`)**: Any AI agent modifying this project **MUST** actively log their session's structural changes, file modifications, and significant debugging resolutions at the end of `docs/agent-log.md`. This creates a persistent trail of context across multi-session interactions.
