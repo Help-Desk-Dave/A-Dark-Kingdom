@@ -11,7 +11,22 @@ const App = () => {
     // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
     const [stage, setStage] = useState(() => {
         const saved = localStorage.getItem('adk_stage');
-        return saved ? parseInt(saved) : 1;
+        return saved !== null ? parseInt(saved) : 0;
+    });
+
+    const [sticks, setSticks] = useState(() => {
+        const saved = localStorage.getItem('adk_sticks');
+        return saved !== null ? parseInt(saved) : 0;
+    });
+
+    const [timber, setTimber] = useState(() => {
+        const saved = localStorage.getItem('adk_timber');
+        return saved !== null ? parseInt(saved) : 0;
+    });
+
+    const [rations, setRations] = useState(() => {
+        const saved = localStorage.getItem('adk_rations');
+        return saved !== null ? parseInt(saved) : 0;
     });
 
     // `logs`: The main event ledger. Acts as the user's primary feedback mechanism instead of console.logs.
@@ -97,6 +112,9 @@ const App = () => {
     // Save State
     useEffect(() => {
         localStorage.setItem('adk_stage', stage);
+        localStorage.setItem('adk_sticks', sticks);
+        localStorage.setItem('adk_timber', timber);
+        localStorage.setItem('adk_rations', rations);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
         localStorage.setItem('adk_unrest', unrest);
@@ -106,7 +124,7 @@ const App = () => {
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, logs, bp, unrest, xp, tickCount, world, ruler]);
+    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, ruler]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -693,7 +711,9 @@ const App = () => {
                     </div>
                 </div>
             )}
-            <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
+            {stage >= 2 && (
+                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
+            )}
 
             <div className={`w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
                 {/* Map Area */}
@@ -848,21 +868,67 @@ const App = () => {
                     }
                     return null;
                 })()}
+                {stage === 0 && (
+                    <>
+                        <button
+                            onClick={() => {
+                                setSticks(s => s + 1);
+                                addLog("Gathered a stick.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Gather Sticks ({sticks})
+                        </button>
+                        {sticks >= 10 && (
+                            <button
+                                onClick={() => {
+                                    setStage(1);
+                                    addLog("[+] Fire built. A small comfort in the dark.");
+                                }}
+                                className="bg-orange-900 text-white px-4 py-2 font-bold hover:bg-orange-700 rounded flex items-center gap-2 border border-orange-500"
+                            >
+                                Build Fire
+                            </button>
+                        )}
+                    </>
+                )}
                 {stage === 1 && (
-                    <button
-                        onClick={() => {
-                            setStage(2);
-                            addLog("[+] Camp established at (5,5).");
-                            const newWorld = [...world];
-                            newWorld[5][5].status = 2;
-                            newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
-                            setCurrentView("5,5");
-                            setWorld(newWorld);
-                        }}
-                        className="bg-green-900 text-black px-4 py-2 font-bold hover:bg-green-700 rounded flex items-center gap-2"
-                    >
-                        <Home size={16} /> Establish Camp
-                    </button>
+                    <>
+                        <button
+                            onClick={() => {
+                                setTimber(t => t + 1);
+                                addLog("Gathered timber.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Gather Timber ({timber})
+                        </button>
+                        <button
+                            onClick={() => {
+                                setRations(r => r + 1);
+                                addLog("Hunted for rations.");
+                            }}
+                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                        >
+                            Hunt Rations ({rations})
+                        </button>
+                        {timber >= 5 && rations >= 5 && (
+                            <button
+                                onClick={() => {
+                                    setStage(2);
+                                    addLog("[+] Camp established at (5,5).");
+                                    const newWorld = [...world];
+                                    newWorld[5][5].status = 2;
+                                    newWorld[5][5].settlement = { name: "Camp", grid: Array(5).fill(null).map(() => Array(5).fill(null)), resLots: 0, otherLots: 0 };
+                                    setCurrentView("5,5");
+                                    setWorld(newWorld);
+                                }}
+                                className="bg-green-900 text-black px-4 py-2 font-bold hover:bg-green-700 rounded flex items-center gap-2"
+                            >
+                                <Home size={16} /> Establish Camp
+                            </button>
+                        )}
+                    </>
                 )}
                 {stage >= 4 && currentView !== "world" && (
                     <button
