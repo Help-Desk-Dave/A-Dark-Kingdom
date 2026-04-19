@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer, Menu } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
+import { usePopulationEngine } from './hooks/usePopulationEngine';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -108,6 +109,8 @@ const App = () => {
     const addLog = (msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
     };
+
+    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY);
 
     // Save State
     useEffect(() => {
@@ -474,22 +477,38 @@ const App = () => {
 
         const isOvercrowded = settlement.resLots < Math.floor(settlement.otherLots / HOUSING_CAPACITY);
 
+        const localPops = pops.filter(p => p.settlementCoords.sx === sx && p.settlementCoords.sy === sy);
+
         return (
             <div className={`grid grid-cols-5 gap-2 w-fit bg-black p-4 border ${isOvercrowded ? 'border-red-600' : 'border-blue-800'}`}>
                 {settlement.grid.map((row, y) => (
-                    row.map((cell, x) => (
-                        <div
-                            key={`${x}-${y}`}
-                            className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
-                            onClick={() => {
-                                if (stage >= 2 && cell === null) {
-                                    setBuildMenuTarget({ x, y });
-                                }
-                            }}
-                        >
-                            {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
-                        </div>
-                    ))
+                    row.map((cell, x) => {
+                        const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
+
+                        return (
+                            <div
+                                key={`${x}-${y}`}
+                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                                onClick={() => {
+                                    if (stage >= 2 && cell === null) {
+                                        setBuildMenuTarget({ x, y });
+                                    }
+                                }}
+                            >
+                                {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
+                                {cellPops.map((p, idx) => (
+                                    <div key={p.id} className="absolute flex flex-col items-center" style={{ bottom: `${2 + idx * 4}px`, right: `${2 + idx * 4}px` }}>
+                                        {p.dialogue && (
+                                            <div className="absolute bottom-full mb-1 text-[10px] bg-white text-black p-1 rounded whitespace-nowrap z-10 font-bold border border-gray-400">
+                                                {p.dialogue}
+                                            </div>
+                                        )}
+                                        <div className="w-2 h-2 bg-yellow-400 rounded-full border border-yellow-700" title={`${p.name} (${p.state})`} />
+                                    </div>
+                                ))}
+                            </div>
+                        );
+                    })
                 ))}
             </div>
         );
