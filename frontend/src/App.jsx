@@ -36,6 +36,7 @@ const App = () => {
     const [huntProgress, setHuntProgress] = useState(0);
 
     const [isHelpingBuild, setIsHelpingBuild] = useState(false);
+    const isRulerBusy = isGatheringSticks || isGatheringTimber || isHunting || isHelpingBuild;
     const [helpBuildProgress, setHelpBuildProgress] = useState(0);
 
     const [timber, setTimber] = useState(() => {
@@ -217,7 +218,7 @@ const App = () => {
 
     const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, handlePopsMove);
     const handleGatherSticks = () => {
-        if (isGatheringSticks) return;
+        if (isRulerBusy) return;
         setIsGatheringSticks(true);
         setGatherProgress(0);
 
@@ -241,7 +242,7 @@ const App = () => {
     };
 
     const handleGatherTimber = () => {
-        if (isGatheringTimber) return;
+        if (isRulerBusy) return;
         setIsGatheringTimber(true);
         setGatherTimberProgress(0);
 
@@ -264,7 +265,7 @@ const App = () => {
     };
 
     const handleHuntRations = () => {
-        if (isHunting) return;
+        if (isRulerBusy) return;
         setIsHunting(true);
         setHuntProgress(0);
 
@@ -287,7 +288,7 @@ const App = () => {
     };
 
     const handleHelpBuild = () => {
-        if (isHelpingBuild || constructionQueue.length === 0) return;
+        if (isRulerBusy || constructionQueue.length === 0) return;
         setIsHelpingBuild(true);
         setHelpBuildProgress(0);
 
@@ -1278,38 +1279,17 @@ const App = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                         <ProgressBar
                             onClick={handleGatherTimber}
-                            disabled={isGatheringTimber}
+                            disabled={isRulerBusy}
                             progress={gatherTimberProgress}
                             label={`Gather Timber (${timber})`}
                         />
                         <ProgressBar
                             onClick={handleHuntRations}
-                            disabled={isHunting}
+                            disabled={isRulerBusy}
                             progress={huntProgress}
                             label={`Hunt Rations (${rations})`}
                         />
-                        <button
-                            onClick={() => {
-                                let amount = 1;
-                                if (vibeMode && Math.random() < 0.1) amount = 2;
-                                setTimber(t => t + amount);
-                                addLog(amount === 2 ? "RAD! Gathered double timber." : "Gathered timber.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Gather Timber ({timber})
-                        </button>
-                        <button
-                            onClick={() => {
-                                let amount = 1;
-                                if (vibeMode && Math.random() < 0.1) amount = 2;
-                                setRations(r => r + amount);
-                                addLog(amount === 2 ? "RAD! Hunted double rations." : "Hunted for rations.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Hunt Rations ({rations})
-                        </button>
+
                         <button
                             onClick={() => {
                                 setTimber(t => t - 10);
@@ -1324,7 +1304,7 @@ const App = () => {
                         </button>
                         <ProgressBar
                             onClick={handleHelpBuild}
-                            disabled={isHelpingBuild || constructionQueue.length === 0}
+                            disabled={isRulerBusy || constructionQueue.length === 0}
                             progress={helpBuildProgress}
                             label={<><Hammer size={16} className="inline mr-2" />Help Build</>}
                         />
@@ -1365,7 +1345,7 @@ const App = () => {
                             {sticks < 10 && (
                                 <ProgressBar
                                     onClick={handleGatherSticks}
-                                    disabled={isGatheringSticks}
+                                    disabled={isRulerBusy}
                                     progress={gatherProgress}
                                     label={`Gather Sticks (${sticks}/10)`}
                                 />
@@ -1390,13 +1370,13 @@ const App = () => {
                             <>
                                 <ProgressBar
                                     onClick={handleGatherTimber}
-                                    disabled={isGatheringTimber}
+                                    disabled={isRulerBusy}
                                     progress={gatherTimberProgress}
                                     label={`Gather Timber (${timber})`}
                                 />
                                 <ProgressBar
                                     onClick={handleHuntRations}
-                                    disabled={isHunting}
+                                    disabled={isRulerBusy}
                                     progress={huntProgress}
                                     label={`Hunt Rations (${rations})`}
                                 />
