@@ -58,13 +58,13 @@ export const SETTLEMENT_NAMES = [
 ];
 
 export const KINGMAKER_BACKGROUNDS = [
-    {"name": "Borderlands Pioneer", "skill": "Nature", "attribute": "Strength", "desc": "You have long lived along the southern border of Brevoy."},
-    {"name": "Brevic Noble", "skill": "Society", "attribute": "Charisma", "desc": "You claim a connection to one of Brevoy's noble families (Garess, Lebeda, Lodovka, Medvyed, Orlovsky, Surtova)."},
-    {"name": "Brevic Outcast", "skill": "Politics", "attribute": "Charisma", "desc": "You have noble blood but no proof, seeking to make a name of your own."},
-    {"name": "Issian Patriot", "skill": "Society", "attribute": "Intelligence", "desc": "You grew up in northern Brevoy, answering the call for heroes."},
-    {"name": "Local Brigand", "skill": "Intimidation", "attribute": "Strength", "desc": "You hail from the lawless reaches and are looking to lie low."},
-    {"name": "Rostlander", "skill": "Athletics", "attribute": "Strength", "desc": "Raised in the south of Brevoy, you come from hardy stock."},
-    {"name": "Sword Scion", "skill": "Warfare", "attribute": "Strength", "desc": "You grew up on tales of the legendary Aldori swordlords."}
+    {"name": "Borderlands Pioneer", "skill": "Nature", "attribute": "Strength", "desc": "You have long lived along the southern border of Brevoy.", "failMod": 0.1},
+    {"name": "Brevic Noble", "skill": "Society", "attribute": "Charisma", "desc": "You claim a connection to one of Brevoy's noble families (Garess, Lebeda, Lodovka, Medvyed, Orlovsky, Surtova).", "failMod": 0.25},
+    {"name": "Brevic Outcast", "skill": "Politics", "attribute": "Charisma", "desc": "You have noble blood but no proof, seeking to make a name of your own.", "failMod": 0.2},
+    {"name": "Issian Patriot", "skill": "Society", "attribute": "Intelligence", "desc": "You grew up in northern Brevoy, answering the call for heroes.", "failMod": 0.15},
+    {"name": "Local Brigand", "skill": "Intimidation", "attribute": "Strength", "desc": "You hail from the lawless reaches and are looking to lie low.", "failMod": 0.15},
+    {"name": "Rostlander", "skill": "Athletics", "attribute": "Strength", "desc": "Raised in the south of Brevoy, you come from hardy stock.", "failMod": 0.1},
+    {"name": "Sword Scion", "skill": "Warfare", "attribute": "Strength", "desc": "You grew up on tales of the legendary Aldori swordlords.", "failMod": 0.15}
 ];
 
 export const STRUCTURES_DB = {

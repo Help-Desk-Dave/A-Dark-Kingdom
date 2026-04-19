@@ -83,6 +83,9 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - **Charter Changes**: Simplified the Stage 3 "Sign the Charter" logic in `frontend/src/App.jsx` to immediately transition to Stage 4 without displaying the Hero Selection prompt again.
 - **Backend Test Suite Alignment**: Adjusted `engine/Engine.py` to match the new flow (initializing `self.pending_hero_selection = True`) and updated `engine/test_engine.py`'s `setUp` blocks by bypassing the hero selection state explicitly (`self.game.pending_hero_selection = False`). This ensures backend unit tests run correctly without getting stalled on the missing CLI input.
 
+## Manual Labor Heaviness & Failure Logic
+*   **What was changed:** Added progressive ASCII art to Stage 0 campfire based on sticks count. Introduced a `ProgressBar` React component. Replaced all instantaneous manual actions (Help Build, Gather Timber, Hunt Rations) with progress bars. Implemented a failure chance (`failMod`) tied to the player's background across both Python and React codebases, with specific log outputs when tasks fail.
+*   **Why it was changed:** To make early game survival actions feel "heavier" and less trivial to click-spam, and to integrate background choice directly into gameplay mechanics early on.
 ## YYYY-MM-DD - Expanded World Scope
 **Changes:**
 - Implemented Pathfinding in `frontend/src/hooks/usePopulationEngine.js` by tracking moving pops and passing them via an `onPopsMove` callback.
