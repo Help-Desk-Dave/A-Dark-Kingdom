@@ -37,3 +37,6 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **What**: Replaced inline grid traversals in `src/App.jsx` with a single `useMemo` hook (`worldStats`) that pre-computes structure counts, population, and swamp claims.
 - **Why**: Prevented redundant O(N*M) grid traversals on every render and during the 5-second simulation tick interval.
 - **Impact**: Significantly reduces computational overhead for React re-renders, preventing UI stutter as the settlement expands.
+## Enhancements by Palette
+
+- Improved UI accessibility for screen readers in `src/App.jsx` by adding `role="log"`, `aria-live="polite"`, and `aria-atomic="false"` to the main event ledger. This ensures that game state updates and dynamically generated simulation events are properly announced to users relying on assistive technologies.
