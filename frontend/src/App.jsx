@@ -104,6 +104,14 @@ const App = () => {
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
 
+    // --- VIBE MODE STATE ---
+    // Secret Dev Tool: Toggled by clicking the Terminal icon 3 times within 2 seconds.
+    const [vibeMode, setVibeMode] = useState(() => {
+        const saved = localStorage.getItem('adk_vibeMode');
+        return saved ? JSON.parse(saved) : false;
+    });
+    const terminalClickTimestamps = useRef([]);
+
     // --- GAME MENU STATE ---
     // Controls the visibility of the absolute positioned dropdown menu in the top right.
     // Toggled by clicking the Menu icon. Defaults to false (hidden).
@@ -118,6 +126,25 @@ const App = () => {
 
     // Ref for log auto-scrolling
     const logEndRef = useRef(null);
+
+    const handleTerminalClick = () => {
+        const now = Date.now();
+        terminalClickTimestamps.current = terminalClickTimestamps.current.filter(t => now - t <= 2000);
+        terminalClickTimestamps.current.push(now);
+
+        if (terminalClickTimestamps.current.length === 3) {
+            setVibeMode(prev => {
+                const newVibe = !prev;
+                if (newVibe) {
+                    addLog("[!] RAD: Vibe Mode Enabled. The Muse is watching.");
+                } else {
+                    addLog("[!] Vibe Mode Disabled.");
+                }
+                return newVibe;
+            });
+            terminalClickTimestamps.current = [];
+        }
+    };
 
     const addLog = (msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
@@ -930,7 +957,14 @@ const App = () => {
                 </div>
             )}
             {stage >= 2 && (
-                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
+                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
+                    <MapIcon /> A Dark Kingdom
+                    <Terminal
+                        size={20}
+                        className="text-gray-600 hover:text-gray-400 cursor-pointer transition-colors ml-2"
+                        onClick={handleTerminalClick}
+                    />
+                </h1>
             )}
 
             {stage >= 2 && (
@@ -997,6 +1031,13 @@ const App = () => {
                     <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
+                    {vibeMode && (
+                        <div className="flex justify-between items-center text-xs text-cyan-400 mt-2 border-t border-cyan-900 pt-2">
+                            <span>Vibe Variance:</span>
+                            <span dangerouslySetInnerHTML={{ __html: '$$V_v = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}{n - 1}$$' }} />
+                        </div>
+                    )}
 
                     {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
                         <>
@@ -1075,8 +1116,10 @@ const App = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                         <button
                             onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setTimber(t => t + amount);
+                                addLog(amount === 2 ? "RAD! Gathered double timber." : "Gathered timber.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
@@ -1084,8 +1127,10 @@ const App = () => {
                         </button>
                         <button
                             onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setRations(r => r + amount);
+                                addLog(amount === 2 ? "RAD! Hunted double rations." : "Hunted for rations.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
