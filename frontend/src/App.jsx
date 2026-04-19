@@ -105,10 +105,6 @@ const App = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
-    const [showHeroSelection, setShowHeroSelection] = useState(() => {
-        // Automatically show the hero selection screen if there is no ruler saved
-        return !localStorage.getItem('adk_ruler');
-    });
     const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
@@ -159,7 +155,6 @@ const App = () => {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
     }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, ruler, constructionQueue]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -177,68 +172,6 @@ const App = () => {
 
         return () => clearInterval(interval);
     }, [stage, showHeroSelection]);
-
-    // Construction Loop (every 1 second)
-    useEffect(() => {
-        if (stage < 2 || showHeroSelection) return;
-
-        const interval = setInterval(() => {
-            setConstructionQueue(prevQueue => {
-                if (prevQueue.length === 0) return prevQueue;
-                return prevQueue.map(job => ({ ...job, progress: job.progress + 1 }));
-            });
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [stage, showHeroSelection]);
-
-    // Construction Completion Handler
-    useEffect(() => {
-        if (constructionQueue.length === 0) return;
-
-        const completedJobs = constructionQueue.filter(job => job.progress >= job.requiredProgress);
-
-        if (completedJobs.length > 0) {
-            let newWorld = [...world];
-            let shouldUpdateWorld = false;
-            let housesBuilt = false;
-
-            completedJobs.forEach(job => {
-                const { sx, sy, structureName, positionsToFill } = job;
-                const settlement = newWorld[sy][sx].settlement;
-
-                if (settlement) {
-                    shouldUpdateWorld = true;
-                    const structure = STRUCTURES_DB[structureName];
-                    const isRes = structure.traits.includes("residential");
-
-                    positionsToFill.forEach(([px, py]) => {
-                        settlement.grid[py][px] = structureName;
-                    });
-
-                    if (isRes) settlement.resLots += structure.lots;
-                    else settlement.otherLots += structure.lots;
-
-                    addLog(`[+] Construction complete: ${structureName} at ${job.x},${job.y}.`);
-
-                    if (structureName === "houses") {
-                        housesBuilt = true;
-                    }
-                }
-            });
-
-            if (shouldUpdateWorld) {
-                setWorld(newWorld);
-            }
-
-            if (stage === 2 && housesBuilt) {
-                setStage(3);
-                addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
-            }
-
-            setConstructionQueue(prevQueue => prevQueue.filter(job => job.progress < job.requiredProgress));
-        }
-    }, [constructionQueue, world, stage]);
 
     // Pre-compute expensive world stats in one pass
     // This avoids O(N*M) nested loops on every re-render and tick
@@ -562,9 +495,9 @@ const App = () => {
 
             setBp(prev => prev - cost);
 
+            const isRes = structure.traits.includes("residential");
+
             const newJob = {
-            // Queue the construction instead of instantly building
-            setConstructionQueue(prev => [...prev, {
                 id: Date.now(),
                 structureName,
                 x,
@@ -573,18 +506,15 @@ const App = () => {
                 sy,
                 progress: 0,
                 requiredProgress: cost * 2,
-                positionsToFill
-            };
-
-            setConstructionQueue(prev => [...prev, newJob]);
-            addLog(`[*] Started construction of ${structureName} at ${x},${y}.`);
+                positionsToFill,
                 active: false,
                 isRes,
-                lotsNeeded,
-                positionsToFill
-            }]);
+                lotsNeeded
+            };
 
-            addLog(`[+] Construction started: ${structureName} at ${x},${y}.`);
+            // Queue the construction instead of instantly building
+            setConstructionQueue(prev => [...prev, newJob]);
+            addLog(`[*] Started construction of ${structureName} at ${x},${y}.`);
         });
     };
 
@@ -697,12 +627,9 @@ const App = () => {
                         return (
                             <div
                                 key={`${x}-${y}`}
-                                className={`w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
-                                onClick={() => {
-                                    if (stage >= 2 && cell === null && !job) {
                                 className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center bg-gray-900 text-base cursor-pointer ${FLAVORS[flavor].hover}`}
                                 onClick={() => {
-                                    if (stage >= 2 && cell === null) {
+                                    if (stage >= 2 && cell === null && !job) {
                                         setBuildMenuTarget({ x, y });
                                     }
                                 }}
@@ -1131,8 +1058,6 @@ const App = () => {
             {/* Controls */}
             <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out mb-8">
                 {stage === 3 && !showHeroSelection && (() => {
-            <div className="w-full max-w-7xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
-                {stage === 3 && (() => {
                     let pop = 0;
                     world.forEach(row => {
                         row.forEach(hex => {
@@ -1144,7 +1069,6 @@ const App = () => {
                             <button
                                 onClick={() => {
                                     setStage(4);
-                                    addLog("[+] The Charter has been signed. The World Map is now open.");
                                     addLog("[+] The Charter is signed. The World Map is now open.");
                                 }}
                                 className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
