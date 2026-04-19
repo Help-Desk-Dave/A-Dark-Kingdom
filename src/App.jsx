@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS } from './library';
 
@@ -110,6 +110,40 @@ const App = () => {
     return () => clearInterval(interval);
   }, [stage]);
 
+  // Pre-compute expensive world stats in one pass
+  // This avoids O(N*M) nested loops on every re-render and tick
+  const worldStats = useMemo(() => {
+      const stats = {
+          structureCounts: {},
+          swampClaimed: false,
+          totalPop: 0
+      };
+
+      if (stage < 2) return stats;
+
+      world.forEach(row => {
+          row.forEach(hex => {
+              if (hex.status === 2) {
+                  if (hex.terrain.toLowerCase() === "swamp") {
+                      stats.swampClaimed = true;
+                  }
+                  if (hex.settlement) {
+                      stats.totalPop += hex.settlement.resLots * HOUSING_CAPACITY;
+                      hex.settlement.grid.forEach(sRow => {
+                          sRow.forEach(cell => {
+                              if (cell) {
+                                  const name = cell.toLowerCase();
+                                  stats.structureCounts[name] = (stats.structureCounts[name] || 0) + 1;
+                              }
+                          });
+                      });
+                  }
+              }
+          });
+      });
+      return stats;
+  }, [world, stage]);
+
   // Prominent Citizens Observer
   const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
 
@@ -120,26 +154,9 @@ const App = () => {
         let newSpawned = new Set(spawnedCitizens);
         let spawnedAny = false;
 
-        // Pre-compute all structure counts in one pass to avoid O(N*M) nested loops per trigger
-        const structureCounts = {};
-        world.forEach(row => {
-            row.forEach(hex => {
-                if (hex.status === 2 && hex.settlement) {
-                    hex.settlement.grid.forEach(sRow => {
-                        sRow.forEach(cell => {
-                            if (cell) {
-                                const name = cell.toLowerCase();
-                                structureCounts[name] = (structureCounts[name] || 0) + 1;
-                            }
-                        });
-                    });
-                }
-            });
-        });
-
         const getStructureCount = (name) => {
             const targetStructure = name.toLowerCase();
-            const count = structureCounts[targetStructure] || 0;
+            const count = worldStats.structureCounts[targetStructure] || 0;
             const lots = STRUCTURES_DB[targetStructure] ? STRUCTURES_DB[targetStructure].lots : 1;
             return Math.floor(count / lots);
         };
@@ -167,7 +184,7 @@ const App = () => {
             } else if (trigger === "Kingdom Level 17") {
                 conditionsMet = false; // No level concept yet, ignoring
             } else if (trigger === "Claim a swamp hex") {
-                conditionsMet = world.some(row => row.some(hex => hex.status === 2 && hex.terrain.toLowerCase() === "swamp"));
+                conditionsMet = worldStats.swampClaimed;
             } else if (trigger === "Random Event") {
                 conditionsMet = Math.random() < 0.05;
             }
@@ -185,7 +202,7 @@ const App = () => {
     };
 
     checkProminentCitizens();
-  }, [tickCount, stage, world, spawnedCitizens]);
+  }, [tickCount, stage, worldStats, spawnedCitizens]);
 
   // Handle Tick Side Effects
   useEffect(() => {
@@ -666,30 +683,17 @@ const App = () => {
 
         {/* Controls */}
         <div className="w-full max-w-5xl flex justify-center gap-4 transition-all duration-1000 ease-in-out">
-            {stage === 3 && (() => {
-                let pop = 0;
-                world.forEach(row => {
-                    row.forEach(hex => {
-                        if (hex.status === 2 && hex.settlement) {
-                            pop += hex.settlement.resLots * HOUSING_CAPACITY;
-                        }
-                    });
-                });
-                if (pop >= 5) {
-                    return (
-                        <button
-                            onClick={() => {
-                                setStage(4);
-                                addLog("[+] The Charter has been signed. The World Map is now open.");
-                            }}
-                            className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
-                        >
-                            <User size={16} /> Sign the Charter
-                        </button>
-                    );
-                }
-                return null;
-            })()}
+            {stage === 3 && worldStats.totalPop >= 5 && (
+                <button
+                    onClick={() => {
+                        setStage(4);
+                        addLog("[+] The Charter has been signed. The World Map is now open.");
+                    }}
+                    className="bg-yellow-900 text-white px-4 py-2 font-bold hover:bg-yellow-700 rounded flex items-center gap-2 border border-yellow-500"
+                >
+                    <User size={16} /> Sign the Charter
+                </button>
+            )}
             {stage === 1 && (
                 <button
                     onClick={() => {

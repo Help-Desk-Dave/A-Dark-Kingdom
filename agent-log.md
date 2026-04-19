@@ -32,3 +32,8 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 
 **Learning:** Added ARIA labels to the close buttons in the custom modal interfaces.
 **Action:** Always ensure interactive elements with no text content have proper accessible names.
+
+## Optimization: Pre-compute grid scans in App.jsx (Bolt)
+- **What**: Replaced inline grid traversals in `src/App.jsx` with a single `useMemo` hook (`worldStats`) that pre-computes structure counts, population, and swamp claims.
+- **Why**: Prevented redundant O(N*M) grid traversals on every render and during the 5-second simulation tick interval.
+- **Impact**: Significantly reduces computational overhead for React re-renders, preventing UI stutter as the settlement expands.
