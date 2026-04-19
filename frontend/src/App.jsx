@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer } from 'lucide-react';
+import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer, Menu } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
 
 // --- REACT COMPONENT: APP ---
@@ -74,6 +74,11 @@ const App = () => {
     const [inspectorPop, setInspectorPop] = useState(null);
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
+
+    // --- GAME MENU STATE ---
+    // Controls the visibility of the absolute positioned dropdown menu in the top right.
+    // Toggled by clicking the Menu icon. Defaults to false (hidden).
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
     const [showHeroSelection, setShowHeroSelection] = useState(false);
@@ -584,11 +589,93 @@ const App = () => {
         );
     };
 
+    // --- RENDER GAME MENU ---
+    // This function creates a fixed/absolute positioned overlay in the top right corner.
+    // It provides system-level controls to the user, such as restarting the game or
+    // accessing debug shortcuts for rapid testing.
+    const renderGameMenu = () => {
+        return (
+            // Position the wrapper in the absolute top right corner. z-50 ensures it floats above the main UI.
+            <div className="absolute top-4 right-4 z-50">
+                {/*
+                  Menu Toggle Button
+                  Clicking this button toggles the boolean `isMenuOpen` state.
+                  It displays the imported `Menu` icon from lucide-react.
+                */}
+                <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="p-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-white transition-colors"
+                    aria-label="Toggle Game Menu"
+                >
+                    <Menu size={24} />
+                </button>
+
+                {/*
+                  Conditional Dropdown
+                  If `isMenuOpen` is true, render the dropdown menu containing the options.
+                */}
+                {isMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-600 rounded shadow-xl flex flex-col p-2 gap-2">
+                        {/*
+                          Option 1: Restart Game
+                          This button iterates through all items in localStorage.
+                          Any key starting with the prefix 'adk_' is removed to clear the kingdom simulator's saved state.
+                          After clearing, it calls window.location.reload() to forcefully refresh the application
+                          and re-initialize all default states.
+                        */}
+                        <button
+                            onClick={() => {
+                                // Iterate backwards or gather keys first to safely remove while iterating.
+                                const keysToRemove = [];
+                                for (let i = 0; i < localStorage.length; i++) {
+                                    const key = localStorage.key(i);
+                                    if (key && key.startsWith('adk_')) {
+                                        keysToRemove.push(key);
+                                    }
+                                }
+                                // Remove all gathered 'adk_' prefixed keys.
+                                keysToRemove.forEach(k => localStorage.removeItem(k));
+                                // Reload the window to guarantee a clean slate.
+                                window.location.reload();
+                            }}
+                            className="w-full text-left p-2 hover:bg-red-900 text-red-400 font-bold border border-transparent hover:border-red-500 rounded transition-colors"
+                        >
+                            Restart Game
+                        </button>
+
+                        {/*
+                          Option 2: Debug - Skip to Hero Selection
+                          This debug shortcut fast-forwards the simulation for testing late-game mechanics.
+                          It forces the `stage` to 3, directly shows the Hero Selection screen,
+                          closes the menu to clean up the UI, and logs the debug action.
+                        */}
+                        <button
+                            onClick={() => {
+                                // Force stage to 3, skipping the early game sequence.
+                                setStage(3);
+                                // Trigger the hero selection overlay, bypassing the normal population trigger.
+                                setShowHeroSelection(true);
+                                // Close the game menu after selection to keep the view unobstructed.
+                                setIsMenuOpen(false);
+                                // Inform the user via the in-game event ledger that a debug action occurred.
+                                addLog("[*] DEBUG: Fast-forwarded to Hero Selection via Game Menu.");
+                            }}
+                            className="w-full text-left p-2 hover:bg-yellow-900 text-yellow-400 font-bold border border-transparent hover:border-yellow-500 rounded transition-colors"
+                        >
+                            Debug: Skip to Hero Selection
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // --- RENDER (JSX) ---
     // The main layout uses Tailwind CSS for a dashboard-style interface.
     // Conditional rendering blocks elements based on the current `stage`.
     return (
         <div className={`min-h-screen bg-gray-900 ${FLAVORS[flavor].color} p-4 font-mono flex flex-col items-center relative`}>
+            {renderGameMenu()}
             {renderHeroSelection()}
             {renderBuildMenu()}
             {treasurerWarning && (
