@@ -18,7 +18,6 @@ import Engine
 class TestEnginePrologue(unittest.TestCase):
     def setUp(self):
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        self.game.pending_hero_selection = False
 
     def test_stage_0_to_1_transition(self):
         self.assertEqual(self.game.stage, 0)
@@ -83,7 +82,6 @@ class TestEngineReconnoiter(unittest.TestCase):
         # Initialize Kingdom with a fixed seed if possible,
         # but here we just want to test logic.
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        self.game.pending_hero_selection = False
         self.game.stage = 3 # Bypass stage progression for recon checks
         self.game.bp = 60 # Ensure enough BP for tests
 
@@ -249,7 +247,6 @@ class TestStructures(unittest.TestCase):
 class TestEngineCitizens(unittest.TestCase):
     def setUp(self):
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
-        self.game.pending_hero_selection = False
 
     def test_monthly_tick_increments_turn(self):
         initial_turn = self.game.turn
