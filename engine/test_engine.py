@@ -15,6 +15,67 @@ import Engine
 
 # --- TEST SUITE: WORLD MAP EXPLORATION ---
 # Verifies that the 'reconnoiter' command correctly maps hexes and deducts BP.
+class TestEnginePrologue(unittest.TestCase):
+    def setUp(self):
+        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+
+    def test_stage_0_to_1_transition(self):
+        self.assertEqual(self.game.stage, 0)
+        self.game.sticks = 10
+
+        # Simulate building fire logic
+        with self.game.lock:
+            self.game.stage = 1
+            self.game.sticks -= 10
+
+        self.assertEqual(self.game.stage, 1)
+        self.assertEqual(self.game.sticks, 0)
+
+    def test_stage_1_tick_finds_outcast(self):
+        self.game.stage = 1
+        # Force random to return < 0.20
+        with patch('random.random', return_value=0.1):
+            self.game.tick()
+        self.assertEqual(self.game.stage, 2)
+        self.assertEqual(len(self.game.citizens), 1)
+        self.assertEqual(self.game.citizens[0].name, "Brevic Outcast")
+
+    def test_stage_2_automation(self):
+        self.game.stage = 2
+        self.game.woodcutters = 2
+        self.game.trappers = 1
+        self.game.citizens.append(Engine.Pop("Outcast"))
+
+        initial_timber = self.game.timber
+        initial_rations = self.game.rations
+
+        # 1 tick - produce but no consumption
+        self.game.tick()
+        self.assertEqual(self.game.timber, initial_timber + 2)
+        self.assertEqual(self.game.rations, initial_rations + 1)
+
+        # 2nd tick - produce and consume
+        self.game.tick()
+        self.assertEqual(self.game.timber, initial_timber + 4)
+        self.assertEqual(self.game.rations, initial_rations + 2 - 1)
+
+    def test_stage_3_charter_requirement(self):
+        self.game.stage = 3
+        self.game.timber = 100
+        self.game.rations = 50
+
+        # Mock structures
+        with patch.object(self.game, 'count_structures', side_effect=lambda name: 3 if name == 'pioneer tent' else (1 if name == 'supply wagon' else 0)):
+            self.assertTrue(self.game.count_structures("pioneer tent") >= 3)
+            self.assertTrue(self.game.count_structures("supply wagon") >= 1)
+
+            # Simulate map crafting
+            self.game.timber -= 100
+            self.game.rations -= 50
+            self.game.scouting_map_crafted = True
+
+        self.assertTrue(self.game.scouting_map_crafted)
+
 class TestEngineReconnoiter(unittest.TestCase):
     def setUp(self):
         # Initialize Kingdom with a fixed seed if possible,

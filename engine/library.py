@@ -132,7 +132,9 @@ STRUCTURES_DB = {
     "shrine": {"lots": 1, "cost_rp": 8, "traits": ["building"], "desc": "A small building devoted to a deity or faith."},
     "tavern": {"lots": 1, "cost_rp": 24, "traits": ["building"], "desc": "A respectable establishment for entertainment, eating, and drinking."},
     "tenement": {"lots": 1, "cost_rp": 1, "traits": ["building", "residential"], "desc": "Hastily built shantytowns. Cheap, but increases a Ruin."},
-    "watchtower": {"lots": 1, "cost_rp": 12, "traits": ["building"], "desc": "A guard post that grants advance warning to events."}
+    "watchtower": {"lots": 1, "cost_rp": 12, "traits": ["building"], "desc": "A guard post that grants advance warning to events."},
+    "pioneer tent": {"lots": 1, "cost_timber": 20, "traits": ["building", "residential"], "desc": "A basic shelter for early survival. Increases max population."},
+    "supply wagon": {"lots": 1, "cost_timber": 50, "traits": ["building", "storage"], "desc": "A reinforced wagon for storing large quantities of resources."}
 }
 
 # --- RANDOM EVENTS ---
