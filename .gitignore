@@ -1,3 +1,5 @@
 node_modules/
 __pycache__/
 dist/
+dev_server.log
+dev.log
