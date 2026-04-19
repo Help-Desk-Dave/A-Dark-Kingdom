@@ -946,9 +946,10 @@ const App = () => {
                 <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
             )}
 
-            <div className={`w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 hidden'}`}>
+            {stage >= 2 && (
+            <div className="w-full max-w-7xl flex flex-col md:flex-row gap-8 mb-4 transition-all duration-1000 ease-in-out">
                 {/* Map Area */}
-                <div className={`flex-grow bg-black border ${FLAVORS[flavor].border} p-6 rounded flex flex-col items-center transition-all duration-1000 ease-in-out ${stage >= 2 ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-full hidden'} overflow-x-auto`}>
+                <div className={`flex-grow bg-black border ${FLAVORS[flavor].border} p-6 rounded flex flex-col items-center transition-all duration-1000 ease-in-out overflow-x-auto`}>
                     <h2 className="text-xl font-bold mb-4">
                         {currentView === "world" ? "World Map" : `Settlement at ${currentView}`}
                         {currentView !== "world" && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.resLots < Math.floor(world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.otherLots / HOUSING_CAPACITY) && (
@@ -971,7 +972,7 @@ const App = () => {
                 </div>
 
                 {/* Ledger Area */}
-                <div className={`w-full md:w-64 flex-shrink-0 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${stage >= 3 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full hidden'} ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
+                <div className={`w-full md:w-64 flex-shrink-0 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
                     <h2 className={`text-xl font-bold border-b ${FLAVORS[flavor].border} pb-2`}>Kingdom Ledger</h2>
                     {stage >= 4 && (
                         <div className="flex flex-col gap-1 mb-2">
@@ -1000,7 +1001,7 @@ const App = () => {
                         </div>
                     )}
                     <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
-                    <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 4 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
@@ -1064,14 +1065,16 @@ const App = () => {
                 )}
 
             </div>
+            )}
 
-            {/* Log Area */}
-            <div className={`w-full max-w-7xl bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
-                {logs.map((log, i) => (
-                    <div key={i} className="mb-1">{log}</div>
-                ))}
-                <div ref={logEndRef} />
-            </div>
+            <div className={stage < 2 ? "flex-1 flex flex-col justify-center items-center w-full max-w-7xl" : "w-full flex flex-col items-center max-w-7xl"}>
+                {/* Log Area */}
+                <div className={`w-full bg-black border ${FLAVORS[flavor].border} p-4 rounded h-48 overflow-y-auto mb-4 transition-all duration-1000 ease-in-out`}>
+                    {logs.map((log, i) => (
+                        <div key={i} className="mb-1">{log}</div>
+                    ))}
+                    <div ref={logEndRef} />
+                </div>
 
             {/* Ruler's Actions (Stage 2+) */}
             {stage >= 2 && (
@@ -1157,17 +1160,19 @@ const App = () => {
                 })()}
                 {stage === 0 && (
                     <>
-                        <button
-                            onClick={handleGatherSticks}
-                            disabled={isGatheringSticks}
-                            className={`bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600 relative overflow-hidden ${isGatheringSticks ? 'opacity-75 cursor-not-allowed' : ''}`}
-                        >
-                            <div
-                                className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-75"
-                                style={{ width: `${gatherProgress}%` }}
-                            />
-                            <span className="relative z-10">Gather Sticks ({sticks}/10)</span>
-                        </button>
+                        {sticks < 10 && (
+                            <button
+                                onClick={handleGatherSticks}
+                                disabled={isGatheringSticks}
+                                className={`bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600 relative overflow-hidden ${isGatheringSticks ? 'opacity-75 cursor-not-allowed' : ''}`}
+                            >
+                                <div
+                                    className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-75"
+                                    style={{ width: `${gatherProgress}%` }}
+                                />
+                                <span className="relative z-10">Gather Sticks ({sticks}/10)</span>
+                            </button>
+                        )}
                         {sticks >= 10 && (
                             <button
                                 onClick={() => {
@@ -1183,25 +1188,28 @@ const App = () => {
                 )}
                 {stage === 1 && (
                     <>
-                        <button
-                            onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Gather Timber ({timber})
-                        </button>
-                        <button
-                            onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Hunt Rations ({rations})
-                        </button>
-                        {timber >= 5 && rations >= 5 && (
+                        {timber < 5 || rations < 5 ? (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setTimber(t => t + 1);
+                                        addLog("Gathered timber.");
+                                    }}
+                                    className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                                >
+                                    Gather Timber ({timber})
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setRations(r => r + 1);
+                                        addLog("Hunted for rations.");
+                                    }}
+                                    className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                                >
+                                    Hunt Rations ({rations})
+                                </button>
+                            </>
+                        ) : (
                             <button
                                 onClick={() => {
                                     setStage(2);
@@ -1227,6 +1235,7 @@ const App = () => {
                         <Compass size={16} /> Return to World Map
                     </button>
                 )}
+                </div>
             </div>
         </div>
     );

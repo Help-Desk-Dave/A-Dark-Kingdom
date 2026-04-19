@@ -61,6 +61,14 @@ Added line-by-line comments to Engine.py, library.py, src/App.jsx, src/main.jsx,
 - **Python Engine:** Moved Python core logic (`Engine.py`, `library.py`, `test_engine.py`) to `/engine`.
 - **Documentation:** Moved project documentation (`Blueprint.md`, `AGENTS.md`, `KingMakerRules.md`, `agent-log.md`) to `/docs`.
 - **Updates:** Updated `docs/AGENTS.md` to reflect these path changes, and added this entry to `docs/agent-log.md`.
+## Completed UI Prologue Alignment
+
+- Fixed Control Stacking: Enforced strict mutual exclusivity within Stage 0 and Stage 1 for intermediate actions. 'Gather Sticks' strictly hides when 'Build Fire' unlocks. 'Gather Timber' and 'Hunt Rations' completely hide when 'Establish Camp' unlocks, eliminating stacked visual artifacts.
+- Hid Dashboard Panels: Added a strict `stage >= 2 && (...)` conditional render to entirely remove the World Map and Ledger from the DOM during the prologue, removing hacky opacity toggles.
+- Revealed BP Earlier: Made BP explicitly visible in the Ledger starting at Stage 2 so the player can manage resources when starting out.
+- Centered the Prologue: Dynamically wrapped the Event Log and control sections in a flex container that vertically centers the interface when `stage < 2`, conveying a clean and intentional minimalist aesthetic.
+
+Successfully built frontend and verified visually with Playwright.
 2024-05-18 - Implemented Ruler Actions and Construction Queue in React UI
 ## $(date +%Y-%m-%d): Refactor Building Construction Loop in App.jsx
 - **Feature**: Buildings no longer appear instantly upon purchase. Implemented a `constructionQueue` to track active building projects.
