@@ -45,10 +45,15 @@ const App = () => {
         return saved ? parseInt(saved) : 60;
     });
 
-    // `tickCount`: Tracks elapsed 'months'. Every 12 ticks triggers an Annual Upkeep.
-    const [tickCount, setTickCount] = useState(() => {
-        const saved = localStorage.getItem('adk_tickCount');
-        return saved ? parseInt(saved) : 0;
+    const [stone, setStone] = useState(() => {
+        const saved = localStorage.getItem('adk_stone');
+        return saved !== null ? parseInt(saved) : 0;
+    });
+
+    // `gameTime`: Tracks elapsed time in days, months, years, and hours.
+    const [gameTime, setGameTime] = useState(() => {
+        const saved = localStorage.getItem('adk_gameTime');
+        return saved ? JSON.parse(saved) : { day: 1, month: 1, year: 4710, hour: 0 };
     });
 
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
@@ -99,6 +104,14 @@ const App = () => {
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
 
+    // --- VIBE MODE STATE ---
+    // Secret Dev Tool: Toggled by clicking the Terminal icon 3 times within 2 seconds.
+    const [vibeMode, setVibeMode] = useState(() => {
+        const saved = localStorage.getItem('adk_vibeMode');
+        return saved ? JSON.parse(saved) : false;
+    });
+    const terminalClickTimestamps = useRef([]);
+
     // --- GAME MENU STATE ---
     // Controls the visibility of the absolute positioned dropdown menu in the top right.
     // Toggled by clicking the Menu icon. Defaults to false (hidden).
@@ -115,6 +128,26 @@ const App = () => {
     const logEndRef = useRef(null);
 
     const addLog = React.useCallback((msg) => {
+    const handleTerminalClick = () => {
+        const now = Date.now();
+        terminalClickTimestamps.current = terminalClickTimestamps.current.filter(t => now - t <= 2000);
+        terminalClickTimestamps.current.push(now);
+
+        if (terminalClickTimestamps.current.length === 3) {
+            setVibeMode(prev => {
+                const newVibe = !prev;
+                if (newVibe) {
+                    addLog("[!] RAD: Vibe Mode Enabled. The Muse is watching.");
+                } else {
+                    addLog("[!] Vibe Mode Disabled.");
+                }
+                return newVibe;
+            });
+            terminalClickTimestamps.current = [];
+        }
+    };
+
+    const addLog = (msg) => {
         setLogs(prev => [...prev.slice(-19), msg]);
     }, []);
 
@@ -146,15 +179,16 @@ const App = () => {
         localStorage.setItem('adk_rations', rations);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
+        localStorage.setItem('adk_stone', stone);
         localStorage.setItem('adk_unrest', unrest);
         localStorage.setItem('adk_xp', xp);
-        localStorage.setItem('adk_tickCount', tickCount);
+        localStorage.setItem('adk_gameTime', JSON.stringify(gameTime));
         localStorage.setItem('adk_world', JSON.stringify(world));
         localStorage.setItem('adk_constructionQueue', JSON.stringify(constructionQueue));
         if (ruler) {
             localStorage.setItem('adk_ruler', JSON.stringify(ruler));
         }
-    }, [stage, sticks, timber, rations, logs, bp, unrest, xp, tickCount, world, constructionQueue, ruler]);
+    }, [stage, sticks, timber, rations, logs, bp, stone, unrest, xp, gameTime, world, constructionQueue, ruler]);
 
     // Simulation Advisors
     const [advisors, setAdvisors] = useState({
@@ -162,13 +196,29 @@ const App = () => {
         General: { name: "Amiri", attribute: 14 }
     });
 
-    // Background Tick (every 5 seconds)
+    // Background Tick (every 1 second = 1 hour)
     useEffect(() => {
         if (stage < 3 || showHeroSelection) return;
 
         const interval = setInterval(() => {
-            setTickCount(prevTick => prevTick + 1);
-        }, 5000);
+            setGameTime(prev => {
+                let { day, month, year, hour } = prev;
+                hour += 1;
+                if (hour >= 24) {
+                    hour = 0;
+                    day += 1;
+                    if (day > 30) {
+                        day = 1;
+                        month += 1;
+                        if (month > 12) {
+                            month = 1;
+                            year += 1;
+                        }
+                    }
+                }
+                return { day, month, year, hour };
+            });
+        }, 1000);
 
         return () => clearInterval(interval);
     }, [stage, showHeroSelection]);
@@ -332,37 +382,61 @@ const App = () => {
         };
 
         checkProminentCitizens();
-    }, [tickCount, stage, worldStats, spawnedCitizens]);
+    }, [gameTime.hour, stage, worldStats, spawnedCitizens]);
 
-    // Handle Tick Side Effects
+    // Handle Tick Side Effects (Every Day and Year)
     useEffect(() => {
-        if (stage < 3 || tickCount === 0) return;
+        if (stage < 3) return;
 
-        let treasurerBonus = 0;
-        if (advisors.Treasurer) {
-            treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
-        }
-
-        setBp(currentBp => {
-            let newBp = currentBp + treasurerBonus;
-
-            if (tickCount % 12 === 0) {
-                newBp -= ANNUAL_UPKEEP;
+        if (gameTime.hour === 0) {
+            let treasurerBonus = 0;
+            if (advisors.Treasurer) {
+                treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
             }
 
-            return newBp;
-        });
+            // Daily Production Calculation
+            let dailyTimber = 0;
+            let dailyRations = 0;
+            let dailyStone = 0;
 
-        if (tickCount % 12 === 0) {
-            addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
-            const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
-            if (expectedBp < 0) {
-                setUnrest(u => u + 1);
-                addLog("[!] Debt causes unrest!");
+            // worldStats.structureCounts counts cells, so we divide by lots to get structure count.
+            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+                const structData = STRUCTURES_DB[structName];
+                if (structData && structData.production) {
+                    const actualCount = Math.floor(cellCount / structData.lots);
+                    if (structData.production.timber) dailyTimber += structData.production.timber * actualCount;
+                    if (structData.production.rations) dailyRations += structData.production.rations * actualCount;
+                    if (structData.production.stone) dailyStone += structData.production.stone * actualCount;
+                }
+            });
+
+            if (dailyTimber > 0) setTimber(t => t + dailyTimber);
+            if (dailyRations > 0) setRations(r => r + dailyRations);
+            if (dailyStone > 0) setStone(s => s + dailyStone);
+
+            if (dailyTimber > 0 || dailyRations > 0 || dailyStone > 0) {
+                addLog(`[+] Daily Yield: +${dailyTimber} Timber, +${dailyRations} Rations, +${dailyStone} Stone`);
+            }
+
+            if (gameTime.day === 1) {
+                // Monthly BP bonus from treasurer
+                setBp(currentBp => currentBp + treasurerBonus);
+            }
+
+            if (gameTime.day === 1 && gameTime.month === 1 && gameTime.year > 4710) {
+                // Annual Upkeep
+                setBp(currentBp => currentBp - ANNUAL_UPKEEP);
+                addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
+
+                const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
+                if (expectedBp < 0) {
+                    setUnrest(u => u + 1);
+                    addLog("[!] Debt causes unrest!");
+                }
             }
         }
 
-    }, [tickCount]);
+    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]);
 
     const [treasurerWarning, setTreasurerWarning] = useState(null);
 
@@ -451,9 +525,23 @@ const App = () => {
             return;
         }
 
-        const cost = structure.cost_rp;
+        const cost_timber = structure.cost_timber || 0;
+        const cost_rations = structure.cost_rations || 0;
+        const cost_stone = structure.cost_stone || 0;
 
-        handleAction(cost, structureName, () => {
+        if (timber < cost_timber || rations < cost_rations || stone < cost_stone) {
+            addLog(`[-] Cannot afford ${structureName}. Need: ${cost_timber} Timber, ${cost_rations} Rations, ${cost_stone} Stone.`);
+            return;
+        }
+
+        // Action handles the BP cost. If there are no BP costs for structures anymore, we don't pass cost.
+        // Wait, the prompt says "Structures in STRUCTURES_DB should now cost timber, rations, and a new variable stone."
+        // We will deduct the materials here.
+        handleAction(0, structureName, () => {
+            setTimber(t => t - cost_timber);
+            setRations(r => r - cost_rations);
+            setStone(s => s - cost_stone);
+
             const lotsNeeded = structure.lots;
             let positionsToFill = [];
 
@@ -755,7 +843,7 @@ const App = () => {
                                                 }}
                                                 className="bg-green-900 hover:bg-green-700 text-white px-3 py-1 font-bold border border-green-500 whitespace-nowrap ml-4"
                                             >
-                                                {struct.cost_rp} BP
+                                                Build
                                             </button>
                                         </div>
                                     ))}
@@ -872,7 +960,14 @@ const App = () => {
                 </div>
             )}
             {stage >= 2 && (
-                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2"><MapIcon /> A Dark Kingdom</h1>
+                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
+                    <MapIcon /> A Dark Kingdom
+                    <Terminal
+                        size={20}
+                        className="text-gray-600 hover:text-gray-400 cursor-pointer transition-colors ml-2"
+                        onClick={handleTerminalClick}
+                    />
+                </h1>
             )}
 
             {stage >= 2 && (
@@ -930,12 +1025,22 @@ const App = () => {
                         </div>
                     )}
                     <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
-                    <div className="flex justify-between"><span>BP:</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Time:</span> <span>{stage >= 4 ? `Day ${gameTime.day}, Month ${gameTime.month}, Year ${gameTime.year} - ${gameTime.hour}:00` : "???"}</span></div>
+                    <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
+                    <div className="flex justify-between"><span>BP (Influence):</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
+                    <div className="flex justify-between"><span>Timber:</span> <span>{stage >= 2 ? timber : "???"}</span></div>
+                    <div className="flex justify-between"><span>Rations:</span> <span>{stage >= 2 ? rations : "???"}</span></div>
+                    <div className="flex justify-between"><span>Stone:</span> <span>{stage >= 2 ? stone : "???"}</span></div>
+                    <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
                     <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
                     <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
                     <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
-                    <div className="flex justify-between"><span>Time:</span> <span>{stage >= 4 ? `Day ${gameTime?.day} ${String(gameTime?.hour).padStart(2, '0')}:00` : "???"}</span></div>
-                    <div className="flex justify-between"><span>Pop:</span> <span>{stage >= 4 ? totalPop : "???"}</span></div>
+                    {vibeMode && (
+                        <div className="flex justify-between items-center text-xs text-cyan-400 mt-2 border-t border-cyan-900 pt-2">
+                            <span>Vibe Variance:</span>
+                            <span dangerouslySetInnerHTML={{ __html: '$$V_v = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}{n - 1}$$' }} />
+                        </div>
+                    )}
 
                     {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
                         <>
@@ -1014,8 +1119,10 @@ const App = () => {
                     <div className="flex flex-wrap justify-center gap-4">
                         <button
                             onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setTimber(t => t + amount);
+                                addLog(amount === 2 ? "RAD! Gathered double timber." : "Gathered timber.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >
@@ -1023,8 +1130,10 @@ const App = () => {
                         </button>
                         <button
                             onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
+                                let amount = 1;
+                                if (vibeMode && Math.random() < 0.1) amount = 2;
+                                setRations(r => r + amount);
+                                addLog(amount === 2 ? "RAD! Hunted double rations." : "Hunted for rations.");
                             }}
                             className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
                         >

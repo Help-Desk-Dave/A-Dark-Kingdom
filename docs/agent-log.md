@@ -92,3 +92,7 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
     *   Updated `App.jsx` to pass `unrest` and `addLog` to the population engine.
     *   Wrapped `addLog` in `React.useCallback` to prevent infinite re-render loops when passed as a dependency.
     *   Used `pops.length` directly for population count instead of relying on theoretical housing capacity.
+## 2024-04-19 - Calendar and Supply Chain Update
+- Replaced `tickCount` with an hourly `gameTime` clock (1 second = 1 game hour).
+- Overhauled material economy: BP shifted to an 'Influence' role, while structures now cost `Timber`, `Rations`, and a new `Stone` resource.
+- Implemented a daily production cycle where structures like the new 'Pier' produce raw materials at hour 0.
