@@ -116,6 +116,14 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 **Action:** Ensure clean diff updates when fixing syntax errors and build warnings. Double-check all React state functional updates for proper parenthesis and brackets to not break standard JavaScript/JSX build parsers.
 - Fixed a crash caused by an undefined `tickCount` state variable in `frontend/src/App.jsx`.
 - Implemented an `ErrorBoundary` component in `frontend/src/ErrorBoundary.jsx` and applied it in `frontend/src/main.jsx` to catch and gracefully display rendering errors, preventing silent white-screen failures.
+## Component Extraction Refactor
+**Date:** $(date +%Y-%m-%d)
+**Agent:** Mason
+**Changes:**
+- Extracted inline rendering logic from `frontend/src/App.jsx` into standalone React functional components to improve maintainability.
+- Created `BuildMenu.jsx`, `HeroSelection.jsx`, and `GameMenu.jsx` in the `frontend/src/components/` directory.
+- Refactored `App.jsx` to import and compose these new components, passing necessary state and setter functions via props.
+- Verified that functionality and styling (Tailwind CSS) remained intact across the isolated components.
 
 ## 2024-05-19 - Refactor Ruler/Founder Mechanics
 **Action:** Refactored the Ruler/Founder agent mechanics to fix core gameplay issues:
