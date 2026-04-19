@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer, Menu } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
 import { usePopulationEngine } from './hooks/usePopulationEngine';
+import ProgressBar from './ProgressBar';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -22,6 +23,15 @@ const App = () => {
 
     const [isGatheringSticks, setIsGatheringSticks] = useState(false);
     const [gatherProgress, setGatherProgress] = useState(0);
+
+    const [isGatheringTimber, setIsGatheringTimber] = useState(false);
+    const [gatherTimberProgress, setGatherTimberProgress] = useState(0);
+
+    const [isHunting, setIsHunting] = useState(false);
+    const [huntProgress, setHuntProgress] = useState(0);
+
+    const [isHelpingBuild, setIsHelpingBuild] = useState(false);
+    const [helpBuildProgress, setHelpBuildProgress] = useState(0);
 
     const [timber, setTimber] = useState(() => {
         const saved = localStorage.getItem('adk_timber');
@@ -128,9 +138,88 @@ const App = () => {
             setGatherProgress(prev => {
                 if (prev >= 99) {
                     clearInterval(interval);
-                    setSticks(s => s + 1);
-                    addLog("[+] Gathered a stick from the freezing dark.");
                     setIsGatheringSticks(false);
+                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                        addLog("[!] Your lack of experience caused a setback. No resources gained.");
+                    } else {
+                        setSticks(s => s + 1);
+                        addLog("[+] Gathered a stick from the freezing dark.");
+                    }
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 50);
+    };
+
+    const handleGatherTimber = () => {
+        if (isGatheringTimber) return;
+        setIsGatheringTimber(true);
+        setGatherTimberProgress(0);
+
+        const interval = setInterval(() => {
+            setGatherTimberProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(interval);
+                    setIsGatheringTimber(false);
+                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                        addLog("[!] Your lack of experience caused a setback. No resources gained.");
+                    } else {
+                        setTimber(t => t + 1);
+                        addLog("[+] Gathered timber.");
+                    }
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 50);
+    };
+
+    const handleHuntRations = () => {
+        if (isHunting) return;
+        setIsHunting(true);
+        setHuntProgress(0);
+
+        const interval = setInterval(() => {
+            setHuntProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(interval);
+                    setIsHunting(false);
+                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                        addLog("[!] Your lack of experience caused a setback. No resources gained.");
+                    } else {
+                        setRations(r => r + 1);
+                        addLog("[+] Hunted for rations.");
+                    }
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 50);
+    };
+
+    const handleHelpBuild = () => {
+        if (isHelpingBuild || constructionQueue.length === 0) return;
+        setIsHelpingBuild(true);
+        setHelpBuildProgress(0);
+
+        const interval = setInterval(() => {
+            setHelpBuildProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(interval);
+                    setIsHelpingBuild(false);
+                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                        addLog("[!] Your lack of experience caused a setback. No progress made.");
+                    } else {
+                        setConstructionQueue(prevQueue => {
+                            const newQueue = [...prevQueue];
+                            if (newQueue.length > 0) {
+                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 2 };
+                            }
+                            return newQueue;
+                        });
+                        addLog("[+] You rolled up your sleeves and helped speed up construction.");
+                    }
                     return 100;
                 }
                 return prev + 1;
@@ -1008,24 +1097,18 @@ const App = () => {
                 <div className={`w-full max-w-7xl bg-gray-900 border-t ${FLAVORS[flavor].border} pt-4 pb-4 mb-4 flex flex-col items-center gap-4`}>
                     <h3 className="text-lg font-bold text-gray-300 mb-2">Ruler's Actions</h3>
                     <div className="flex flex-wrap justify-center gap-4">
-                        <button
-                            onClick={() => {
-                                setTimber(t => t + 1);
-                                addLog("Gathered timber.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Gather Timber ({timber})
-                        </button>
-                        <button
-                            onClick={() => {
-                                setRations(r => r + 1);
-                                addLog("Hunted for rations.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                        >
-                            Hunt Rations ({rations})
-                        </button>
+                        <ProgressBar
+                            onClick={handleGatherTimber}
+                            disabled={isGatheringTimber}
+                            progress={gatherTimberProgress}
+                            label={`Gather Timber (${timber})`}
+                        />
+                        <ProgressBar
+                            onClick={handleHuntRations}
+                            disabled={isHunting}
+                            progress={huntProgress}
+                            label={`Hunt Rations (${rations})`}
+                        />
                         <button
                             onClick={() => {
                                 setTimber(t => t - 10);
@@ -1038,22 +1121,12 @@ const App = () => {
                         >
                             Sell Resources (10 Timber, 10 Rations -&gt; 1 BP)
                         </button>
-                        <button
-                            onClick={() => {
-                                if (constructionQueue.length > 0) {
-                                    setConstructionQueue(prev => {
-                                        const newQueue = [...prev];
-                                        newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 2 };
-                                        return newQueue;
-                                    });
-                                    addLog("[+] You rolled up your sleeves and helped speed up construction.");
-                                }
-                            }}
-                            disabled={constructionQueue.length === 0}
-                            className={`px-4 py-2 font-bold rounded border flex items-center gap-2 ${constructionQueue.length > 0 ? 'bg-blue-900 text-blue-100 hover:bg-blue-700 border-blue-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
-                        >
-                            <Hammer size={16} /> Help Build
-                        </button>
+                        <ProgressBar
+                            onClick={handleHelpBuild}
+                            disabled={isHelpingBuild || constructionQueue.length === 0}
+                            progress={helpBuildProgress}
+                            label={<><Hammer size={16} className="inline mr-2" />Help Build</>}
+                        />
                     </div>
                 </div>
             )}
@@ -1083,55 +1156,49 @@ const App = () => {
                     return null;
                 })()}
                 {stage === 0 && (
-                    <>
-                        {sticks < 10 && (
-                            <button
-                                onClick={handleGatherSticks}
-                                disabled={isGatheringSticks}
-                                className={`bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600 relative overflow-hidden ${isGatheringSticks ? 'opacity-75 cursor-not-allowed' : ''}`}
-                            >
-                                <div
-                                    className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-75"
-                                    style={{ width: `${gatherProgress}%` }}
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="text-4xl font-mono text-gray-400 mb-4 h-12 flex items-center justify-center">
+                            {sticks < 3 ? "( . )" : sticks < 7 ? "( ^ )" : "( # )"}
+                        </div>
+                        <div className="flex gap-4">
+                            {sticks < 10 && (
+                                <ProgressBar
+                                    onClick={handleGatherSticks}
+                                    disabled={isGatheringSticks}
+                                    progress={gatherProgress}
+                                    label={`Gather Sticks (${sticks}/10)`}
                                 />
-                                <span className="relative z-10">Gather Sticks ({sticks}/10)</span>
-                            </button>
-                        )}
-                        {sticks >= 10 && (
-                            <button
-                                onClick={() => {
-                                    setStage(1);
-                                    addLog("[+] Fire built. A small comfort in the dark.");
-                                }}
-                                className="bg-orange-900 text-white px-4 py-2 font-bold hover:bg-orange-700 rounded flex items-center gap-2 border border-orange-500"
-                            >
-                                Build Fire
-                            </button>
-                        )}
-                    </>
+                            )}
+                            {sticks >= 10 && (
+                                <button
+                                    onClick={() => {
+                                        setStage(1);
+                                        addLog("[+] Fire built. A small comfort in the dark.");
+                                    }}
+                                    className="bg-orange-900 text-white px-4 py-2 font-bold hover:bg-orange-700 rounded flex items-center gap-2 border border-orange-500"
+                                >
+                                    Build Fire
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 )}
                 {stage === 1 && (
                     <>
                         {timber < 5 || rations < 5 ? (
                             <>
-                                <button
-                                    onClick={() => {
-                                        setTimber(t => t + 1);
-                                        addLog("Gathered timber.");
-                                    }}
-                                    className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                                >
-                                    Gather Timber ({timber})
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setRations(r => r + 1);
-                                        addLog("Hunted for rations.");
-                                    }}
-                                    className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
-                                >
-                                    Hunt Rations ({rations})
-                                </button>
+                                <ProgressBar
+                                    onClick={handleGatherTimber}
+                                    disabled={isGatheringTimber}
+                                    progress={gatherTimberProgress}
+                                    label={`Gather Timber (${timber})`}
+                                />
+                                <ProgressBar
+                                    onClick={handleHuntRations}
+                                    disabled={isHunting}
+                                    progress={huntProgress}
+                                    label={`Hunt Rations (${rations})`}
+                                />
                             </>
                         ) : (
                             <button
