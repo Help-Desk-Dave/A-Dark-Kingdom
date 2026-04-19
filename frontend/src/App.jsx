@@ -20,6 +20,9 @@ const App = () => {
         return saved !== null ? parseInt(saved) : 0;
     });
 
+    const [isGatheringSticks, setIsGatheringSticks] = useState(false);
+    const [gatherProgress, setGatherProgress] = useState(0);
+
     const [timber, setTimber] = useState(() => {
         const saved = localStorage.getItem('adk_timber');
         return saved !== null ? parseInt(saved) : 0;
@@ -111,6 +114,24 @@ const App = () => {
     };
 
     const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY);
+    const handleGatherSticks = () => {
+        if (isGatheringSticks) return;
+        setIsGatheringSticks(true);
+        setGatherProgress(0);
+
+        const interval = setInterval(() => {
+            setGatherProgress(prev => {
+                if (prev >= 99) {
+                    clearInterval(interval);
+                    setSticks(s => s + 1);
+                    addLog("[+] Gathered a stick from the freezing dark.");
+                    setIsGatheringSticks(false);
+                    return 100;
+                }
+                return prev + 1;
+            });
+        }, 50);
+    };
 
     // Save State
     useEffect(() => {
@@ -890,13 +911,15 @@ const App = () => {
                 {stage === 0 && (
                     <>
                         <button
-                            onClick={() => {
-                                setSticks(s => s + 1);
-                                addLog("Gathered a stick.");
-                            }}
-                            className="bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600"
+                            onClick={handleGatherSticks}
+                            disabled={isGatheringSticks}
+                            className={`bg-gray-800 text-white px-4 py-2 font-bold hover:bg-gray-700 rounded border border-gray-600 relative overflow-hidden ${isGatheringSticks ? 'opacity-75 cursor-not-allowed' : ''}`}
                         >
-                            Gather Sticks ({sticks})
+                            <div
+                                className="absolute left-0 top-0 h-full bg-gray-600 transition-all duration-75"
+                                style={{ width: `${gatherProgress}%` }}
+                            />
+                            <span className="relative z-10">Gather Sticks ({sticks}/10)</span>
                         </button>
                         {sticks >= 10 && (
                             <button
