@@ -89,7 +89,7 @@ PROMINENT_CITIZENS = [
 # Text Note: This dictionary maps a structure's name to its exact cost (in Resource Points), 
 # the number of lots it takes up on your Urban Grid, and its benefits.
 STRUCTURES_DB = {
-    "pier": {"lots": 1, "shape": "1x1", "cost_timber": 20, "cost_rations": 10, "cost_stone": 5, "traits": ["building"], "production": {"rations": 2}, "desc": "A dock for fishing and small boats. Produces rations daily."},
+    "pier": {"lots": 1, "shape": "1x1", "cost_timber": 20, "cost_rations": 10, "cost_stone": 5, "traits": ["building"], "produces": {"rations": 2}, "desc": "A dock for fishing and small boats. Produces rations daily."},
     "academy": {"lots": 2, "shape": "2x1", "cost_timber": 104, "cost_rations": 104, "cost_stone": 52, "traits": ["building", "edifice"], "desc": "An institution where advanced study in many fields can be pursued."},
     "alchemy laboratory": {"lots": 1, "shape": "1x1", "cost_timber": 36, "cost_rations": 36, "cost_stone": 18, "traits": ["building"], "desc": "A factory for alchemists crafting elixirs and items."},
     "arena": {"lots": 4, "shape": "2x2", "cost_timber": 80, "cost_rations": 80, "cost_stone": 40, "traits": ["edifice", "yard"], "desc": "A large public structure for gladiator combats and spectacle."},
@@ -103,13 +103,13 @@ STRUCTURES_DB = {
     "farm": {"lots": 1, "shape": "1x1", "cost_timber": 10, "cost_rations": 10, "cost_stone": 5, "traits": ["yard"], "desc": "Produces food for your citizens. Essential for survival."},
     "garrison": {"lots": 2, "shape": "2x1", "cost_timber": 56, "cost_rations": 56, "cost_stone": 28, "traits": ["building", "residential"], "desc": "A complex for maintaining military forces."},
     "general store": {"lots": 1, "shape": "1x1", "cost_timber": 16, "cost_rations": 16, "cost_stone": 8, "traits": ["building"], "desc": "A basic shop that provides standard goods to citizens."},
-    "granary": {"lots": 1, "shape": "1x1", "cost_timber": 24, "cost_rations": 24, "cost_stone": 12, "traits": ["building"], "desc": "Silos and warehouses for grain. Increases Food capacity."},
+    "granary": {"lots": 1, "shape": "1x1", "cost_timber": 24, "cost_rations": 24, "cost_stone": 12, "traits": ["building"], "storage_cap": {"rations": 200}, "desc": "Silos and warehouses for grain. Increases Food capacity."},
     "hospital": {"lots": 2, "shape": "2x1", "cost_timber": 60, "cost_rations": 60, "cost_stone": 30, "traits": ["building"], "desc": "Dedicated to healing the sick through magical and mundane means."},
     "houses": {"lots": 1, "shape": "1x1", "cost_timber": 6, "cost_rations": 6, "cost_stone": 3, "traits": ["building", "residential"], "desc": "Neighborhood dwellings for citizens to prevent overcrowding."},
     "illicit market": {"lots": 1, "shape": "1x1", "cost_timber": 100, "cost_rations": 100, "cost_stone": 50, "traits": ["building", "infamous"], "desc": "Unregulated and illegal trade. Increases Crime ruin."},
     "inn": {"lots": 1, "shape": "1x1", "cost_timber": 20, "cost_rations": 20, "cost_stone": 10, "traits": ["building", "residential"], "desc": "A safe place for visitors to rest."},
     "jail": {"lots": 1, "shape": "1x1", "cost_timber": 28, "cost_rations": 28, "cost_stone": 14, "traits": ["building"], "desc": "Fortified structure that houses criminals. Reduces Crime."},
-    "lumberyard": {"lots": 2, "shape": "2x1", "cost_timber": 32, "cost_rations": 32, "cost_stone": 16, "traits": ["yard"], "desc": "Increases Lumber capacity. Must be built next to water."},
+    "lumberyard": {"lots": 2, "shape": "2x1", "cost_timber": 32, "cost_rations": 32, "cost_stone": 16, "traits": ["yard"], "storage_cap": {"timber": 200}, "desc": "Increases Lumber capacity. Must be built next to water."},
     "marketplace": {"lots": 2, "shape": "2x1", "cost_timber": 96, "cost_rations": 96, "cost_stone": 48, "traits": ["building", "residential"], "desc": "A large neighborhood of shops around an open area."},
     "park": {"lots": 1, "shape": "1x1", "cost_timber": 10, "cost_rations": 10, "cost_stone": 5, "traits": ["yard"], "desc": "Undeveloped land set aside for public use."},
     "shrine": {"lots": 1, "shape": "1x1", "cost_timber": 16, "cost_rations": 16, "cost_stone": 8, "traits": ["building"], "desc": "A small building devoted to a deity or faith."},
@@ -117,7 +117,7 @@ STRUCTURES_DB = {
     "tenement": {"lots": 1, "shape": "1x1", "cost_timber": 2, "cost_rations": 2, "cost_stone": 1, "traits": ["building", "residential"], "desc": "Hastily built shantytowns. Cheap, but increases a Ruin."},
     "watchtower": {"lots": 1, "shape": "1x1", "cost_timber": 24, "cost_rations": 24, "cost_stone": 12, "traits": ["building"], "desc": "A guard post that grants advance warning to events."},
     "pioneer tent": {"lots": 1, "shape": "1x1", "cost_timber": 20, "traits": ["building", "residential"], "desc": "A basic shelter for early survival. Increases max population."},
-    "supply wagon": {"lots": 1, "shape": "1x1", "cost_timber": 50, "traits": ["building", "storage"], "desc": "A reinforced wagon for storing large quantities of resources."}
+    "supply wagon": {"lots": 1, "shape": "1x1", "cost_timber": 50, "traits": ["building", "storage"], "storage_cap": {"timber": 100, "rations": 100, "stone": 100}, "desc": "A reinforced wagon for storing large quantities of resources."}
 }
 
 # --- RANDOM EVENTS ---
