@@ -116,6 +116,20 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertEqual(self.game.bp, initial_bp - 5)
         self.assertTrue(any(f"[+] Reconnoitered ({x},{y})" in entry for entry in self.game.log))
 
+    def test_reconnoiter_cost_deduction_and_status_update(self):
+        x, y = 0, 0
+        if self.game.world[y][x].status != 0:
+            x, y = 1, 1 # Try another
+
+        initial_bp = self.game.bp
+        self.game.reconnoiter(x, y)
+
+        # Test status update
+        self.assertEqual(self.game.world[y][x].status, 1)
+
+        # Test cost deduction
+        self.assertEqual(self.game.bp, initial_bp - 5)
+
     def test_reconnoiter_insufficient_bp(self):
         self.game.bp = 4
         x, y = 0, 0
