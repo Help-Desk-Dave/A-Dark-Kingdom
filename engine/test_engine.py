@@ -287,5 +287,25 @@ class TestEngineCitizens(unittest.TestCase):
         self.assertIn("Stas", self.game.spawned_citizens)
         self.assertTrue(any("Stas" in entry for entry in self.game.log))
 
+class TestLibrary(unittest.TestCase):
+    def test_get_random_citizen_valid_output(self):
+        from library import get_random_citizen
+        expected_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+        # Call it multiple times to ensure we get valid outputs
+        for _ in range(10):
+            citizen = get_random_citizen()
+            self.assertIn(citizen, expected_names)
+
+    @patch('library.random.choice')
+    def test_get_random_citizen_mocked(self, mock_choice):
+        from library import get_random_citizen
+        mock_choice.return_value = "TestName"
+        citizen = get_random_citizen()
+
+        expected_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+        # Verify random.choice was called with the expected names
+        mock_choice.assert_called_once_with(expected_names)
+        self.assertEqual(citizen, "TestName")
+
 if __name__ == '__main__':
     unittest.main()
