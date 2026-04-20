@@ -1,3 +1,45 @@
-# ⚖️ Equinox Balance Ledger
+### ⚖️ Balance Report: Stage 2 Economy / Construction Queue
+**Target System:** Stage 2 Economy / Construction Queue
+**The Problem:** The manual gathering rates for Timber (50ms * 100 = 5s), Rations (5s), and Stone (80ms * 100 = 8s) create significant player fatigue and grind. Building a simple House (6 Timber, 6 Rations, 3 Stone) requires 30s of Timber gathering, 30s of Ration hunting, and 24s of Stone gathering, totaling 84 seconds of real-time, non-stop clicking and waiting just to afford the materials for *one* house. This extreme "Sweat Equity" burden makes scaling up a settlement un-fun and mathematically tedious.
+**Simulation Data:** Simulation of 1 house cost requires 6 Timber, 6 Rations, 3 Stone. With current speeds, that's ~1.4 real-time minutes of waiting.
 
-## Pending Proposals
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Reduce `handleGatherTimber` interval from `50` to `20`.
+* `App.jsx`: Reduce `handleHuntRations` interval from `50` to `20`.
+* `App.jsx`: Reduce `handleGatherStone` interval from `80` to `30`.
+
+**Notes for Future Agents:** The time scaling here was too punishing for basic resources. Speeding it up allows for a much smoother transition into mid-game macro-management.
+
+### ⚖️ Balance Report: Unrest Death Spiral & Annual Upkeep
+**Target System:** Stage 4 Economy / Annual Upkeep
+**The Problem:** The game forces a 25 BP `ANNUAL_UPKEEP` every in-game year. If the player cannot afford this, `unrest` increases by 1. If `unrest` reaches 10, the population stops growing (`usePopulationEngine.js` immigration threshold). The fatal flaw is that **there is currently no mechanism to reduce unrest** once it is gained, even though structures like the "Castle" and "Barracks" claim to do so in their descriptions. This means if a player misses the upkeep 10 times, the game soft-locks into a permanent zero-growth state (Death Spiral).
+**Simulation Data:** 10 missed upkeeps = 10 Unrest. Immigration stops. No new pops = No more builders. Economy stagnates permanently.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Implement a mechanism when a `Castle` or `Barracks` is built to reduce `unrest` (e.g., `setUnrest(u => Math.max(0, u - 2))`).
+* `App.jsx`: Add a manual action or advisor action to spend BP or Resources to lower unrest.
+* `library.js`: The description for Castle and Barracks needs to be mechanically supported in `App.jsx`.
+
+**Notes for Future Agents:** The Death Spiral is mathematically guaranteed if the player makes enough early mistakes, as unrest is strictly monotonic increasing.
+
+### ⚖️ Balance Report: Stage 0 and 1 Soft-Lock Verification
+**Target System:** Stage 0 and 1 Economy
+**The Problem:** I have verified the math for early game soft-locks. In Stage 0, players only gather sticks and there is no mechanism that reduces sticks. Thus, no soft-lock is possible. In Stage 1, players gather Timber, Rations, and Stone to establish a camp. The only mechanism that reduces Timber/Rations is the "Sell Resources" button, but that requires Stage 2 to appear. Therefore, Stage 1 is perfectly safe from soft-locks. The player is guaranteed a mathematical path forward.
+**Simulation Data:** `sticks` monotonically increases. `timber`/`rations` monotonically increases until Stage 2.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* None. The Stage 0/1 math is secure.
+
+**Notes for Future Agents:** Guardrails passed successfully.
+
+### ⚖️ Balance Report: Late Game Resource Scaling
+**Target System:** Stage 3+ Economy
+**The Problem:** Mid-to-late game structures have high resource costs that do not scale well with manual gathering rates. For example, a `Castle` costs 108 Timber, 108 Rations, and 54 Stone. With current base gather rates, it takes 1512 real-time seconds (over 25 minutes) of non-stop clicking to afford the materials for a single Castle if relying primarily on manual gathering. This fundamentally breaks the "Sweat Equity" pacing, turning what should be a milestone achievement into a tedious grind.
+**Simulation Data:** 108 clicks * 5s (Timber) + 108 clicks * 5s (Rations) + 54 clicks * 8s (Stone) = 1512s.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Increase the base yield of `handleGatherTimber`, `handleHuntRations`, and `handleGatherStone` based on the current `stage` (e.g., `setTimber(t => t + (1 + stage))`).
+* `App.jsx`: Alternatively, increase the click yield multiplier if specific structures (like `Lumberyard` or `Granary`) have been built.
+* `library.js`: Consider reducing the material costs of high-end `edifice` structures if manual gathering is intended to remain the primary fallback.
+
+**Notes for Future Agents:** Ensuring "Sweat Equity" remains viable means manual clicks should still feel impactful even when the kingdom scales. A flat +1 yield in late game is mathematically demoralizing.
