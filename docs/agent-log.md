@@ -147,3 +147,5 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - Refactored the daily tick logic in `App.jsx` and `Engine.py` to calculate dynamic max capacities based on the settlement's infrastructure.
 - Replaced the simple additive daily yield with a sequential **Deficit Protocol** loop. Buildings now explicitly check if they can afford their `consumes` requirements; if they fail the check, they do not deduct inputs and do not yield `produces` outputs.
 - Applied max storage boundaries using `Math.min(..., maxStorage)` checks to strictly enforce The Storage Bottleneck.
+### 🗄️ Midnight Log: State Protection Pass
+As The Archivist, I fortified all `localStorage` state initializations in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`. I replaced naive `parseInt` calls with robust `NaN` checks and wrapped all `JSON.parse` calls in `try...catch` blocks, safely injecting missing default properties (like `bedID`, `terrain`, and `gameTime` fields) using the spread operator to ensure absolute forward-compatibility for player save files.

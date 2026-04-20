@@ -6,6 +6,8 @@ import ProgressBar from './ProgressBar';
 import BuildMenu from './components/BuildMenu';
 import HeroSelection from './components/HeroSelection';
 import GameMenu from './components/GameMenu';
+import WorldGrid from './components/WorldGrid';
+import SettlementGrid from './components/SettlementGrid';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -16,17 +18,27 @@ const App = () => {
     // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
     const [stage, setStage] = useState(() => {
         const saved = localStorage.getItem('adk_stage');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [unlockedTechs, setUnlockedTechs] = useState(() => {
         const saved = localStorage.getItem('adk_unlockedTechs');
-        return saved ? JSON.parse(saved) : [];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_unlockedTechs:", e);
+            }
+        }
+        return [];
     });
 
     const [sticks, setSticks] = useState(() => {
         const saved = localStorage.getItem('adk_sticks');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [isGatheringSticks, setIsGatheringSticks] = useState(false);
@@ -47,38 +59,68 @@ const App = () => {
 
     const [timber, setTimber] = useState(() => {
         const saved = localStorage.getItem('adk_timber');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [rations, setRations] = useState(() => {
         const saved = localStorage.getItem('adk_rations');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     // `logs`: The main event ledger. Acts as the user's primary feedback mechanism instead of console.logs.
     const [logs, setLogs] = useState(() => {
         const saved = localStorage.getItem('adk_logs');
-        return saved ? JSON.parse(saved) : ["[!] Expedition landed in the Stolen Lands. Awaiting orders to establish camp."];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_logs:", e);
+            }
+        }
+        return ["[!] Expedition landed in the Stolen Lands. Awaiting orders to establish camp."];
     });
 
     // `bp` (Build Points): The kingdom's main currency. Cannot drop below 0.
     const [bp, setBp] = useState(() => {
         const saved = localStorage.getItem('adk_bp');
-        return saved ? parseInt(saved) : 60;
+        const parsed = saved !== null ? parseInt(saved) : 60;
+        return isNaN(parsed) ? 60 : parsed;
     });
 
-    const [stone, setStone] = useState(() => Number(localStorage.getItem('adk_stone')) || 0);
+    const [stone, setStone] = useState(() => {
+        const saved = localStorage.getItem('adk_stone');
+        const parsed = saved !== null ? Number(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
+    });
 
     // `gameTime`: Tracks elapsed time in days, months, years, and hours.
     const [gameTime, setGameTime] = useState(() => {
         const saved = localStorage.getItem('adk_gameTime');
-        return saved ? JSON.parse(saved) : { day: 1, month: 1, year: 4710, hour: 0 };
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return {
+                    day: 1,
+                    month: 1,
+                    year: 4710,
+                    hour: 0,
+                    ...parsed
+                };
+            } catch (e) {
+                console.error("Failed to parse adk_gameTime:", e);
+            }
+        }
+        return { day: 1, month: 1, year: 4710, hour: 0 };
     });
 
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
     const [unrest, setUnrest] = useState(() => {
         const saved = localStorage.getItem('adk_unrest');
-        return saved ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     // `xp`: Kingdom Experience. Awarded for claiming hexes and surviving annual upkeeps.
@@ -86,18 +128,45 @@ const App = () => {
 
     const [xp, setXp] = useState(() => {
         const saved = localStorage.getItem('adk_xp');
-        return saved ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [constructionQueue, setConstructionQueue] = useState(() => {
         const saved = localStorage.getItem('adk_constructionQueue');
-        return saved ? JSON.parse(saved) : [];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_constructionQueue:", e);
+            }
+        }
+        return [];
     });
 
     // `world`: The 10x10 hex grid. Represents the Stolen Lands. Generated once and saved.
     const [world, setWorld] = useState(() => {
         const saved = localStorage.getItem('adk_world');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    return parsed.map(row => {
+                        if (Array.isArray(row)) {
+                            return row.map(hex => ({
+                                terrain: 'Plain', // Fallback terrain
+                                ...hex
+                            }));
+                        }
+                        return row;
+                    });
+                }
+                return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_world:", e);
+            }
+        }
 
         // Generate new world
         const terrains = ["Forest", "Plain", "Mountain", "Hill", "Swamp"];
@@ -807,140 +876,6 @@ const App = () => {
         }
     }, [logs]);
 
-    const renderWorldGrid = () => {
-        const style = FLAVORS[flavor];
-        return (
-            <div className={`grid grid-cols-10 gap-2 min-w-max bg-black p-4 border ${FLAVORS[flavor].border} mx-auto`}>
-                {world.map((row, y) => (
-                    row.map((hex, x) => {
-                        let char = "??";
-                        let colorClass = "text-gray-600";
-                        if (hex.status === 1) {
-                            char = style[hex.terrain] || ".";
-                            colorClass = style.color;
-                        } else if (hex.status === 2) {
-                            char = style[hex.terrain] ? `[${style[hex.terrain].trim()}]` : "[C]";
-                            colorClass = "text-yellow-500 font-bold";
-                        }
-                        return (
-                            <div
-                                key={`${x}-${y}`}
-                                className={`w-12 h-12 flex items-center justify-center text-base cursor-pointer hover:border ${FLAVORS[flavor].color.replace("text-", "border-").replace("500", "400")} ${colorClass}`}
-                                onClick={() => {
-                                    if (stage >= 3) {
-                                        setInspectorHex({ x, y, ...hex });
-                                        setInspectorPop(null); // Clear any open pop inspector
-                                        setInspectorPlot(null);
-
-                                        if (hex.status === 0) {
-                                            handleReconnoiter(x, y);
-                                        } else if (hex.status === 1) {
-                                            handleClaim(x, y);
-                                        } else if (hex.status === 2 && hex.settlement) {
-                                            setCurrentView(`${x},${y}`);
-                                        }
-                                    }
-                                }}
-                            >
-                                {char}
-                            </div>
-                        );
-                    })
-                ))}
-            </div>
-        );
-    };
-
-    const renderSettlementGrid = (sx, sy) => {
-        const settlement = world[sy][sx].settlement;
-        if (!settlement) return <div className="text-gray-500 p-4">No settlement here.</div>;
-
-        const isOvercrowded = settlement.resLots < Math.floor(settlement.otherLots / HOUSING_CAPACITY);
-
-        const localPops = pops.filter(p => p.settlementCoords.sx === sx && p.settlementCoords.sy === sy);
-
-        return (
-            <div className={`grid grid-cols-5 gap-2 w-fit bg-black p-4 border ${isOvercrowded ? 'border-red-600' : 'border-blue-800'}`}>
-                {settlement.grid.map((row, y) => (
-                    row.map((cell, x) => {
-                        const activeJob = constructionQueue.find(job =>
-                            job.sx === sx && job.sy === sy && job.positionsToFill.some(p => p[0] === x && p[1] === y)
-                        );
-
-                        if (activeJob) {
-                            const percent = Math.floor((activeJob.progress / activeJob.requiredProgress) * 100);
-                            return (
-                                <div
-                                    key={`${x}-${y}`}
-                                    className="w-16 h-16 border-2 border-yellow-500 bg-yellow-900 flex items-center justify-center text-xs font-bold text-yellow-100 cursor-not-allowed bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,0,0,0.2)_10px,rgba(0,0,0,0.2)_20px)]"
-                                    title={`Building ${activeJob.structureName}: ${percent}%`}
-                                >
-                                    {percent}%
-                                </div>
-                            );
-                        }
-                        // Check if cell is under construction
-                        const job = constructionQueue.find(q =>
-                            q.sx === sx &&
-                            q.sy === sy &&
-                            q.positionsToFill.some(([px, py]) => px === x && py === y)
-                        );
-
-                        if (job) {
-                            const percent = Math.floor((job.progress / job.requiredProgress) * 100);
-                            return (
-                                <div
-                                    key={`${x}-${y}`}
-                                    className="w-16 h-16 border border-yellow-500 flex items-center justify-center bg-yellow-900 text-xs text-center cursor-not-allowed flex-col"
-                                    style={{
-                                        backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.2) 5px, rgba(0,0,0,0.2) 10px)"
-                                    }}
-                                >
-                                    {job.active ? (
-                                        <span className="text-white font-bold bg-black/50 px-1 rounded">{percent}%</span>
-                                    ) : (
-                                        <span className="text-red-500 font-bold leading-tight bg-black/50 px-1 rounded">Awaiting Builder</span>
-                                    )}
-                                </div>
-                            );
-                        }
-                        const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
-                        const isPath = settlement.pathValues && settlement.pathValues[y] && settlement.pathValues[y][x] > 5;
-
-                        return (
-                            <div
-                                key={`${x}-${y}`}
-                                className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover}`}
-                                onClick={() => {
-                                    if (stage >= 2 && cell === null && !job) {
-                                        setBuildMenuTarget({ x, y });
-                                    } else if (stage >= 2 && cell !== null && !job) {
-                                        setInspectorPlot({ x, y, sx, sy, building: cell });
-                                        setInspectorHex(null);
-                                        setInspectorPop(null);
-                                    }
-                                }}
-                            >
-                                {cell ? <span className="bg-blue-800 text-white p-1 font-bold" title={cell}>{cell.charAt(0).toUpperCase()}</span> : <span className="text-gray-600">[ ]</span>}
-                                {cellPops.map((p, idx) => (
-                                    <div key={p.id} className="absolute flex flex-col items-center" style={{ bottom: `${2 + idx * 4}px`, right: `${2 + idx * 4}px` }}>
-                                        {p.dialogue && (
-                                            <div className="absolute bottom-full mb-1 text-[10px] bg-white text-black p-1 rounded whitespace-nowrap z-10 font-bold border border-gray-400">
-                                                {p.dialogue}
-                                            </div>
-                                        )}
-                                        <div className="w-2 h-2 bg-yellow-400 rounded-full border border-yellow-700" title={`${p.name} (${p.state})`} />
-                                    </div>
-                                ))}
-                            </div>
-                        );
-                    })
-                ))}
-            </div>
-        );
-    };
-
-
     const closeBuildMenu = () => {
         setBuildMenuTarget(null);
         setBuildMenuCategory(null);
@@ -981,177 +916,6 @@ const App = () => {
         );
     };
 
-    const renderBuildMenu = () => {
-        if (!buildMenuTarget) return null;
-        const { x, y } = buildMenuTarget;
-
-        const categories = [
-            { id: "residential", label: "Residential", icon: <Home size={16} /> },
-            { id: "edifice", label: "Edifice", icon: <Building size={16} /> },
-            { id: "yard", label: "Yard", icon: <TreePine size={16} /> },
-            { id: "building", label: "General Building", icon: <Hammer size={16} /> }
-        ];
-
-        const hasPrerequisite = (structName) => {
-            if (structName === 'lumberyard') {
-                let hasPier = false;
-                for (let wy = 0; wy < world.length; wy++) {
-                    for (let wx = 0; wx < world[wy].length; wx++) {
-                        const cell = world[wy][wx];
-                        if (cell.settlement) {
-                            for (let cy = 0; cy < 5; cy++) {
-                                for (let cx = 0; cx < 5; cx++) {
-                                    if (cell.settlement.grid[cy][cx] === 'pier') {
-                                        hasPier = true;
-                                        break;
-                                    }
-                                }
-                                if (hasPier) break;
-                            }
-                        }
-                        if (hasPier) break;
-                    }
-                    if (hasPier) break;
-                }
-                return { met: hasPier, reason: "Requires a Pier in the Kingdom" };
-            }
-            return { met: true, reason: "" };
-        };
-
-        return (
-            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border-2 border-blue-500 p-6 max-w-4xl w-full max-h-[90vh] flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-blue-400">
-                            {buildMenuCategory ? `Build ${buildMenuCategory} at (${x},${y})` : `Select Category to Build at (${x},${y})`}
-                        </h2>
-                        <button onClick={closeBuildMenu} aria-label="Close build menu" className="text-red-500 hover:text-red-300 font-bold">X</button>
-                    </div>
-
-                    {!buildMenuCategory ? (
-                        <div className="grid grid-cols-2 gap-4">
-                            {categories.map(c => (
-                                <button
-                                    key={c.id}
-                                    onClick={() => setBuildMenuCategory(c.id)}
-                                    className="bg-blue-900 hover:bg-blue-700 text-white p-4 font-bold flex flex-col items-center justify-center gap-2 border border-blue-500 rounded"
-                                >
-                                    {c.icon} {c.label}
-                                </button>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="flex-1 overflow-y-auto pr-2">
-                            <button onClick={() => setBuildMenuCategory(null)} className="mb-4 text-sm text-gray-400 hover:text-white">&larr; Back to Categories</button>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {Object.entries(STRUCTURES_DB)
-                                    .filter(([key, struct]) => {
-                                        if (buildMenuCategory === "residential") return struct.traits.includes("residential");
-                                        if (buildMenuCategory === "edifice") return struct.traits.includes("edifice");
-                                        if (buildMenuCategory === "yard") return struct.traits.includes("yard");
-                                        return struct.traits.includes("building") && !struct.traits.includes("residential") && !struct.traits.includes("edifice");
-                                    })
-                                    .map(([key, struct]) => {
-                                        const cTimber = struct.cost_timber || 0;
-                                        const cRations = struct.cost_rations || 0;
-                                        const cStone = struct.cost_stone || 0;
-                                        const cBp = struct.cost_bp || 0;
-
-                                        const affordTimber = timber >= cTimber;
-                                        const affordRations = rations >= cRations;
-                                        const affordStone = stone >= cStone;
-                                        const affordBp = bp >= cBp;
-                                        const canAfford = affordTimber && affordRations && affordStone && affordBp;
-
-                                        const prereq = hasPrerequisite(key);
-                                        const canBuild = canAfford && prereq.met;
-
-                                        const lotsBadge = struct.lots === 1 ? "1x1" : (struct.lots === 2 ? "1x2" : "2x2");
-
-                                        return (
-                                            <div key={key} className="bg-black border-2 border-gray-700 p-4 flex flex-col justify-between hover:border-blue-400 transition-colors rounded group relative">
-                                                <div className="mb-4">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="font-bold text-white capitalize text-lg flex items-center gap-2">
-                                                            {key}
-                                                            {!prereq.met && <Lock size={16} className="text-red-500" title="Locked" />}
-                                                        </div>
-                                                        <span className="bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded font-mono border border-gray-600">
-                                                            {lotsBadge}
-                                                        </span>
-                                                    </div>
-
-                                                    <div className="text-sm text-gray-400 italic mb-3">{struct.desc}</div>
-
-                                                    <div className="flex flex-wrap gap-2 mb-3">
-                                                        {struct.production && Object.entries(struct.production).map(([res, val]) => (
-                                                            <span key={res} className="bg-green-900/50 text-green-300 text-xs px-2 py-1 rounded flex items-center gap-1 border border-green-800">
-                                                                <Info size={12} /> +{val} {res}/Day
-                                                            </span>
-                                                        ))}
-                                                        {struct.traits && struct.traits.includes("residential") && (
-                                                            <span className="bg-blue-900/50 text-blue-300 text-xs px-2 py-1 rounded flex items-center gap-1 border border-blue-800">
-                                                                <Home size={12} /> Provides Housing
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    <div className="flex items-center gap-4 text-sm mt-auto border-t border-gray-800 pt-3">
-                                                        {cTimber > 0 && (
-                                                            <div className={`flex items-center gap-1 ${affordTimber ? 'text-gray-300' : 'text-red-500 font-bold'}`} title="Timber">
-                                                                <TreePine size={14} /> {cTimber}
-                                                            </div>
-                                                        )}
-                                                        {cRations > 0 && (
-                                                            <div className={`flex items-center gap-1 ${affordRations ? 'text-gray-300' : 'text-red-500 font-bold'}`} title="Rations">
-                                                                <Apple size={14} /> {cRations}
-                                                            </div>
-                                                        )}
-                                                        {cStone > 0 && (
-                                                            <div className={`flex items-center gap-1 ${affordStone ? 'text-gray-300' : 'text-red-500 font-bold'}`} title="Stone">
-                                                                <Gem size={14} /> {cStone}
-                                                            </div>
-                                                        )}
-                                                        {cBp > 0 && (
-                                                            <div className={`flex items-center gap-1 ${affordBp ? 'text-gray-300' : 'text-red-500 font-bold'}`} title="BP (Influence)">
-                                                                <Coins size={14} /> {cBp}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-auto">
-                                                    {!prereq.met ? (
-                                                        <div className="text-red-500 text-sm font-bold bg-red-950/30 p-2 rounded text-center border border-red-900">
-                                                            Requires: {prereq.reason}
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => {
-                                                                handleBuild(key, x, y);
-                                                                closeBuildMenu();
-                                                            }}
-                                                            disabled={!canAfford}
-                                                            className={`w-full py-2 font-bold border rounded transition-colors ${
-                                                                canAfford
-                                                                    ? 'bg-green-900 hover:bg-green-700 text-white border-green-500'
-                                                                    : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'
-                                                            }`}
-                                                        >
-                                                            {canAfford ? 'Build' : 'Cannot Afford'}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
 
     // --- RENDER GAME MENU ---
     // This function creates a fixed/absolute positioned overlay in the top right corner.
@@ -1308,7 +1072,17 @@ const App = () => {
                         )}
                     </h2>
                     {stage >= 2 && (
-                        currentView === "world" ? (stage >= 4 ? renderWorldGrid() : (
+                        currentView === "world" ? (stage >= 4 ? <WorldGrid
+                            world={world}
+                            stage={stage}
+                            flavor={flavor}
+                            setInspectorHex={setInspectorHex}
+                            setInspectorPop={setInspectorPop}
+                            setInspectorPlot={setInspectorPlot}
+                            handleReconnoiter={handleReconnoiter}
+                            handleClaim={handleClaim}
+                            setCurrentView={setCurrentView}
+                        /> : (
                             <div className="flex flex-col items-center justify-center gap-4">
                                 <div className={`text-gray-500 p-8 border ${FLAVORS[flavor].border}`}>World Map is restricted until the Charter is signed.</div>
                                 <button
@@ -1318,7 +1092,19 @@ const App = () => {
                                     <Home size={16} /> Return to Camp
                                 </button>
                             </div>
-                        )) : renderSettlementGrid(...currentView.split(',').map(Number))
+                        )) : <SettlementGrid
+                            sx={Number(currentView.split(',')[0])}
+                            sy={Number(currentView.split(',')[1])}
+                            world={world}
+                            pops={pops}
+                            constructionQueue={constructionQueue}
+                            stage={stage}
+                            flavor={flavor}
+                            setBuildMenuTarget={setBuildMenuTarget}
+                            setInspectorPlot={setInspectorPlot}
+                            setInspectorHex={setInspectorHex}
+                            setInspectorPop={setInspectorPop}
+                        />
                     )}
                 </div>
 
