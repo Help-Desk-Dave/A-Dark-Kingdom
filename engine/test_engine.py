@@ -145,12 +145,12 @@ class TestEngineReconnoiter(unittest.TestCase):
 
     def test_flavor_switching(self):
         from library import FLAVORS
-        # Switch to icy
-        self.game.flavor = "icy"
-        self.game.style = FLAVORS["icy"]
-        self.assertEqual(self.game.style["color"], "cyan")
+        # Switch to dark
+        self.game.flavor = "dark"
+        self.game.style = FLAVORS["dark"]
+        self.assertEqual(self.game.style["color"], "magenta")
 
-        # Test rendering with icy flavor
+        # Test rendering with dark flavor
         x, y = 0, 0
         self.game.world[y][x].status = 1
         self.game.world[y][x].terrain = "Mountain"
@@ -160,15 +160,15 @@ class TestEngineReconnoiter(unittest.TestCase):
             mock_text_inst = MockText.return_value
             self.game.render_map()
 
-            # Check if it appended the icy mountain art " 🏔 "
+            # Check if it appended the dark mountain art " ⚰ "
             # It might append other things like " ?? ", "\n"
-            # We look for a call that has " 🏔 " and style "cyan"
+            # We look for a call that has " ⚰ " and style "magenta"
             found = False
             for call in mock_text_inst.append.call_args_list:
-                if " 🏔 " in str(call) and "cyan" in str(call):
+                if " ⚰ " in str(call) and "magenta" in str(call):
                     found = True
                     break
-            self.assertTrue(found, "Should render icy mountain with cyan style.")
+            self.assertTrue(found, "Should render dark mountain with magenta style.")
 
 class TestSettlement(unittest.TestCase):
     def test_overcrowded_logic(self):

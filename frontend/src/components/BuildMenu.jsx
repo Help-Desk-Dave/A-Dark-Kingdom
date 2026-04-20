@@ -47,24 +47,45 @@ const BuildMenu = ({ buildMenuTarget, buildMenuCategory, setBuildMenuCategory, c
                                     // General Building: buildings that aren't residential or edifice
                                     return struct.traits.includes("building") && !struct.traits.includes("residential") && !struct.traits.includes("edifice");
                                 })
-                                .map(([key, struct]) => (
-                                    <div key={key} className="bg-black border border-gray-700 p-3 flex justify-between items-center hover:border-blue-400">
-                                        <div>
-                                            <div className="font-bold text-white capitalize">{key}</div>
-                                            <div className="text-xs text-gray-400 italic">{struct.desc}</div>
-                                            <div className="text-xs text-gray-300 mt-1">Lots: {struct.lots} | Traits: {struct.traits.join(", ")}</div>
+                                .map(([key, struct]) => {
+                                    const renderShapePreview = (shape) => {
+                                        if (shape === "1x1") return "[ ]";
+                                        if (shape === "2x1") return "[ ][ ]";
+                                        if (shape === "2x2") return "[ ][ ]\n[ ][ ]";
+                                        return "[ ]"; // fallback
+                                    };
+
+                                    return (
+                                        <div key={key} className="bg-black border border-gray-700 p-3 flex justify-between items-center hover:border-blue-400">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-bold text-white capitalize text-lg">{key}</span>
+                                                    <pre className="text-[10px] leading-tight text-gray-400 border border-gray-600 bg-gray-900 p-1 rounded inline-block">
+                                                        {renderShapePreview(struct.shape)}
+                                                    </pre>
+                                                </div>
+
+                                                {struct.production && (
+                                                    <div className="text-sm font-bold text-green-400 mb-1">
+                                                        {Object.entries(struct.production).map(([res, amount]) => `+${amount} ${res.charAt(0).toUpperCase() + res.slice(1)}/Day`).join(', ')}
+                                                    </div>
+                                                )}
+
+                                                <div className="text-xs text-gray-400 italic mb-2">{struct.desc}</div>
+                                                <div className="text-xs text-gray-300">Traits: {struct.traits.join(", ")}</div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    handleBuild(key, x, y);
+                                                    closeBuildMenu();
+                                                }}
+                                                className="bg-green-900 hover:bg-green-700 text-white px-3 py-1 font-bold border border-green-500 whitespace-nowrap ml-4"
+                                            >
+                                                Build
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => {
-                                                handleBuild(key, x, y);
-                                                closeBuildMenu();
-                                            }}
-                                            className="bg-green-900 hover:bg-green-700 text-white px-3 py-1 font-bold border border-green-500 whitespace-nowrap ml-4"
-                                        >
-                                            Build
-                                        </button>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                         </div>
                     </div>
                 )}

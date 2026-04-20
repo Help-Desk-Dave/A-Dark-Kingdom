@@ -137,6 +137,7 @@ const App = () => {
     const [buildMenuCategory, setBuildMenuCategory] = useState(null);
     const [inspectorHex, setInspectorHex] = useState(null);
     const [inspectorPop, setInspectorPop] = useState(null);
+    const [inspectorPlot, setInspectorPlot] = useState(null);
     const [bpFlash, setBpFlash] = useState(false);
     const [bpShake, setBpShake] = useState(false);
 
@@ -816,6 +817,7 @@ const App = () => {
                                     if (stage >= 3) {
                                         setInspectorHex({ x, y, ...hex });
                                         setInspectorPop(null); // Clear any open pop inspector
+                                        setInspectorPlot(null);
 
                                         if (hex.status === 0) {
                                             handleReconnoiter(x, y);
@@ -899,6 +901,10 @@ const App = () => {
                                 onClick={() => {
                                     if (stage >= 2 && cell === null && !job) {
                                         setBuildMenuTarget({ x, y });
+                                    } else if (stage >= 2 && cell !== null && !job) {
+                                        setInspectorPlot({ x, y, sx, sy, building: cell });
+                                        setInspectorHex(null);
+                                        setInspectorPop(null);
                                     }
                                 }}
                             >
@@ -969,14 +975,25 @@ const App = () => {
                 </div>
             )}
             {stage >= 2 && (
-                <h1 className="text-4xl font-bold mb-4 flex items-center gap-2">
-                    <MapIcon /> A Dark Kingdom
-                    <Terminal
-                        size={20}
-                        className="text-gray-600 hover:text-gray-400 cursor-pointer transition-colors ml-2"
-                        onClick={handleTerminalClick}
-                    />
-                </h1>
+                <div className="flex flex-col items-center mb-4 gap-2">
+                    <h1 className="text-4xl font-bold flex items-center gap-2">
+                        <MapIcon /> A Dark Kingdom
+                        <Terminal
+                            size={20}
+                            className="text-gray-600 hover:text-gray-400 cursor-pointer transition-colors ml-2"
+                            onClick={handleTerminalClick}
+                        />
+                    </h1>
+                    <div className="flex items-center gap-2 text-sm bg-black border border-gray-700 px-3 py-1 rounded">
+                        <span className="text-gray-400 font-bold">Theme:</span>
+                        <button
+                            onClick={() => setFlavor(flavor === "swamp" ? "dark" : "swamp")}
+                            className="font-bold hover:text-white transition-colors capitalize text-gray-300"
+                        >
+                            [{flavor}]
+                        </button>
+                    </div>
+                </div>
             )}
 
             {stage >= 2 && (
@@ -1024,6 +1041,7 @@ const App = () => {
                                     onClick={() => {
                                         setInspectorPop({ role, ...advisor });
                                         setInspectorHex(null); // Clear hex inspector
+                                        setInspectorPlot(null);
                                     }}
                                     className="text-sm cursor-pointer hover:text-yellow-400 text-gray-300"
                                 >
@@ -1072,11 +1090,11 @@ const App = () => {
                 </div>
 
                 {/* Inspector Area */}
-                {(inspectorHex || inspectorPop) && (
+                {(inspectorHex || inspectorPop || inspectorPlot) && (
                     <div className={`w-full md:w-64 flex-shrink-0 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
                         <div className="flex justify-between items-center border-b ${FLAVORS[flavor].border} pb-2">
                             <h2 className="text-xl font-bold text-blue-400">Inspector</h2>
-                            <button onClick={() => { setInspectorHex(null); setInspectorPop(null); }} aria-label="Close inspector" className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
+                            <button onClick={() => { setInspectorHex(null); setInspectorPop(null); setInspectorPlot(null); }} aria-label="Close inspector" className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
                         </div>
 
                         {inspectorHex && (
@@ -1120,6 +1138,29 @@ const App = () => {
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Bonus Yield:</span>
                                     <span className="text-green-400">+{Math.floor(inspectorPop.attribute / 4)} BP/tick</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {inspectorPlot && (
+                            <div className="flex flex-col gap-2 text-sm mt-2">
+                                <div className="font-bold text-blue-400 mb-1 capitalize">{inspectorPlot.building}</div>
+                                <div className="text-gray-400 italic mb-2">Level 1</div>
+                                <button disabled className="bg-gray-800 text-gray-500 font-bold py-1 px-2 mb-2 cursor-not-allowed border border-gray-700">
+                                    Upgrade (Locked)
+                                </button>
+                                <div className="font-bold text-white mb-1 border-b border-gray-700 pb-1">Assigned Pops</div>
+                                <div className="flex flex-col gap-1">
+                                    {pops.filter(p => p.settlementCoords.sx === inspectorPlot.sx && p.settlementCoords.sy === inspectorPlot.sy && ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) || (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))).length > 0 ? (
+                                        pops.filter(p => p.settlementCoords.sx === inspectorPlot.sx && p.settlementCoords.sy === inspectorPlot.sy && ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) || (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))).map(p => (
+                                            <div key={p.id} className="text-gray-300 flex justify-between">
+                                                <span>{p.name}</span>
+                                                <span className="text-xs text-gray-500">{p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y ? 'Resident' : 'Worker'}</span>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-gray-500 italic">No pops assigned.</div>
+                                    )}
                                 </div>
                             </div>
                         )}
