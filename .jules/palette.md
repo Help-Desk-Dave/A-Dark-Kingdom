@@ -6,3 +6,6 @@
 ## 2026-04-19 - Larger UI Grids for Laptops
 **Learning:** Dense, tiny grids (32x32px) look smooshed on desktop screens like Chrome. Larger hitboxes (48x48px and 64x64px) for map elements, paired with slightly larger text, greatly improve clickability and visual separation while matching the intended Dwarf Fortress aesthetic.
 **Action:** When designing desktop-first grid interfaces, prioritize chunkier target sizes (min 48px) and distinct gaps to ensure elements don't visually merge.
+## 2026-04-20 - [Accessibility: Hero Selection Keyboard Traps]
+**Learning:** The Hero Selection background choices were implemented as clickable <div> elements, acting as keyboard traps which prevented screen reader/keyboard users from starting the game sequence. Changing them to semantic <button> elements with proper focus styles ensures keyboard navigation works consistently without disrupting the visual design.
+**Action:** Always prefer semantic interactive elements like <button> over <div> with onClick when building choice menus, and always verify clear focus rings (focus:ring-2) for keyboard navigability.

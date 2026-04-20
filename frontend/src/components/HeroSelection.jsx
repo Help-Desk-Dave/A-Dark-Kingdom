@@ -14,7 +14,7 @@ const HeroSelection = ({ showHeroSelection, setShowHeroSelection, setRuler, setS
 
                 <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3">
                     {KINGMAKER_BACKGROUNDS.map((bg, index) => (
-                        <div
+                        <button
                             key={index}
                             onClick={() => {
                                 setRuler(bg);
@@ -23,12 +23,12 @@ const HeroSelection = ({ showHeroSelection, setShowHeroSelection, setRuler, setS
                                 setStage(0);
                                 addLog(`[+] You remember your past as a ${bg.name}... but right now, you are alone in the freezing dark.`);
                             }}
-                            className="bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors"
+                            className="w-full text-left bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         >
                             <div className="font-bold text-white text-lg">{bg.name}</div>
                             <div className="text-sm text-cyan-400 mt-1">Skill: {bg.skill} | Bonus: +1 {bg.attribute}</div>
                             <div className="text-sm text-gray-400 mt-2">{bg.desc}</div>
-                        </div>
+                        </button>
                     ))}
                 </div>
             </div>
