@@ -77,6 +77,84 @@ class TestEnginePrologue(unittest.TestCase):
 
         self.assertTrue(self.game.scouting_map_crafted)
 
+class TestKingdomInit(unittest.TestCase):
+    def test_kingdom_init_defaults(self):
+        game = Engine.Kingdom("Test Init", flavor="swamp")
+        self.assertEqual(game.name, "Test Init")
+        self.assertEqual(game.flavor, "swamp")
+        self.assertEqual(game.bp, 60)
+        self.assertEqual(game.level, 1)
+        self.assertEqual(game.turn, 1)
+        self.assertEqual(game.stage, 0)
+        self.assertTrue(game.pending_hero_selection)
+        self.assertEqual(len(game.world), 10)
+        self.assertEqual(len(game.world[0]), 10)
+
+class TestEngineCamp(unittest.TestCase):
+    def setUp(self):
+        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+        self.game.pending_hero_selection = False
+        self.game.start_x = 5
+        self.game.start_y = 5
+
+    def test_establish_camp_success(self):
+        self.game.stage = 1
+        self.game.establish_camp()
+        self.assertEqual(self.game.stage, 2)
+        self.assertEqual(self.game.world[5][5].status, 2)
+        self.assertIsNotNone(self.game.world[5][5].settlement)
+        self.assertEqual(self.game.world[5][5].settlement.name, "Camp")
+        self.assertTrue(any("[+] Camp established" in entry for entry in self.game.log))
+
+    def test_establish_camp_already_established(self):
+        self.game.stage = 2
+        self.game.establish_camp()
+        self.assertEqual(self.game.stage, 2)
+        self.assertTrue(any("[!] Camp already established." in entry for entry in self.game.log))
+
+
+class TestEngineClaimHex(unittest.TestCase):
+    def setUp(self):
+        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+        self.game.pending_hero_selection = False
+        self.game.stage = 4
+        self.game.bp = 100
+
+    def test_claim_hex_success(self):
+        self.game.world[0][0].status = 1
+        initial_bp = self.game.bp
+        self.game.claim_hex(0, 0)
+        self.assertEqual(self.game.world[0][0].status, 2)
+        self.assertEqual(self.game.bp, initial_bp - Engine.CLAIM_COST)
+        self.assertTrue(any("[+] Claimed (0,0)" in entry for entry in self.game.log))
+
+    def test_claim_hex_insufficient_bp(self):
+        self.game.world[0][0].status = 1
+        self.game.bp = Engine.CLAIM_COST - 1
+        initial_bp = self.game.bp
+        self.game.claim_hex(0, 0)
+        self.assertEqual(self.game.world[0][0].status, 1)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertTrue(any("[-] Treasurer: 'Claiming land requires BP we don't have.'" in entry for entry in self.game.log))
+
+    def test_claim_hex_low_bp_warning(self):
+        self.game.world[0][0].status = 1
+        self.game.bp = Engine.CLAIM_COST + 5
+        initial_bp = self.game.bp
+        self.game.claim_hex(0, 0)
+        self.assertEqual(self.game.world[0][0].status, 1)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertTrue(any("[-] Treasurer WARNING: Funds are critically low!" in entry for entry in self.game.log))
+
+    def test_claim_hex_unmapped(self):
+        self.game.world[0][0].status = 0
+        initial_bp = self.game.bp
+        self.game.claim_hex(0, 0)
+        self.assertEqual(self.game.world[0][0].status, 0)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertTrue(any("[!] You must map this area before claiming it!" in entry for entry in self.game.log))
+
+
 class TestEngineReconnoiter(unittest.TestCase):
     def setUp(self):
         # Initialize Kingdom with a fixed seed if possible,
