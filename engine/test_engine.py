@@ -133,6 +133,55 @@ class TestEngineReconnoiter(unittest.TestCase):
         self.assertEqual(self.game.bp, initial_bp)
         self.assertTrue(any("[!] That area is already mapped." in entry for entry in self.game.log))
 
+    def test_claim_hex_valid(self):
+        x, y = 2, 2
+        self.game.world[y][x].status = 1
+        initial_bp = self.game.bp
+        initial_xp = self.game.xp
+        self.game.claim_hex(x, y)
+        self.assertEqual(self.game.world[y][x].status, 2)
+        self.assertEqual(self.game.bp, initial_bp - 10)
+        self.assertEqual(self.game.xp, initial_xp + 10)
+        self.assertTrue(any(f"[+] Claimed ({x},{y}). Kingdom Size +1." in entry for entry in self.game.log))
+
+    def test_claim_hex_unmapped(self):
+        x, y = 3, 3
+        self.game.world[y][x].status = 0
+        initial_bp = self.game.bp
+        self.game.claim_hex(x, y)
+        self.assertEqual(self.game.world[y][x].status, 0)
+        self.assertEqual(self.game.bp, initial_bp)
+        self.assertTrue(any("[!] You must map this area before claiming it!" in entry for entry in self.game.log))
+
+    def test_claim_hex_insufficient_bp(self):
+        x, y = 4, 4
+        self.game.world[y][x].status = 1
+        self.game.bp = 5
+        initial_status = self.game.world[y][x].status
+        self.game.claim_hex(x, y)
+        self.assertEqual(self.game.world[y][x].status, initial_status)
+        self.assertEqual(self.game.bp, 5)
+        self.assertTrue(any("[-] Treasurer: 'Claiming land requires BP we don't have.'" in entry for entry in self.game.log))
+
+    def test_claim_hex_low_funds(self):
+        x, y = 5, 5
+        self.game.world[y][x].status = 1
+        self.game.bp = 20 # 20 - 10 = 10 < 15
+        initial_status = self.game.world[y][x].status
+        self.game.claim_hex(x, y)
+        self.assertEqual(self.game.world[y][x].status, initial_status)
+        self.assertEqual(self.game.bp, 20)
+        self.assertTrue(any("[-] Treasurer WARNING: Funds are critically low! Reconsidering claim." in entry for entry in self.game.log))
+
+    def test_claim_hex_early_stage(self):
+        self.game.stage = 1
+        x, y = 6, 6
+        self.game.world[y][x].status = 1
+        initial_bp = self.game.bp
+        self.game.claim_hex(x, y)
+        self.assertEqual(self.game.world[y][x].status, 1)
+        self.assertEqual(self.game.bp, initial_bp)
+
     def test_claim_hex_out_of_bounds(self):
         initial_bp = self.game.bp
         self.game.claim_hex(-1, -1)
