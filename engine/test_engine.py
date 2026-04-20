@@ -287,5 +287,23 @@ class TestEngineCitizens(unittest.TestCase):
         self.assertIn("Stas", self.game.spawned_citizens)
         self.assertTrue(any("Stas" in entry for entry in self.game.log))
 
+class TestWorldGeneration(unittest.TestCase):
+    def setUp(self):
+        self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
+        self.game.pending_hero_selection = False
+
+    def test_world_generation_dimensions_and_terrain(self):
+        # Verify it's a 10x10 list
+        self.assertEqual(len(self.game.world), 10)
+        for row in self.game.world:
+            self.assertEqual(len(row), 10)
+
+        # Verify terrain types
+        terrain_types = ["Forest", "Plain", "Mountain", "Hill", "Swamp"]
+        for row in self.game.world:
+            for hex_obj in row:
+                self.assertIsInstance(hex_obj, Engine.Hex)
+                self.assertIn(hex_obj.terrain, terrain_types)
+
 if __name__ == '__main__':
     unittest.main()
