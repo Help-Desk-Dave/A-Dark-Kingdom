@@ -254,7 +254,22 @@ class Kingdom:
 
             # Stage 2+: The First Companions / Automation
             if self.stage >= 2 and self.stage < 4:
-                # Produce resources
+                # Base Storage Capacities
+                max_timber = 100
+                max_rations = 100
+                max_stone = 100
+
+                # Calculate Dynamic Storage Capacities based on structures
+                # Note: Woodcutters/Trappers are early stage mechanics, not full buildings, but we set limits just in case.
+                for name, data in STRUCTURES_DB.items():
+                    if "storage_cap" in data:
+                        count = self.count_structures(name)
+                        if count > 0:
+                            max_timber += data["storage_cap"].get("timber", 0) * count
+                            max_rations += data["storage_cap"].get("rations", 0) * count
+                            max_stone += data["storage_cap"].get("stone", 0) * count
+
+                # Produce resources (early game generic jobs)
                 self.timber += self.woodcutters * 1
                 self.rations += self.trappers * 1
 
@@ -267,6 +282,11 @@ class Kingdom:
                         self.rations = 0
                         self.unrest += 1
                         self.log.append("[-] Starvation! Citizens are starving, Unrest increases.")
+
+                # Apply Caps
+                self.timber = min(self.timber, max_timber)
+                self.rations = min(self.rations, max_rations)
+                # Note: stone is not produced in stage 2/3 natively, but capping for consistency
 
                 # Population growth
                 max_capacity = 2 + (self.count_structures("pioneer tent") * 4)
@@ -304,6 +324,62 @@ class Kingdom:
             # Advisor Modifiers (Attribute // 4)
             treasurer_bonus = self.advisors.get("Treasurer", {}).get("attribute", 0) // 4
             self.bp += treasurer_bonus
+
+            # Daily Production (Every 24 ticks in CLI to match frontend hour === 0)
+            if self.tick_count % 24 == 0:
+                daily_timber = 0
+                daily_rations = 0
+                daily_stone = 0
+
+                # Base Storage Capacities
+                max_timber = 100
+                max_rations = 100
+                max_stone = 100
+
+                # Calculate Dynamic Storage Capacities
+                for name, data in STRUCTURES_DB.items():
+                    if "storage_cap" in data:
+                        count = self.count_structures(name)
+                        if count > 0:
+                            max_timber += data["storage_cap"].get("timber", 0) * count
+                            max_rations += data["storage_cap"].get("rations", 0) * count
+                            max_stone += data["storage_cap"].get("stone", 0) * count
+
+                # Sequential Processing (Deficit Protocol)
+                for struct_name, data in STRUCTURES_DB.items():
+                    count = self.count_structures(struct_name)
+                    for _ in range(count):
+                        can_produce = True
+
+                        # Check Consumes
+                        if "consumes" in data:
+                            if data["consumes"].get("timber", 0) and self.timber + daily_timber < data["consumes"]["timber"]:
+                                can_produce = False
+                            if data["consumes"].get("rations", 0) and self.rations + daily_rations < data["consumes"]["rations"]:
+                                can_produce = False
+                            if data["consumes"].get("stone", 0) and self.stone + daily_stone < data["consumes"]["stone"]:
+                                can_produce = False
+
+                        if can_produce:
+                            # Deduct Consumes
+                            if "consumes" in data:
+                                daily_timber -= data["consumes"].get("timber", 0)
+                                daily_rations -= data["consumes"].get("rations", 0)
+                                daily_stone -= data["consumes"].get("stone", 0)
+
+                            # Add Produces
+                            produces = data.get("produces") or data.get("production")
+                            if produces:
+                                daily_timber += produces.get("timber", 0)
+                                daily_rations += produces.get("rations", 0)
+                                daily_stone += produces.get("stone", 0)
+
+                self.timber = min(max(0, self.timber + daily_timber), max_timber)
+                self.rations = min(max(0, self.rations + daily_rations), max_rations)
+                self.stone = min(max(0, self.stone + daily_stone), max_stone)
+
+                if daily_timber > 0 or daily_rations > 0 or daily_stone > 0:
+                    self.log.append(f"[+] Daily Yield: +{daily_timber} Timber, +{daily_rations} Rations, +{daily_stone} Stone")
 
             if self.tick_count % 12 == 0:
                 self.bp -= ANNUAL_UPKEEP
