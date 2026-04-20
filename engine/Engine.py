@@ -936,7 +936,7 @@ if __name__ == "__main__":
             try:
                 coords = action[1].split(',')
                 my_game.reconnoiter(int(coords[0]), int(coords[1]))
-            except Exception: pass
+            except (ValueError, IndexError): pass
         # Command [V] x,y or world: Toggle the UI view between the world map or a specific settlement grid.
         if action[0] == 'v' and len(action) == 2:
             if action[1] == 'world':
@@ -957,7 +957,7 @@ if __name__ == "__main__":
                             my_game.log.append(f'[-] Hex ({vx},{vy}) is unmapped.')
                     else:
                         my_game.log.append(f'[!] ({vx},{vy}) is out of bounds!')
-                except Exception:
+                except (ValueError, IndexError):
                     pass
         # Command [B] <name> x,y: Build a structure on the active settlement grid at coordinate (x,y).
         if action[0] == 'b' and len(action) >= 3:
@@ -966,15 +966,12 @@ if __name__ == "__main__":
                 coords = action[-1].split(',')
                 bx, by = int(coords[0]), int(coords[1])
                 my_game.build_structure(structure_name, bx, by)
-            except Exception:
-                pass
             except (ValueError, IndexError): pass
         # Command [C] x,y: Claim a previously reconnoitered hex coordinate.
         if action[0] == 'c' and len(action) == 2:
             try:
                 coords = action[1].split(',')
                 my_game.claim_hex(int(coords[0]), int(coords[1]))
-            except Exception: pass
             except (ValueError, IndexError): pass
         # Command [Flavor] <name>: Dynamically switch the kingdom's visual theme (e.g., swamp, icy).
         if action[0] in ['flavor', 'f'] and len(action) == 2:
