@@ -16,17 +16,27 @@ const App = () => {
     // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
     const [stage, setStage] = useState(() => {
         const saved = localStorage.getItem('adk_stage');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [unlockedTechs, setUnlockedTechs] = useState(() => {
         const saved = localStorage.getItem('adk_unlockedTechs');
-        return saved ? JSON.parse(saved) : [];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_unlockedTechs:", e);
+            }
+        }
+        return [];
     });
 
     const [sticks, setSticks] = useState(() => {
         const saved = localStorage.getItem('adk_sticks');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [isGatheringSticks, setIsGatheringSticks] = useState(false);
@@ -47,38 +57,68 @@ const App = () => {
 
     const [timber, setTimber] = useState(() => {
         const saved = localStorage.getItem('adk_timber');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [rations, setRations] = useState(() => {
         const saved = localStorage.getItem('adk_rations');
-        return saved !== null ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     // `logs`: The main event ledger. Acts as the user's primary feedback mechanism instead of console.logs.
     const [logs, setLogs] = useState(() => {
         const saved = localStorage.getItem('adk_logs');
-        return saved ? JSON.parse(saved) : ["[!] Expedition landed in the Stolen Lands. Awaiting orders to establish camp."];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_logs:", e);
+            }
+        }
+        return ["[!] Expedition landed in the Stolen Lands. Awaiting orders to establish camp."];
     });
 
     // `bp` (Build Points): The kingdom's main currency. Cannot drop below 0.
     const [bp, setBp] = useState(() => {
         const saved = localStorage.getItem('adk_bp');
-        return saved ? parseInt(saved) : 60;
+        const parsed = saved !== null ? parseInt(saved) : 60;
+        return isNaN(parsed) ? 60 : parsed;
     });
 
-    const [stone, setStone] = useState(() => Number(localStorage.getItem('adk_stone')) || 0);
+    const [stone, setStone] = useState(() => {
+        const saved = localStorage.getItem('adk_stone');
+        const parsed = saved !== null ? Number(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
+    });
 
     // `gameTime`: Tracks elapsed time in days, months, years, and hours.
     const [gameTime, setGameTime] = useState(() => {
         const saved = localStorage.getItem('adk_gameTime');
-        return saved ? JSON.parse(saved) : { day: 1, month: 1, year: 4710, hour: 0 };
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return {
+                    day: 1,
+                    month: 1,
+                    year: 4710,
+                    hour: 0,
+                    ...parsed
+                };
+            } catch (e) {
+                console.error("Failed to parse adk_gameTime:", e);
+            }
+        }
+        return { day: 1, month: 1, year: 4710, hour: 0 };
     });
 
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
     const [unrest, setUnrest] = useState(() => {
         const saved = localStorage.getItem('adk_unrest');
-        return saved ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     // `xp`: Kingdom Experience. Awarded for claiming hexes and surviving annual upkeeps.
@@ -86,18 +126,45 @@ const App = () => {
 
     const [xp, setXp] = useState(() => {
         const saved = localStorage.getItem('adk_xp');
-        return saved ? parseInt(saved) : 0;
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
     });
 
     const [constructionQueue, setConstructionQueue] = useState(() => {
         const saved = localStorage.getItem('adk_constructionQueue');
-        return saved ? JSON.parse(saved) : [];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_constructionQueue:", e);
+            }
+        }
+        return [];
     });
 
     // `world`: The 10x10 hex grid. Represents the Stolen Lands. Generated once and saved.
     const [world, setWorld] = useState(() => {
         const saved = localStorage.getItem('adk_world');
-        if (saved) return JSON.parse(saved);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    return parsed.map(row => {
+                        if (Array.isArray(row)) {
+                            return row.map(hex => ({
+                                terrain: 'Plain', // Fallback terrain
+                                ...hex
+                            }));
+                        }
+                        return row;
+                    });
+                }
+                return parsed;
+            } catch (e) {
+                console.error("Failed to parse adk_world:", e);
+            }
+        }
 
         // Generate new world
         const terrains = ["Forest", "Plain", "Mountain", "Hill", "Swamp"];

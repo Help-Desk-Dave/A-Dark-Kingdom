@@ -138,3 +138,5 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 ## 2024-05-24 - Fixed Population Engine Mismatched Dependencies Bug
 **Learning:** Found and fixed a bug where `usePopulationEngine` arguments in `App.jsx` were mismatched after refactoring `handlePopsMove` away. This effectively passed an unused function into the hook's `unrest` argument, disabling the organic growth immigration math completely.
 **Action:** Always verify hook call signatures when updating and refactoring arguments. The mismatch also caused `addLog` to be undefined inside the population loop, leading to missing log events.
+### 🗄️ Midnight Log: State Protection Pass
+As The Archivist, I fortified all `localStorage` state initializations in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`. I replaced naive `parseInt` calls with robust `NaN` checks and wrapped all `JSON.parse` calls in `try...catch` blocks, safely injecting missing default properties (like `bedID`, `terrain`, and `gameTime` fields) using the spread operator to ensure absolute forward-compatibility for player save files.

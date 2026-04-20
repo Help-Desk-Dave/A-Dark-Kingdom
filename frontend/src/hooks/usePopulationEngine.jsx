@@ -7,12 +7,38 @@ const STATE_CHANGE_CHANCE = 0.1;
 export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, ruler, addLog) => {
     const [pops, setPops] = useState(() => {
         const saved = localStorage.getItem('adk_pops');
-        return saved ? JSON.parse(saved) : [];
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    return parsed.map(pop => ({
+                        bedID: null, // Fallback bedID
+                        ...pop
+                    }));
+                }
+                return [];
+            } catch (e) {
+                console.error("Failed to parse adk_pops:", e);
+            }
+        }
+        return [];
     });
 
     const [gameTime, setGameTime] = useState(() => {
         const saved = localStorage.getItem('adk_gameTime');
-        return saved ? JSON.parse(saved) : { day: 1, hour: 8 };
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                return {
+                    day: 1,
+                    hour: 8,
+                    ...parsed
+                };
+            } catch (e) {
+                console.error("Failed to parse adk_gameTime in pops:", e);
+            }
+        }
+        return { day: 1, hour: 8 };
     });
 
     const popIdCounter = useRef(pops.length > 0 ? Math.max(...pops.map(p => p.id)) + 1 : 0);
