@@ -135,3 +135,6 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - **Feature Add**: Updated the `BuildMenu` in React to visually preview building shapes and benefits.
 - **Data Change**: Injected a `shape` property into all entries in `STRUCTURES_DB` across both `engine/library.py` and `frontend/src/library.js`.
 - **UX Update**: Stripped out non-dark themes from `FLAVORS`, keeping only `swamp` and `dark` (formerly necromancy). Implemented a theme toggle button in the main top header UI to switch between these two terminal-style aesthetics. Fixed corresponding python testing assertions in `test_engine.py` that relied on the removed `icy` theme.
+## 2024-05-24 - Fixed Population Engine Mismatched Dependencies Bug
+**Learning:** Found and fixed a bug where `usePopulationEngine` arguments in `App.jsx` were mismatched after refactoring `handlePopsMove` away. This effectively passed an unused function into the hook's `unrest` argument, disabling the organic growth immigration math completely.
+**Action:** Always verify hook call signatures when updating and refactoring arguments. The mismatch also caused `addLog` to be undefined inside the population loop, leading to missing log events.

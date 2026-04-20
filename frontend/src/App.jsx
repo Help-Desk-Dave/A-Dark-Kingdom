@@ -187,40 +187,8 @@ const App = () => {
         setLogs(prev => [...prev.slice(-19), msg]);
     }, []);
 
-    const handlePopsMove = React.useCallback((movedPops) => {
-        setWorld(prevWorld => {
-            // Need a deep clone for the nested settlements and pathValues to actually trigger re-renders properly
-            // without mutating the old state, but for performance we only clone what we change
-            let nextWorld = [...prevWorld];
-            let changed = false;
 
-            movedPops.forEach(pop => {
-                const sx = pop.settlementCoords.sx;
-                const sy = pop.settlementCoords.sy;
-                const cx = pop.currentCoords.x;
-                const cy = pop.currentCoords.y;
-
-                if (nextWorld[sy] && nextWorld[sy][sx] && nextWorld[sy][sx].settlement) {
-                    let settlement = nextWorld[sy][sx].settlement;
-                    if (settlement.pathValues && settlement.pathValues[cy] && settlement.pathValues[cy][cx] !== undefined) {
-                        // Deep clone to avoid mutating old state
-                        if (!changed) {
-                            nextWorld = nextWorld.map(row => [...row]);
-                            nextWorld[sy][sx] = { ...nextWorld[sy][sx], settlement: { ...settlement, pathValues: settlement.pathValues.map(row => [...row]) } };
-                            settlement = nextWorld[sy][sx].settlement;
-                        }
-
-                        settlement.pathValues[cy][cx] = Math.min(10, settlement.pathValues[cy][cx] + 1);
-                        changed = true;
-                    }
-                }
-            });
-
-            return changed ? nextWorld : prevWorld;
-        });
-    }, []);
-
-    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, handlePopsMove);
+    const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, unrest, ruler, addLog);
     const handleGatherSticks = () => {
         if (isRulerBusy) return;
         setIsGatheringSticks(true);

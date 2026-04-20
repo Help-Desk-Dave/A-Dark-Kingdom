@@ -244,8 +244,10 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                              totalHousing = 1;
                         }
 
+                        const roll = Math.random();
+                        console.log("Immigration Check:", { currentPop: totalPops, maxPop: totalHousing, roll });
                         if (totalPops < totalHousing && (unrest || 0) < 10) {
-                            if (Math.random() < 0.20 && targetSettlement) { // 20% chance
+                            if (roll < 0.20 && targetSettlement) { // 20% chance
                                 const settlersCount = Math.random() < 0.5 ? 1 : 2;
                                 const actualCount = Math.min(settlersCount, totalHousing - totalPops);
 
