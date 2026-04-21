@@ -10,3 +10,12 @@
 * `App.jsx`: Add a `useEffect` idle timer. If no clicks occur for 60 seconds during Stage 0, push log: `[?] The silence here is deafening. Are you alone?`
 * `index.css`: Add a `.spectral-flicker` animation keyframe that Palette can occasionally apply to the main text elements to simulate a corrupted, dying terminal.
 * **Secret Trigger:** If the user clicks "Gather Sticks" exactly 13 times before building a fire, unlock a rare log: `[!] The wood is wet with something that isn't water. The shadows seem to stretch.`
+
+### 🌀 Vibe Proposal: 2026-04-21/Population Milestone 100
+**Target Vibe:** The chaotic murmur of a growing city in Stage 3.
+**The Concept:** The settlement is no longer a quiet outpost; it's a claustrophobic, spectral hive. The terminal interface should briefly struggle to process the noise of 100 souls, manifesting as visual static and overlapping whispers in the logs.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: Add a milestone listener. When population hits exactly 100, pause the game simulation for 2 seconds and push log: `[!] The silence breaks. 100 voices whispering at once in the murky dark.`
+* `index.css`: Add a `.ghosting-text` keyframe animation for a subtle text-shadow duplication effect that Palette can apply to the population counter for 10 seconds.
+* **Secret Trigger:** If the user clicks the population counter 3 times while it reads exactly 100, unlock a rare log: `[?] Who are they talking to?`
