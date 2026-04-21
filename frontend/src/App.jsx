@@ -156,7 +156,11 @@ const App = () => {
                         if (Array.isArray(row)) {
                             return row.map(hex => ({
                                 terrain: 'Plain', // Fallback terrain
-                                ...hex
+                                ...hex,
+                                settlement: hex.settlement ? {
+                                    ...hex.settlement,
+                                    pathValues: hex.settlement.pathValues || Array(5).fill(0).map(() => Array(5).fill(0))
+                                } : null
                             }));
                         }
                         return row;
@@ -214,7 +218,14 @@ const App = () => {
     // Secret Dev Tool: Toggled by clicking the Terminal icon 3 times within 2 seconds.
     const [vibeMode, setVibeMode] = useState(() => {
         const saved = localStorage.getItem('adk_vibeMode');
-        return saved ? JSON.parse(saved) : false;
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error("Failed to parse adk_vibeMode:", e);
+            }
+        }
+        return false;
     });
     const terminalClickTimestamps = useRef([]);
 
@@ -224,10 +235,28 @@ const App = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
-    const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
+    const [showHeroSelection, setShowHeroSelection] = useState(() => {
+        const saved = localStorage.getItem('adk_ruler');
+        if (saved) {
+            try {
+                JSON.parse(saved);
+                return false;
+            } catch (e) {
+                return true;
+            }
+        }
+        return true;
+    });
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
-        return saved ? JSON.parse(saved) : null;
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error("Failed to parse adk_ruler:", e);
+            }
+        }
+        return null;
     });
 
     // Ref for log auto-scrolling
