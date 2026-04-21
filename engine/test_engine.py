@@ -43,8 +43,10 @@ class TestEnginePrologue(unittest.TestCase):
 
     def test_stage_2_automation(self):
         self.game.stage = 2
+        self.game.tick_count = 0
         self.game.woodcutters = 2
         self.game.trappers = 1
+        self.game.pending_hero_selection = False
         self.game.citizens.append(Engine.Pop("Outcast"))
 
         initial_timber = self.game.timber
@@ -57,6 +59,7 @@ class TestEnginePrologue(unittest.TestCase):
 
         # 2nd tick - produce and consume
         self.game.tick()
+
         self.assertEqual(self.game.timber, initial_timber + 4)
         self.assertEqual(self.game.rations, initial_rations + 2 - 1)
 
