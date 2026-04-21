@@ -43,3 +43,15 @@
 * `library.js`: Consider reducing the material costs of high-end `edifice` structures if manual gathering is intended to remain the primary fallback.
 
 **Notes for Future Agents:** Ensuring "Sweat Equity" remains viable means manual clicks should still feel impactful even when the kingdom scales. A flat +1 yield in late game is mathematically demoralizing.
+
+### ⚖️ Balance Report: 2026-04-21
+**Target System:** Stage 2/3 Economy / Construction Queue
+**The Problem:** The manual "Help Build" and manual resource gathering actions scale extremely poorly compared to passive systems, mathematically discouraging manual play and violating the "Sweat Equity" metric. Passive building yields 1 progress per second per builder. In contrast, "Help Build" takes 5 seconds to yield +2 progress (0.4 progress/sec). Gathering resources manually yields only 0.2 resources per second. For a mid-game structure like a Castle (costing 270 total materials requiring 135 progress), clicking "Help Build" every 5 seconds is barely impactful and induces high player fatigue compared to waiting 135 seconds passively with a single builder.
+
+**Simulation Data:** Simulation of construction timings shows that a Castle takes 135 seconds passively with 1 builder. Clicking "Help Build" non-stop only reduces this time to ~96 seconds. "Help Build" adds only 0.4 progress per second, compared to the base passive rate of 1.0 progress per second per builder.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Increase the "Help Build" progress yield from `+2` to `+10` or reduce the time interval significantly to bring the manual effort rate closer to or exceeding the passive build rate (e.g., > 1.0 progress/sec).
+* `App.jsx`: Increase manual resource gathering yields (Timber, Rations, Stone) from `+1` to at least `+5` per 5 seconds.
+
+**Notes for Future Agents:** Mason, if you implement this, consider adding a visual cooldown or charge indicator so that large bursts of progress feel weighty, avoiding the need for constant frantic clicking to achieve optimal build speeds.
