@@ -282,13 +282,28 @@ const App = () => {
     };
 
     const addLog = React.useCallback((msg) => {
-        setLogs(prev => [...prev.slice(-19), msg]);
+        setLogs(prev => {
+            if (prev.length === 0) return [msg];
+            const lastLog = prev[prev.length - 1];
+            const regex = /^(.*?)(\s+\(x(\d+)\))?$/;
+            const newMatch = msg.match(regex);
+            const lastMatch = lastLog.match(regex);
+
+            if (newMatch && lastMatch && newMatch[1] === lastMatch[1]) {
+                const count = lastMatch[3] ? parseInt(lastMatch[3], 10) : 1;
+                return [...prev.slice(0, -1), `${newMatch[1]} (x${count + 1})`];
+            }
+            return [...prev.slice(-19), msg];
+        });
     }, []);
 
 
     const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, unrest, ruler, addLog);
     const handleGatherSticks = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsGatheringSticks(true);
         setGatherProgress(0);
 
@@ -312,7 +327,10 @@ const App = () => {
     };
 
     const handleGatherStone = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsGatheringStone(true);
         setGatherStoneProgress(0);
 
@@ -335,7 +353,10 @@ const App = () => {
     };
 
     const handleGatherTimber = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsGatheringTimber(true);
         setGatherTimberProgress(0);
 
@@ -358,7 +379,10 @@ const App = () => {
     };
 
     const handleHuntRations = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsHunting(true);
         setHuntProgress(0);
 
@@ -381,7 +405,14 @@ const App = () => {
     };
 
     const handleHelpBuild = () => {
-        if (isRulerBusy || constructionQueue.length === 0) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
+        if (constructionQueue.length === 0) {
+            addLog("[-] No active construction to help with.");
+            return;
+        }
         setIsHelpingBuild(true);
         setHelpBuildProgress(0);
 
