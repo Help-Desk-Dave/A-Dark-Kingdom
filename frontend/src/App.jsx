@@ -64,6 +64,12 @@ const App = () => {
         return isNaN(parsed) ? 0 : parsed;
     });
 
+    const [lumber, setLumber] = useState(() => {
+        const saved = localStorage.getItem('adk_lumber');
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
+    });
+
     const [rations, setRations] = useState(() => {
         const saved = localStorage.getItem('adk_rations');
         const parsed = saved !== null ? parseInt(saved) : 0;
@@ -453,6 +459,7 @@ const App = () => {
         localStorage.setItem('adk_stage', stage);
         localStorage.setItem('adk_sticks', sticks);
         localStorage.setItem('adk_timber', timber);
+        localStorage.setItem('adk_lumber', lumber);
         localStorage.setItem('adk_rations', rations);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
@@ -674,6 +681,7 @@ const App = () => {
 
             // Base Storage Capacities
             let maxTimber = 100;
+            let maxLumber = 100;
             let maxRations = 100;
             let maxStone = 100;
 
@@ -683,6 +691,7 @@ const App = () => {
                 if (structData && structData.storage_cap) {
                     const actualCount = Math.floor(cellCount / structData.lots);
                     if (structData.storage_cap.timber) maxTimber += structData.storage_cap.timber * actualCount;
+                    if (structData.storage_cap.lumber) maxLumber += structData.storage_cap.lumber * actualCount;
                     if (structData.storage_cap.rations) maxRations += structData.storage_cap.rations * actualCount;
                     if (structData.storage_cap.stone) maxStone += structData.storage_cap.stone * actualCount;
                 }
@@ -690,6 +699,7 @@ const App = () => {
 
             // Daily Production Calculation
             let dailyTimber = 0;
+            let dailyLumber = 0;
             let dailyRations = 0;
             let dailyStone = 0;
 
@@ -704,6 +714,7 @@ const App = () => {
                         // Check Consumes
                         if (structData.consumes) {
                             if (structData.consumes.timber && timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                            if (structData.consumes.lumber && lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
                             if (structData.consumes.rations && rations + dailyRations < structData.consumes.rations) canProduce = false;
                             if (structData.consumes.stone && stone + dailyStone < structData.consumes.stone) canProduce = false;
                         }
@@ -712,6 +723,7 @@ const App = () => {
                             // Deduct Consumes
                             if (structData.consumes) {
                                 if (structData.consumes.timber) dailyTimber -= structData.consumes.timber;
+                                if (structData.consumes.lumber) dailyLumber -= structData.consumes.lumber;
                                 if (structData.consumes.rations) dailyRations -= structData.consumes.rations;
                                 if (structData.consumes.stone) dailyStone -= structData.consumes.stone;
                             }
@@ -720,6 +732,7 @@ const App = () => {
                             const produces = structData.produces || structData.production;
                             if (produces) {
                                 if (produces.timber) dailyTimber += produces.timber;
+                                if (produces.lumber) dailyLumber += produces.lumber;
                                 if (produces.rations) dailyRations += produces.rations;
                                 if (produces.stone) dailyStone += produces.stone;
                             }
@@ -729,11 +742,17 @@ const App = () => {
             });
 
             setTimber(t => Math.min(Math.max(0, t + dailyTimber), maxTimber));
+            setLumber(l => Math.min(Math.max(0, l + dailyLumber), maxLumber));
             setRations(r => Math.min(Math.max(0, r + dailyRations), maxRations));
             setStone(s => Math.min(Math.max(0, s + dailyStone), maxStone));
 
-            if (dailyTimber > 0 || dailyRations > 0 || dailyStone > 0) {
-                addLog(`[+] Daily Yield: +${dailyTimber} Timber, +${dailyRations} Rations, +${dailyStone} Stone`);
+            if (dailyTimber !== 0 || dailyLumber !== 0 || dailyRations !== 0 || dailyStone !== 0) {
+                const yields = [];
+                if (dailyTimber !== 0) yields.push(`${dailyTimber > 0 ? '+' : ''}${dailyTimber} Timber`);
+                if (dailyLumber !== 0) yields.push(`${dailyLumber > 0 ? '+' : ''}${dailyLumber} Lumber`);
+                if (dailyRations !== 0) yields.push(`${dailyRations > 0 ? '+' : ''}${dailyRations} Rations`);
+                if (dailyStone !== 0) yields.push(`${dailyStone > 0 ? '+' : ''}${dailyStone} Stone`);
+                addLog(`[+] Daily Yield: ${yields.join(', ')}`);
             }
 
             if (gameTime.day === 1) {
