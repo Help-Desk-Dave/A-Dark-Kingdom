@@ -27,9 +27,11 @@ const WorldGrid = ({
                         colorClass = "text-yellow-500 font-bold";
                     }
                     return (
-                        <div
+                        <button
                             key={`${x}-${y}`}
-                            className={`w-12 h-12 flex items-center justify-center text-base cursor-pointer hover:border ${FLAVORS[flavor].color.replace("text-", "border-").replace("500", "400")} ${colorClass}`}
+                            type="button"
+                            aria-label="World Hex"
+                            className={`w-12 h-12 flex items-center justify-center text-base cursor-pointer hover:border ${FLAVORS[flavor].color.replace("text-", "border-").replace("500", "400")} ${colorClass} focus-visible:ring-2 focus-visible:ring-blue-500 focus:outline-none`}
                             onClick={() => {
                                 if (stage >= 3) {
                                     setInspectorHex({ x, y, ...hex });
@@ -47,7 +49,7 @@ const WorldGrid = ({
                             }}
                         >
                             {char}
-                        </div>
+                        </button>
                     );
                 })
             ))}

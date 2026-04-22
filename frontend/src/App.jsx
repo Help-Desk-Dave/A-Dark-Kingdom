@@ -1183,17 +1183,19 @@ const App = () => {
                             )}
                             <span className="text-gray-400 text-sm font-bold mt-2">Advisors (Click to inspect)</span>
                             {Object.entries(advisors).map(([role, advisor]) => (
-                                <div
+                                <button
                                     key={role}
+                                    type="button"
+                                    aria-label={`Inspect ${role} advisor`}
                                     onClick={() => {
                                         setInspectorPop({ role, ...advisor });
                                         setInspectorHex(null); // Clear hex inspector
                                         setInspectorPlot(null);
                                     }}
-                                    className="text-sm cursor-pointer hover:text-yellow-400 text-gray-300"
+                                    className="text-sm cursor-pointer hover:text-yellow-400 text-gray-300 text-left w-full focus-visible:ring-2 focus-visible:ring-blue-500 focus:outline-none"
                                 >
                                     - {role}: {advisor.name} <span className="text-gray-500 text-xs">(Attr: {advisor.attribute})</span>
-                                </div>
+                                </button>
                             ))}
                             <div className={`border-t ${FLAVORS[flavor].border} mt-1 mb-1`}></div>
                         </div>
