@@ -102,13 +102,15 @@ const App = () => {
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                return {
-                    day: 1,
-                    month: 1,
-                    year: 4710,
-                    hour: 0,
-                    ...parsed
-                };
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return {
+                        day: 1,
+                        month: 1,
+                        year: 4710,
+                        hour: 0,
+                        ...parsed
+                    };
+                }
             } catch (e) {
                 console.error("Failed to parse adk_gameTime:", e);
             }
@@ -163,10 +165,10 @@ const App = () => {
                                 } : null
                             }));
                         }
-                        return row;
+                        // Fallback for corrupted row
+                        return Array.from({ length: 10 }, () => ({ terrain: 'Plain', status: 0, settlement: null, poi: null }));
                     });
                 }
-                return parsed;
             } catch (e) {
                 console.error("Failed to parse adk_world:", e);
             }
@@ -220,7 +222,7 @@ const App = () => {
         const saved = localStorage.getItem('adk_vibeMode');
         if (saved) {
             try {
-                return JSON.parse(saved);
+                return Boolean(JSON.parse(saved));
             } catch (e) {
                 console.error("Failed to parse adk_vibeMode:", e);
             }
@@ -239,8 +241,10 @@ const App = () => {
         const saved = localStorage.getItem('adk_ruler');
         if (saved) {
             try {
-                JSON.parse(saved);
-                return false;
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return false;
+                }
             } catch (e) {
                 return true;
             }
@@ -251,7 +255,10 @@ const App = () => {
         const saved = localStorage.getItem('adk_ruler');
         if (saved) {
             try {
-                return JSON.parse(saved);
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return parsed;
+                }
             } catch (e) {
                 console.error("Failed to parse adk_ruler:", e);
             }
