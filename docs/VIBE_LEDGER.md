@@ -19,3 +19,12 @@
 * `App.jsx`: Add a milestone listener. When population hits exactly 100, pause the game simulation for 2 seconds and push log: `[!] The silence breaks. 100 voices whispering at once in the murky dark.`
 * `index.css`: Add a `.ghosting-text` keyframe animation for a subtle text-shadow duplication effect that Palette can apply to the population counter for 10 seconds.
 * **Secret Trigger:** If the user clicks the population counter 3 times while it reads exactly 100, unlock a rare log: `[?] Who are they talking to?`
+
+### 🌀 Vibe Proposal: 2026-04-21/Critical Unrest
+**Target Vibe:** The suffocating dread of impending societal collapse.
+**The Concept:** As Unrest reaches critical levels, the settlement should feel like a powder keg ready to explode. The UI should subtly reflect the tension, becoming visually unstable, and the event logs should echo the desperation of the populace.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: Add an effect that triggers when Unrest exceeds 90%. Occasionally push a rare log: `[!] The murmurs in the dark have turned to screams. They are watching you.`
+* `index.css`: Add a `.pulse-dread` keyframe animation that slightly reddens and shakes the Unrest meter when it crosses 90%, creating a sense of urgency and danger.
+* **Secret Trigger:** If the user attempts to construct a building while Unrest is above 95%, do not block construction but unlock a rare log: `[!] The workers build, but their eyes are hollow. The tools are stained.` and apply a `.glitch` effect to the building preview for a moment.
