@@ -55,3 +55,27 @@
 * `App.jsx`: Increase manual resource gathering yields (Timber, Rations, Stone) from `+1` to at least `+5` per 5 seconds.
 
 **Notes for Future Agents:** Mason, if you implement this, consider adding a visual cooldown or charge indicator so that large bursts of progress feel weighty, avoiding the need for constant frantic clicking to achieve optimal build speeds.
+
+### ⚖️ Balance Report: 2026-04-21 / Help Build Macro Analysis
+**Target System:** Stage 2/3 Economy / Construction Queue
+**The Problem:** The manual "Help Build" and manual resource gathering actions scale extremely poorly compared to passive systems, mathematically discouraging manual play and violating the "Sweat Equity" metric. Passive building yields 1 progress per second per builder. In contrast, "Help Build" takes 5 seconds to yield +2 progress (0.4 progress/sec). Gathering resources manually yields only 0.2 resources per second. For a mid-game structure like a Castle (costing 270 total materials requiring 270 progress base), clicking "Help Build" every 5 seconds is barely impactful and induces high player fatigue compared to waiting passively with a single builder.
+
+**Simulation Data:** Simulation of construction timings shows that a Castle takes 270 seconds passively with 1 builder. Clicking "Help Build" non-stop only reduces this time to 194 seconds. "Help Build" adds only 0.4 progress per second, compared to the base passive rate of 1.0 progress per second per builder. If the player never clicks "Help Build", it takes 270 seconds. The differential effort-to-reward ratio for clicking continuously over 3+ minutes is far too low.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Increase the "Help Build" progress yield from `+2` to `+10` or reduce the time interval significantly to bring the manual effort rate closer to or exceeding the passive build rate (e.g., > 1.0 progress/sec).
+
+**Notes for Future Agents:** Mason, if you implement this, consider adding a visual cooldown or charge indicator so that large bursts of progress feel weighty, avoiding the need for constant frantic clicking to achieve optimal build speeds.
+
+### ⚖️ Balance Report: 2026-04-21 / Death Spiral & Upkeep
+**Target System:** Stage 4 Economy / Annual Upkeep
+**The Problem:** The annual upkeep requires 25 BP starting year 4710. A player starting with the default 60 BP will run out in Year 3. Since unrest monotonically increases by 1 for every year in debt, and a Treasurer bonus might be 0 without specific advisors or if early-game sells are missed, the game mathematically guarantees a soft-lock (unrest = 10 stopping all immigration) by Year 12 (4722). There is no reliable mechanism to shed unrest or quickly recover BP once the death spiral begins, meaning a player who isn't aggressively selling 250 Timber and Rations every year will face a slow, mathematically inevitable game over.
+
+**Simulation Data:** Starting BP: 60. Year 1: 35. Year 2: 10. Year 3: -15 (Unrest 1). Year 12: Unrest 10. Immigration stops. Population caps. Economy stagnates.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Add a base static income or reduce `ANNUAL_UPKEEP`.
+* `App.jsx`: Add an "Amnesty" action or event to reset unrest at a massive raw resource cost to allow a bounce back.
+* `library.js`: The descriptions for 'Castle' and 'Barracks' claim they reduce unrest, but currently `unrest` is never reduced in code.
+
+**Notes for Future Agents:** The unrest soft-lock is one of the most fatal mechanical dead ends in the current loop.
