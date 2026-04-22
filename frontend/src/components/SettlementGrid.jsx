@@ -70,9 +70,11 @@ const SettlementGrid = ({
                     const isPath = settlement.pathValues && settlement.pathValues[y] && settlement.pathValues[y][x] > 5;
 
                     return (
-                        <div
+                        <button
                             key={`${x}-${y}`}
-                            className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                            type="button"
+                            aria-label="Settlement Cell"
+                            className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover} focus-visible:ring-2 focus-visible:ring-blue-500 focus:outline-none`}
                             onClick={() => {
                                 if (stage >= 2 && cell === null && !job) {
                                     setBuildMenuTarget({ x, y });
@@ -94,7 +96,7 @@ const SettlementGrid = ({
                                     <div className="w-2 h-2 bg-yellow-400 rounded-full border border-yellow-700" title={`${p.name} (${p.state})`} />
                                 </div>
                             ))}
-                        </div>
+                        </button>
                     );
                 })
             ))}
