@@ -28,3 +28,16 @@
 * `App.jsx`: Add an effect that triggers when Unrest exceeds 90%. Occasionally push a rare log: `[!] The murmurs in the dark have turned to screams. They are watching you.`
 * `index.css`: Add a `.pulse-dread` keyframe animation that slightly reddens and shakes the Unrest meter when it crosses 90%, creating a sense of urgency and danger.
 * **Secret Trigger:** If the user attempts to construct a building while Unrest is above 95%, do not block construction but unlock a rare log: `[!] The workers build, but their eyes are hollow. The tools are stained.` and apply a `.glitch` effect to the building preview for a moment.
+
+### 🎨 Vibe Proposal: 2026-04-21 / Defending Atmosphere
+
+**Target Vibe:**
+A sense of unseen danger and constant tension from the swamp, addressing the lack of a true 'defending' mechanic in the UI.
+
+**The Concept:**
+While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game currently only features explicit UI states for building and ruling (Advisors/Unrest). We can inject 'defending' flavor atmospherically via the Event Log. Unrest shouldn't just be a number; it should feel like you are actively defending the kingdom from internal mutiny and external swamp terrors.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+- **Secret Trigger:** If `unrest > 0` and it's night time (`gameTime.hour > 20 || gameTime.hour < 5`), randomly append atmospheric Event Logs such as `[!] Shadowy figures stalk the perimeter of the camp.` or `[*] The militia repels a swarm of giant mosquitoes.`
+- **Easter Egg:** A 1% chance on `handleHuntRations` to trigger a purely cosmetic log: `[!] Your hunters return empty-handed, speaking of glowing eyes in the mangroves.`
+- These logs should be purely visual and NEVER alter raw resources or block core progression actions.

@@ -4,15 +4,15 @@ Project Blueprint: "Pathfinder's Frontier" (Text-Based City Builder)
 
 A terminal-based, Object-Oriented simulation game that merges the macro-level kingdom management of Pathfinder: Kingmaker with the micro-level agent simulation of Dwarf Fortress. The game uses a "Dark Room" (Fog of War) exploration mechanic where the player must spend resources to map and claim a procedurally generated world.
 
-The UI is built using the Python rich library to create a static, dashboard-style interface rather than a scrolling terminal.
+The UI is built using React to create a static, dashboard-style interface rather than a scrolling terminal.
 
 2. File Architecture
 
-To keep the codebase clean and scalable, the game is split into two primary Python files.
+To keep the codebase clean and scalable, the game relies on structured frontend components.
 
-A. data_libraries.py (The Database)
+A. library.js / library.py (The Database)
 
-This file holds all static data, dictionaries, and lists. Keeping this as a .py file allows for easy importing and the inclusion of simple helper functions.
+This file holds all static data, dictionaries, and lists. Keeping this as a library file allows for easy importing and the inclusion of simple helper functions.
 
 FLAVORS: A nested dictionary containing UI colors, ASCII art sets, and text suffixes for different biomes (Swamp, Icy, Necromancy, Desert).
 
@@ -22,9 +22,9 @@ PROMINENT_CITIZENS: A list of NPC quest-givers and their specific spawn triggers
 
 NAMES: Lists for settlements, heroes, and generic villager pops.
 
-B. kingdom_sim.py (The Game Engine)
+B. App.jsx (The React Frontend App)
 
-This is the main executable script. It handles the game loop, state management, and the rich UI rendering.
+This is the main executable interface. It handles the game loop, state management, and the React UI rendering.
 
 class Pop: Tracks individual citizens (name, hunger, happiness, alignment).
 
@@ -48,11 +48,11 @@ The "Dark Room" Exploration Engine
 
 The world is a 2D grid (e.g., 10x10) of Hex objects.
 
-Status 0 (Hidden): Displayed as ??. The player knows nothing about it.
+Status 0 (Hidden): Displayed as ??. The player knows nothing about it. Click to call `handleReconnoiter`.
 
-Status 1 (Reconnoitered): Costs BP to scout. Reveals the terrain type and applies Flavor-specific ASCII art (e.g., Swamp trees vs. Icy peaks).
+Status 1 (Reconnoitered): Costs BP to scout. Reveals the terrain type and applies Flavor-specific art. Click to call `handleClaim`.
 
-Status 2 (Claimed): Costs BP to annex. Displayed as [C]. Only claimed hexes can have structures built on them.
+Status 2 (Claimed): Costs BP to annex. Displayed as [C]. Only claimed hexes can have structures built on them. Click to inspect the settlement.
 
 Flavor Sets
 
@@ -68,19 +68,19 @@ Design Concept: To simulate the pressures of kingdom budgeting, the game feature
 
 Logic Note: Before executing any command that costs BP (Build Points)—like mapping a hex or building a structure—the Kingdom class checks if self.bp >= cost. If not, a warning is printed: [-] Treasurer: 'We literally cannot afford to do that right now. Mind the budget!' This prevents the kingdom from going bankrupt (or missing its carriage payments!).
 
-4. UI Layout (rich Library)
+4. UI Layout (React Components)
 
 The terminal is divided into a fixed Layout:
 
 Header: Displays Kingdom Name, Current Turn, and Active Flavor.
 
-Map Panel (Left): Renders the 2D "Dark Room" ASCII grid.
+Map Panel (Left): Renders the 2D grid using `WorldGrid.jsx` or `SettlementGrid.jsx`.
 
-Ledger Panel (Right): Displays Pathfinder stats (BP, Food, Unrest, Kingdom XP) and a table of active citizen Pops.
+Ledger Panel (Right): Displays Pathfinder stats (BP, Rations, Unrest, Kingdom XP) and a table of active citizen Pops.
 
-Log Panel (Center-Bottom): A scrolling list of the last 5-7 events (e.g., "Urist has starved," "Stas the Lumberjack has arrived").
+Log Panel (Center-Bottom): A scrolling list of recent events (e.g., "Urist has starved," "Stas the Lumberjack has arrived").
 
-Command Prompt (Footer): Where the user types commands (r 5,5 to reconnoiter, build farm, etc.).
+Command Prompt (Footer): Action buttons rendered conditionally based on state (e.g., Gather Timber).
 
 5. Development Roadmap (Phases)
 
