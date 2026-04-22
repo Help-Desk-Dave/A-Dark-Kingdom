@@ -29,11 +29,13 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                return {
-                    day: 1,
-                    hour: 8,
-                    ...parsed
-                };
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return {
+                        day: 1,
+                        hour: 8,
+                        ...parsed
+                    };
+                }
             } catch (e) {
                 console.error("Failed to parse adk_gameTime in pops:", e);
             }
