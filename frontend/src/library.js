@@ -47,6 +47,7 @@ export const KINGMAKER_BACKGROUNDS = [
 
 export const STRUCTURES_DB = {
     "pier": {lots: 1, shape: "1x1", cost_timber: 20, cost_rations: 10, cost_stone: 5, traits: ["building"], produces: {rations: 2}, desc: "A dock for fishing and small boats. Produces rations daily."},
+    "sawmill": {lots: 1, shape: "1x1", cost_timber: 50, cost_rations: 50, cost_stone: 25, traits: ["building"], consumes: {timber: 2}, produces: {lumber: 1}, desc: "Refines timber into lumber. Requires 2 timber per day."},
     "academy": {lots: 2, shape: "2x1", cost_timber: 104, cost_rations: 104, cost_stone: 52, traits: ["building", "edifice"], desc: "An institution where advanced study in many fields can be pursued."},
     "alchemy laboratory": {lots: 1, shape: "1x1", cost_timber: 36, cost_rations: 36, cost_stone: 18, traits: ["building"], desc: "A factory for alchemists crafting elixirs and items."},
     "arena": {lots: 4, shape: "2x2", cost_timber: 80, cost_rations: 80, cost_stone: 40, traits: ["edifice", "yard"], desc: "A large public structure for gladiator combats and spectacle."},
@@ -66,7 +67,7 @@ export const STRUCTURES_DB = {
     "illicit market": {lots: 1, shape: "1x1", cost_timber: 100, cost_rations: 100, cost_stone: 50, traits: ["building", "infamous"], desc: "Unregulated and illegal trade. Increases Crime ruin."},
     "inn": {lots: 1, shape: "1x1", cost_timber: 20, cost_rations: 20, cost_stone: 10, traits: ["building", "residential"], desc: "A safe place for visitors to rest."},
     "jail": {lots: 1, shape: "1x1", cost_timber: 28, cost_rations: 28, cost_stone: 14, traits: ["building"], desc: "Fortified structure that houses criminals. Reduces Crime."},
-    "lumberyard": {lots: 2, shape: "2x1", cost_timber: 32, cost_rations: 32, cost_stone: 16, traits: ["yard"], storage_cap: {timber: 200}, desc: "Increases Lumber capacity. Must be built next to water."},
+    "lumberyard": {lots: 2, shape: "2x1", cost_timber: 32, cost_rations: 32, cost_stone: 16, traits: ["yard"], storage_cap: {timber: 200, lumber: 200}, desc: "Increases Lumber capacity. Must be built next to water."},
     "marketplace": {lots: 2, shape: "2x1", cost_timber: 96, cost_rations: 96, cost_stone: 48, traits: ["building", "residential"], desc: "A large neighborhood of shops around an open area."},
     "park": {lots: 1, shape: "1x1", cost_timber: 10, cost_rations: 10, cost_stone: 5, traits: ["yard"], desc: "Undeveloped land set aside for public use."},
     "shrine": {lots: 1, shape: "1x1", cost_timber: 16, cost_rations: 16, cost_stone: 8, traits: ["building"], desc: "A small building devoted to a deity or faith."},

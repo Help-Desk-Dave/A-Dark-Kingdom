@@ -183,6 +183,7 @@ class Kingdom:
         self.unrest = 0
         self.xp = 0
         self.stone = 0
+        self.lumber = 0
         self.level = 1
         self.turn = 1
         self.spawned_citizens = set()
@@ -257,6 +258,7 @@ class Kingdom:
                 max_timber = 100
                 max_rations = 100
                 max_stone = 100
+                max_lumber = 100
 
                 # Calculate Dynamic Storage Capacities based on structures
                 # Note: Woodcutters/Trappers are early stage mechanics, not full buildings, but we set limits just in case.
@@ -267,6 +269,7 @@ class Kingdom:
                             max_timber += data["storage_cap"].get("timber", 0) * count
                             max_rations += data["storage_cap"].get("rations", 0) * count
                             max_stone += data["storage_cap"].get("stone", 0) * count
+                            max_lumber += data["storage_cap"].get("lumber", 0) * count
 
                 # Produce resources (early game generic jobs)
                 self.timber += self.woodcutters * 1
@@ -285,6 +288,8 @@ class Kingdom:
                 # Apply Caps
                 self.timber = min(self.timber, max_timber)
                 self.rations = min(self.rations, max_rations)
+                self.stone = min(self.stone, max_stone)
+                self.lumber = min(self.lumber, max_lumber)
                 # Note: stone is not produced in stage 2/3 natively, but capping for consistency
 
                 # Population growth
@@ -329,11 +334,13 @@ class Kingdom:
                 daily_timber = 0
                 daily_rations = 0
                 daily_stone = 0
+                daily_lumber = 0
 
                 # Base Storage Capacities
                 max_timber = 100
                 max_rations = 100
                 max_stone = 100
+                max_lumber = 100
 
                 # Calculate Dynamic Storage Capacities
                 for name, data in STRUCTURES_DB.items():
@@ -343,6 +350,7 @@ class Kingdom:
                             max_timber += data["storage_cap"].get("timber", 0) * count
                             max_rations += data["storage_cap"].get("rations", 0) * count
                             max_stone += data["storage_cap"].get("stone", 0) * count
+                            max_lumber += data["storage_cap"].get("lumber", 0) * count
 
                 # Sequential Processing (Deficit Protocol)
                 for struct_name, data in STRUCTURES_DB.items():
@@ -358,6 +366,8 @@ class Kingdom:
                                 can_produce = False
                             if data["consumes"].get("stone", 0) and self.stone + daily_stone < data["consumes"]["stone"]:
                                 can_produce = False
+                            if data["consumes"].get("lumber", 0) and self.lumber + daily_lumber < data["consumes"]["lumber"]:
+                                can_produce = False
 
                         if can_produce:
                             # Deduct Consumes
@@ -365,6 +375,7 @@ class Kingdom:
                                 daily_timber -= data["consumes"].get("timber", 0)
                                 daily_rations -= data["consumes"].get("rations", 0)
                                 daily_stone -= data["consumes"].get("stone", 0)
+                                daily_lumber -= data["consumes"].get("lumber", 0)
 
                             # Add Produces
                             produces = data.get("produces") or data.get("production")
@@ -372,13 +383,20 @@ class Kingdom:
                                 daily_timber += produces.get("timber", 0)
                                 daily_rations += produces.get("rations", 0)
                                 daily_stone += produces.get("stone", 0)
+                                daily_lumber += produces.get("lumber", 0)
 
                 self.timber = min(max(0, self.timber + daily_timber), max_timber)
                 self.rations = min(max(0, self.rations + daily_rations), max_rations)
                 self.stone = min(max(0, self.stone + daily_stone), max_stone)
+                self.lumber = min(max(0, self.lumber + daily_lumber), max_lumber)
 
-                if daily_timber > 0 or daily_rations > 0 or daily_stone > 0:
-                    self.log.append(f"[+] Daily Yield: +{daily_timber} Timber, +{daily_rations} Rations, +{daily_stone} Stone")
+                if daily_timber != 0 or daily_rations != 0 or daily_stone != 0 or daily_lumber != 0:
+                    yields = []
+                    if daily_timber != 0: yields.append(f"{'+' if daily_timber > 0 else ''}{daily_timber} Timber")
+                    if daily_lumber != 0: yields.append(f"{'+' if daily_lumber > 0 else ''}{daily_lumber} Lumber")
+                    if daily_rations != 0: yields.append(f"{'+' if daily_rations > 0 else ''}{daily_rations} Rations")
+                    if daily_stone != 0: yields.append(f"{'+' if daily_stone > 0 else ''}{daily_stone} Stone")
+                    self.log.append(f"[+] Daily Yield: {', '.join(yields)}")
 
             if self.tick_count % 12 == 0:
                 self.bp -= ANNUAL_UPKEEP
@@ -570,6 +588,8 @@ class Kingdom:
 
         if getattr(self, "stone", None) is None:
             self.stone = 0
+        if getattr(self, "lumber", None) is None:
+            self.lumber = 0
 
         if self.timber < cost_timber or self.rations < cost_rations or self.stone < cost_stone:
             self.log.append(f"[-] Missing materials for {structure_name.capitalize()}! Need {cost_timber} Timber, {cost_rations} Rations, {cost_stone} Stone.")
@@ -703,6 +723,7 @@ def draw_ui(game):
         stats.add_row("Unrest:", str(game.unrest))
         stats.add_row("Kingdom XP:", str(game.xp))
         stats.add_row("Timber:", str(game.timber))
+        stats.add_row("Lumber:", str(game.lumber))
         stats.add_row("Rations:", str(game.rations))
         stats.add_row("Pops:", str(len(game.citizens)))
 
@@ -727,6 +748,7 @@ def draw_ui(game):
         stats.add_row("Sticks:", str(game.sticks) if game.stage == 0 else "---")
         if game.stage >= 1:
             stats.add_row("Timber:", str(game.timber))
+            stats.add_row("Lumber:", str(game.lumber))
             stats.add_row("Rations:", str(game.rations))
             stats.add_row("Pops:", str(len(game.citizens)))
         if game.stage >= 2:
