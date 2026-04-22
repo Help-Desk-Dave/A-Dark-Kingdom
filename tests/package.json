@@ -1,0 +1,13 @@
+{
+  "name": "a-dark-kingdom-bot",
+  "version": "1.0.0",
+  "description": "Automated playtesting bot for A Dark Kingdom",
+  "main": "index.js",
+  "scripts": {
+    "test:bot": "playwright test",
+    "run:bot": "node bot.js"
+  },
+  "dependencies": {
+    "playwright": "^1.43.0"
+  }
+}
