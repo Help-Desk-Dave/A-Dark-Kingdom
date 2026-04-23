@@ -357,8 +357,9 @@ const App = () => {
                     if (ruler && Math.random() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
-                        setStone(s => s + 1);
-                        addLog("[+] Gathered stone.");
+                        const yieldAmount = Math.max(1, stage * 2);
+                        setStone(s => s + yieldAmount);
+                        addLog(`[+] Gathered ${yieldAmount} stone.`);
                     }
                     return 100;
                 }
@@ -383,8 +384,9 @@ const App = () => {
                     if (ruler && Math.random() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
-                        setTimber(t => t + 1);
-                        addLog("[+] Gathered timber.");
+                        const yieldAmount = Math.max(1, stage * 2);
+                        setTimber(t => t + yieldAmount);
+                        addLog(`[+] Gathered ${yieldAmount} timber.`);
                     }
                     return 100;
                 }
@@ -409,8 +411,9 @@ const App = () => {
                     if (ruler && Math.random() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
-                        setRations(r => r + 1);
-                        addLog("[+] Hunted for rations.");
+                        const yieldAmount = Math.max(1, stage * 2);
+                        setRations(r => r + yieldAmount);
+                        addLog(`[+] Hunted for ${yieldAmount} rations.`);
                     }
                     return 100;
                 }
@@ -442,7 +445,7 @@ const App = () => {
                         setConstructionQueue(prevQueue => {
                             const newQueue = [...prevQueue];
                             if (newQueue.length > 0) {
-                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 10 };
+                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 20 };
                             }
                             return newQueue;
                         });
@@ -579,6 +582,13 @@ const App = () => {
                 if (stage === 2 && completedJobs.some(job => job.structureName === "houses")) {
                     setStage(3);
                     addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
+                }
+                if (completedJobs.some(job => {
+                    const lowerName = job.structureName.toLowerCase();
+                    return lowerName === "castle" || lowerName === "barracks";
+                })) {
+                    setUnrest(u => Math.max(0, u - 2));
+                    addLog("[+] The presence of your new fortifications eases the minds of the people. Unrest decreased.");
                 }
             }
 
