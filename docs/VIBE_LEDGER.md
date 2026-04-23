@@ -37,3 +37,15 @@
 * `App.jsx`: Add a `useEffect` that triggers when `rations === 0` and `totalPop > 0`. Occasionally push a rare log: `[!] The larder is empty. Stomachs growl in the dark.`
 * `index.css`: Add a `.hollow-text` animation keyframe that makes the Rations counter text flicker slightly transparent and pale grey when at 0, as if fading away.
 * **Secret Trigger:** If the user attempts to "Hunt Rations" 5 times while `rations === 0` and fails each time (due to `failMod`), unlock a rare log: `[!] There is nothing left out here. Only bones.`
+### 🎨 Vibe Proposal: 2026-04-21 / Defending Atmosphere
+
+**Target Vibe:**
+A sense of unseen danger and constant tension from the swamp, addressing the lack of a true 'defending' mechanic in the UI.
+
+**The Concept:**
+While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game currently only features explicit UI states for building and ruling (Advisors/Unrest). We can inject 'defending' flavor atmospherically via the Event Log. Unrest shouldn't just be a number; it should feel like you are actively defending the kingdom from internal mutiny and external swamp terrors.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+- **Secret Trigger:** If `unrest > 0` and it's night time (`gameTime.hour > 20 || gameTime.hour < 5`), randomly append atmospheric Event Logs such as `[!] Shadowy figures stalk the perimeter of the camp.` or `[*] The militia repels a swarm of giant mosquitoes.`
+- **Easter Egg:** A 1% chance on `handleHuntRations` to trigger a purely cosmetic log: `[!] Your hunters return empty-handed, speaking of glowing eyes in the mangroves.`
+- These logs should be purely visual and NEVER alter raw resources or block core progression actions.

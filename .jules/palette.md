@@ -12,3 +12,7 @@
 ## 2026-04-21 - Replace interactive `div` with `button`
 **Learning:** Found that core interactive map elements (`SettlementGrid`, `WorldGrid`) and the Kingdom Ledger advisors used interactive `<div onClick={...}>` components which lacked proper semantics and key accessibility features like tab focus and keypress activation.
 **Action:** Replaced interactive `div` wrappers with semantic `button` tags. Appended `type="button"`, `aria-label`, and `focus-visible:ring-2 focus-visible:ring-blue-500 focus:outline-none` styles to enable keyboard navigation while preserving the existing aesthetics (e.g., adding `text-left w-full` to the advisor items to override `button` defaults).
+
+## 2026-04-23 - Date Sync
+**Learning:** The correct system date is 2026-04-23.
+**Action:** Use 2026-04-23 for all generated reports and logs in this session.

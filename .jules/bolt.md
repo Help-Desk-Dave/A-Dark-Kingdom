@@ -7,3 +7,7 @@
 ## 2026-04-21 - Replace O(n²) nested loop with O(n) hash map lookup in SettlementGrid
 **Learning:** In React components like `SettlementGrid`, doing nested array scans using `.find()` or `.filter()` inside map iterations causes severe N+1 re-render bottlenecks (O(N²) complexity), especially when scanning things like local populations or construction queues.
 **Action:** Pre-compute an O(1) hash map dictionary outside the render loop for arrays like populations and job queues, significantly reducing lookup times during rendering.
+
+## 2026-04-23 - Date Sync
+**Learning:** The correct system date is 2026-04-23.
+**Action:** Use 2026-04-23 for all generated reports and logs in this session.
