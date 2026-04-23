@@ -573,13 +573,14 @@ const App = () => {
                 return nextWorld;
             });
 
-            completedJobs.forEach(job => {
-                addLog(`[+] Construction complete: ${job.structureName}.`);
-                if (stage === 2 && job.structureName === "houses") {
+            if (completedJobs.length > 0) {
+                const structureNames = completedJobs.map(job => job.structureName).join(', ');
+                addLog(`[+] Construction complete: ${structureNames}.`);
+                if (stage === 2 && completedJobs.some(job => job.structureName === "houses")) {
                     setStage(3);
                     addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
                 }
-            });
+            }
 
             // Clean up completed jobs
             setConstructionQueue(prevQueue => prevQueue.filter(job => job.progress < job.requiredProgress));
@@ -627,6 +628,7 @@ const App = () => {
                 return Math.floor(count / lots);
             };
 
+            const arrivingCitizens = [];
             PROMINENT_CITIZENS.forEach(citizen => {
                 if (newSpawned.has(citizen.name)) return;
 
@@ -658,9 +660,13 @@ const App = () => {
                 if (conditionsMet) {
                     newSpawned.add(citizen.name);
                     spawnedAny = true;
-                    addLog(`[*] PROMINENT CITIZEN ARRIVES: ${citizen.name}, ${citizen.title}. Quest: ${citizen.quest}`);
+                    arrivingCitizens.push(`[*] PROMINENT CITIZEN ARRIVES: ${citizen.name}, ${citizen.title}. Quest: ${citizen.quest}`);
                 }
             });
+
+            if (arrivingCitizens.length > 0) {
+                addLog(arrivingCitizens.join(' | '));
+            }
 
             if (spawnedAny) {
                 setSpawnedCitizens(newSpawned);
@@ -812,7 +818,10 @@ const App = () => {
     };
 
     const handleReconnoiter = (x, y) => {
-        if (stage < 2) return;
+        if (stage < 2) {
+            addLog("[-] You cannot reconnoiter yet.");
+            return;
+        }
         handleAction(RECON_COST, "recon", () => {
             const newWorld = [...world];
             if (newWorld[y][x].status === 0) {
@@ -830,7 +839,10 @@ const App = () => {
     };
 
     const handleClaim = (x, y) => {
-        if (stage < 2) return;
+        if (stage < 2) {
+            addLog("[-] You cannot claim land yet.");
+            return;
+        }
         handleAction(CLAIM_COST, "claim", () => {
             const newWorld = [...world];
             if (newWorld[y][x].status === 1) {
