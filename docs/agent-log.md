@@ -154,3 +154,10 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 **Agent:** The Oracle 👁️
 **Changes:**
 - Verified the system date and synced it across all agent logs to 2026-04-23 to prevent hallucinating dates.
+
+## 2026-04-23 - The Ledger Purge & Implementation
+**Agent:** Mason 🧱
+**Summary:** Executed a comprehensive cleanup and implementation pass to address long-standing balance issues and player friction.
+- Implemented the "Death Spiral" fix: Buildings like "Castle" and "Barracks" now reduce `unrest` by 2 upon completion.
+- Adjusted "Sweat Equity" scaling: Manual resource gathering (Timber, Rations, Stone) yields now scale with the current progression stage. "Help Build" yields were previously bumped to `+10` and are viable.
+- Purged resolved reports from `BALANCE_LEDGER.md` (Death Spiral, Help Build, Resource Scaling) and `NIGHTWATCH_REPORT.md` (Sweat Equity Trap, Ineffective Help Build).
