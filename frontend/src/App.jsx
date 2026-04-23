@@ -442,7 +442,7 @@ const App = () => {
                         setConstructionQueue(prevQueue => {
                             const newQueue = [...prevQueue];
                             if (newQueue.length > 0) {
-                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 2 };
+                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 10 };
                             }
                             return newQueue;
                         });
@@ -1170,15 +1170,15 @@ const App = () => {
 
                         <button
                             onClick={() => {
-                                setTimber(t => t - 10);
-                                setRations(r => r - 10);
-                                setBp(currentBp => currentBp + 1);
-                                addLog("[+] You sold raw resources to the local market for 1 BP.");
+                                setTimber(t => t - 5);
+                                setRations(r => r - 5);
+                                setBp(currentBp => currentBp + 2);
+                                addLog("[+] You sold raw resources to the local market for 2 BP.");
                             }}
-                            disabled={timber < 10 || rations < 10}
-                            className={`px-4 py-2 font-bold rounded border ${timber >= 10 && rations >= 10 ? 'bg-yellow-900 text-yellow-100 hover:bg-yellow-700 border-yellow-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
+                            disabled={timber < 5 || rations < 5}
+                            className={`px-4 py-2 font-bold rounded border ${timber >= 5 && rations >= 5 ? 'bg-yellow-900 text-yellow-100 hover:bg-yellow-700 border-yellow-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
                         >
-                            Sell Resources (10 Timber, 10 Rations -&gt; 1 BP)
+                            Sell Resources (5 Timber, 5 Rations -&gt; 2 BP)
                         </button>
                         <ProgressBar
                             onClick={handleHelpBuild}
@@ -1212,7 +1212,11 @@ const App = () => {
                             </button>
                         );
                     }
-                    return null;
+                    return (
+                        <div className="text-gray-400 italic flex items-center">
+                            Hint: Build additional housing to increase capacity to 5.
+                        </div>
+                    );
                 })()}
                 {stage === 0 && (
                     <div className="flex flex-col items-center gap-4">
