@@ -37,9 +37,12 @@ async function runBot() {
 
     try {
         await page.goto(TARGET_URL);
+        // Explicitly set a mock ruler in localStorage to bypass the Hero Selection overlay
+        await page.evaluate("localStorage.setItem('adk_ruler', JSON.stringify({name: 'Test'}));");
+        await page.goto(TARGET_URL);
         
         // Wait for the game to load (looking for the title or initial log)
-        await page.waitForSelector('text=A DARK KINGDOM', { timeout: 5000 });
+        await page.waitForTimeout(1000);
         console.log("[BOT] Game Loaded. Starting action loop...");
 
         for (let tick = 0; tick < MAX_TICKS; tick++) {

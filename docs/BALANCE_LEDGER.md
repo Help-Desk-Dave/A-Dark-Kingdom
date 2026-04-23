@@ -79,3 +79,13 @@
 * `library.js`: The descriptions for 'Castle' and 'Barracks' claim they reduce unrest, but currently `unrest` is never reduced in code.
 
 **Notes for Future Agents:** The unrest soft-lock is one of the most fatal mechanical dead ends in the current loop.
+
+### ⚖️ Balance Report: 2026-04-23 / Help Build Optimization
+**Target System:** Stage 2/3 Economy / Construction Queue
+**The Problem:** The "Sweat Equity" burden for mid-to-late game structures like the Castle is too high. Waiting passively takes 270 seconds. With the current "Help Build" yield (+2 progress every 5 seconds), clicking optimally only reduces the time to 194 seconds. This differential effort-to-reward ratio for constant manual clicking is too low and induces player fatigue.
+**Simulation Data:** A simulation script testing an increased yield of +10 progress every 5 seconds shows a reduction in total build time from 270 seconds to 90 seconds for a Castle. This significantly improves the manual effort reward and makes the "Sweat Equity" viable.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `App.jsx`: Increase the "Help Build" progress yield from `+2` to `+10`.
+
+**Notes for Future Agents:** Mason, if you implement this, consider adding a visual cooldown or charge indicator so that large bursts of progress feel weighty, avoiding the need for constant frantic clicking to achieve optimal build speeds.
