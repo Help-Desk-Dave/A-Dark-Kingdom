@@ -11,3 +11,7 @@
 ## 2026-04-23 - Date Sync
 **Learning:** The correct system date is 2026-04-23.
 **Action:** Use 2026-04-23 for all generated reports and logs in this session.
+
+## 2026-04-23 - Duplicate component filtering over states
+**Learning:** Checking the length of a filtered array (e.g., `if (pops.filter(...).length > 0)`) and then immediately `.map()`-ing the exact same `.filter()` result (e.g., `pops.filter(...).map(...)`) causes redundant iterations during component re-renders.
+**Action:** Extract duplicate inline `.filter()` calls into a single variable mapped at the top of the component or within the block, enabling the array to be checked and mapped without recalculating.

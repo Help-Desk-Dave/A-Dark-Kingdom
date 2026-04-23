@@ -13,7 +13,16 @@ const InspectorPanel = ({
 }) => {
     if (!inspectorHex && !inspectorPop && !inspectorPlot) return null;
 
+
+    const assignedPops = inspectorPlot ? pops.filter(p =>
+        p.settlementCoords.sx === inspectorPlot.sx &&
+        p.settlementCoords.sy === inspectorPlot.sy &&
+        ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) ||
+         (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))
+    ) : [];
+
     return (
+
         <div className={`w-full md:w-64 flex-shrink-0 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
             <div className={`flex justify-between items-center border-b ${FLAVORS[flavor].border} pb-2`}>
                 <h2 className="text-xl font-bold text-blue-400">Inspector</h2>
@@ -74,8 +83,8 @@ const InspectorPanel = ({
                     </button>
                     <div className="font-bold text-white mb-1 border-b border-gray-700 pb-1">Assigned Pops</div>
                     <div className="flex flex-col gap-1">
-                        {pops.filter(p => p.settlementCoords.sx === inspectorPlot.sx && p.settlementCoords.sy === inspectorPlot.sy && ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) || (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))).length > 0 ? (
-                            pops.filter(p => p.settlementCoords.sx === inspectorPlot.sx && p.settlementCoords.sy === inspectorPlot.sy && ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) || (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))).map(p => (
+                        {assignedPops.length > 0 ? (
+                            assignedPops.map(p => (
                                 <div key={p.id} className="text-gray-300 flex justify-between">
                                     <span>{p.name}</span>
                                     <span className="text-xs text-gray-500">{p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y ? 'Resident' : 'Worker'}</span>
