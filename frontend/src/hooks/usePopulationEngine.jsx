@@ -252,6 +252,13 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                     if (nextGameTime.hour === 0) {
                         let totalPops = nextPops.length;
 
+                        // ⚡ Bolt Optimization: Precompute population by settlement coordinate
+                        const popsByCoord = {};
+                        nextPops.forEach(p => {
+                            const key = `${p.settlementCoords.sx}-${p.settlementCoords.sy}`;
+                            popsByCoord[key] = (popsByCoord[key] || 0) + 1;
+                        });
+
                         // Calculate total housing capacity across the world
                         let totalHousing = 0;
                         let targetSettlement = null;
@@ -260,7 +267,8 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                 if (hex.status === 2 && hex.settlement) {
                                     const capacity = hex.settlement.resLots * HOUSING_CAPACITY;
                                     totalHousing += capacity;
-                                    if (capacity > nextPops.filter(p => p.settlementCoords.sx === sx && p.settlementCoords.sy === sy).length) {
+                                    const localPopCount = popsByCoord[`${sx}-${sy}`] || 0;
+                                    if (capacity > localPopCount) {
                                         targetSettlement = { sx, sy, settlement: hex.settlement };
                                     }
                                 }
