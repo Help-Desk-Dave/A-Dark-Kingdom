@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.layout import Layout
 from rich.panel import Panel
 from rich.text import Text
+from rich.table import Table
 from library import (
     FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, get_random_citizen,
     RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY,
@@ -657,15 +658,15 @@ class Kingdom:
         return map_display
 
 # --- UI LAYER: RICH DASHBOARD ---
-# Renders the terminal interface using the 'rich' library.
-def draw_ui(game):
+
+def build_layout():
+    """Initializes the layout skeleton to avoid instantiating it on every draw tick."""
     layout = Layout()
     layout.split_column(
         Layout(name="header", size=3),
         Layout(name="main", ratio=1),
         Layout(name="footer", size=3)
     )
-    # Redefine layout
     layout["main"].split_column(
         Layout(name="map_and_stats", ratio=3),
         Layout(name="log", ratio=1)
@@ -674,7 +675,10 @@ def draw_ui(game):
         Layout(name="map", ratio=2),
         Layout(name="stats", ratio=1)
     )
+    return layout
 
+# Renders the terminal interface using the 'rich' library.
+def draw_ui(game, layout):
     # Apply Flavor Visuals
     header_color = game.style["color"]
     layout["header"].update(Panel(f"👑 {game.name.upper()} | Flavor: {game.flavor.capitalize()}", style=f"bold {header_color}"))
@@ -798,10 +802,12 @@ if __name__ == "__main__":
     sim_thread = threading.Thread(target=simulation_loop, args=(my_game,), daemon=True)
     sim_thread.start()
 
+    ui_layout = build_layout()
+
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         with my_game.lock:
-            draw_ui(my_game)
+            draw_ui(my_game, ui_layout)
 
         # Prompt the user for input, convert to lowercase, and split into arguments.
         action = input("\n> ").lower().split()
