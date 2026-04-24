@@ -15,3 +15,6 @@
 ## 2026-04-23 - Duplicate component filtering over states
 **Learning:** Checking the length of a filtered array (e.g., `if (pops.filter(...).length > 0)`) and then immediately `.map()`-ing the exact same `.filter()` result (e.g., `pops.filter(...).map(...)`) causes redundant iterations during component re-renders.
 **Action:** Extract duplicate inline `.filter()` calls into a single variable mapped at the top of the component or within the block, enabling the array to be checked and mapped without recalculating.
+## 2026-04-24 - Population Engine Memoization Optimization
+**Learning:** React `setInterval` hooks using nested state setter chaining (e.g. `setGameTime(prev => { setPops(prevPops => ...) })`) trigger massive synchronous re-render thrashing when computing loops.
+**Action:** Unified the simulation tick using `useRef` to track constant dependencies (world, unrest) and decoupled the interval so it updates `pops` and `gameTime` efficiently in a single tick scope without chaining React setters.

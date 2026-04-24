@@ -45,6 +45,17 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
 
     const popIdCounter = useRef(pops.length > 0 ? Math.max(...pops.map(p => p.id)) + 1 : 0);
 
+    // ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
+    const worldRef = useRef(world);
+    const unrestRef = useRef(unrest);
+    const addLogRef = useRef(addLog);
+
+    useEffect(() => {
+        worldRef.current = world;
+        unrestRef.current = unrest;
+        addLogRef.current = addLog;
+    }, [world, unrest, addLog]);
+
     // Persist pops and gameTime
     useEffect(() => {
         localStorage.setItem('adk_pops', JSON.stringify(pops));
@@ -66,7 +77,7 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                 popsBySettlement[key].push(p);
             });
 
-            world.forEach((row, sy) => {
+            worldRef.current.forEach((row, sy) => {
                 row.forEach((hex, sx) => {
                     if (hex.status === 2 && hex.settlement) {
                         const key = `${sx},${sy}`;
@@ -159,83 +170,6 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
         if (stage < 2) return;
 
         const interval = setInterval(() => {
-            setPops(prevPops => {
-                let newlyMoved = []; // Array to track pop movement
-                const updatedPops = prevPops.map(pop => {
-                    let nextPop = { ...pop };
-
-                    // 1. Dialogue Engine
-                    if (nextPop.dialogueTimer > 0) {
-                        nextPop.dialogueTimer--;
-                        if (nextPop.dialogueTimer <= 0) {
-                            nextPop.dialogue = null;
-                        }
-                    } else if (Math.random() < DIALOGUE_CHANCE) {
-                        // Emit dialogue
-                        let messages = [];
-                        if (nextPop.state === 'home') messages = ["Resting...", "Home sweet home.", "Zzz..."];
-                        else if (nextPop.state === 'working') messages = ["Work work.", "Hard at work.", "Building the kingdom."];
-                        else if (nextPop.state === 'commuting_to_work') messages = ["Off to work.", "Morning commute.", "Late again!"];
-                        else if (nextPop.state === 'commuting_to_home') messages = ["Heading home.", "Long day.", "Finally done."];
-
-                        if (messages.length > 0) {
-                            nextPop.dialogue = messages[Math.floor(Math.random() * messages.length)];
-                            nextPop.dialogueTimer = 3; // Keep dialogue for 3 ticks (3 seconds)
-                        }
-                    }
-
-                    // 2. State Transitions & Pathfinding
-                    if (nextPop.state === 'home') {
-                        if (Math.random() < STATE_CHANGE_CHANCE) {
-                            nextPop.state = 'commuting_to_work';
-                        }
-                    } else if (nextPop.state === 'working') {
-                        if (Math.random() < STATE_CHANGE_CHANCE) {
-                            nextPop.state = 'commuting_to_home';
-                        }
-                    } else if (nextPop.state === 'commuting_to_work') {
-                        let dx = Math.sign(nextPop.workCoords.x - nextPop.currentCoords.x);
-                        let dy = Math.sign(nextPop.workCoords.y - nextPop.currentCoords.y);
-
-                        // Move one tile
-                        if (dx !== 0) {
-                            nextPop.currentCoords.x += dx;
-                            newlyMoved.push({ ...nextPop });
-                        } else if (dy !== 0) {
-                            nextPop.currentCoords.y += dy;
-                            newlyMoved.push({ ...nextPop });
-                        } else {
-                            // Arrived
-                            nextPop.state = 'working';
-                        }
-                    } else if (nextPop.state === 'commuting_to_home') {
-                        let dx = Math.sign(nextPop.homeCoords.x - nextPop.currentCoords.x);
-                        let dy = Math.sign(nextPop.homeCoords.y - nextPop.currentCoords.y);
-
-                        // Move one tile
-                        if (dx !== 0) {
-                            nextPop.currentCoords.x += dx;
-                            newlyMoved.push({ ...nextPop });
-                        } else if (dy !== 0) {
-                            nextPop.currentCoords.y += dy;
-                            newlyMoved.push({ ...nextPop });
-                        } else {
-                            // Arrived
-                            nextPop.state = 'home';
-                        }
-                    }
-
-                    return nextPop;
-                });
-
-                // Do not invoke onPopsMove synchronously here because calling a state setter inside a state setter is bad practice.
-                // We'll queue the invocation via setTimeout to avoid interfering with pure React state cycles.
-                // NOTE: onPopsMove is no longer in scope or needed since we aren't managing pops via onPopsMove hook arg anymore,
-                // but the previous logic is removed.
-
-                return updatedPops;
-            });
-
             setGameTime(prevTime => {
                 let nextHour = prevTime.hour + 1;
                 let nextDay = prevTime.day;
@@ -245,107 +179,10 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                 }
                 const nextGameTime = { day: nextDay, hour: nextHour };
 
+                // Do the pops update based on the NEW game time
                 setPops(prevPops => {
-                    let nextPops = [...prevPops];
-
-                    // Organic Growth check every 24 hours (at hour 0)
-                    if (nextGameTime.hour === 0) {
-                        let totalPops = nextPops.length;
-
-                        // ⚡ Bolt Optimization: Precompute population by settlement coordinate
-                        const popsByCoord = {};
-                        nextPops.forEach(p => {
-                            const key = `${p.settlementCoords.sx}-${p.settlementCoords.sy}`;
-                            popsByCoord[key] = (popsByCoord[key] || 0) + 1;
-                        });
-
-                        // Calculate total housing capacity across the world
-                        let totalHousing = 0;
-                        let targetSettlement = null;
-                        world.forEach((row, sy) => {
-                            row.forEach((hex, sx) => {
-                                if (hex.status === 2 && hex.settlement) {
-                                    const capacity = hex.settlement.resLots * HOUSING_CAPACITY;
-                                    totalHousing += capacity;
-                                    const localPopCount = popsByCoord[`${sx}-${sy}`] || 0;
-                                    if (capacity > localPopCount) {
-                                        targetSettlement = { sx, sy, settlement: hex.settlement };
-                                    }
-                                }
-                            });
-                        });
-
-                        // Ensure at least 1 capacity for the camp if it has 0 resLots but is a settlement
-                        if (totalHousing === 0 && targetSettlement) {
-                             totalHousing = 1;
-                        }
-
-                        const roll = Math.random();
-                        console.log("Immigration Check:", { currentPop: totalPops, maxPop: totalHousing, roll });
-                        if (totalPops < totalHousing && (unrest || 0) < 10) {
-                            if (roll < 0.20 && targetSettlement) { // 20% chance
-                                const settlersCount = Math.random() < 0.5 ? 1 : 2;
-                                const actualCount = Math.min(settlersCount, totalHousing - totalPops);
-
-                                for(let i=0; i<actualCount; i++) {
-                                    // Find an available bed/home
-                                    let houseLocations = [];
-                                    targetSettlement.settlement.grid.forEach((sRow, gy) => {
-                                        sRow.forEach((cell, gx) => {
-                                            if (cell === "houses") houseLocations.push({ x: gx, y: gy });
-                                        });
-                                    });
-
-                                    let newHome = { x: 2, y: 2 };
-                                    let newBedId = 0;
-
-                                    if (houseLocations.length > 0) {
-                                        let availableBeds = [];
-                                        houseLocations.forEach(hl => {
-                                            for(let j=0; j<HOUSING_CAPACITY; j++) {
-                                                availableBeds.push({ ...hl, bedId: j });
-                                            }
-                                        });
-                                        const takenBeds = nextPops.map(p => p.bedId !== undefined ? `${p.homeCoords.x},${p.homeCoords.y}-${p.bedId}` : null);
-                                        availableBeds = availableBeds.filter(b => !takenBeds.includes(`${b.x},${b.y}-${b.bedId}`));
-
-                                        if (availableBeds.length > 0) {
-                                            const bed = availableBeds[Math.floor(Math.random() * availableBeds.length)];
-                                            newHome = { x: bed.x, y: bed.y };
-                                            newBedId = bed.bedId;
-                                        } else {
-                                            const h = houseLocations[Math.floor(Math.random() * houseLocations.length)];
-                                            newHome = { x: h.x, y: h.y };
-                                        }
-                                    }
-
-                                    const newPop = {
-                                        id: popIdCounter.current++,
-                                        name: NAMES[Math.floor(Math.random() * NAMES.length)],
-                                        settlementCoords: { sx: targetSettlement.sx, sy: targetSettlement.sy },
-                                        homeCoords: newHome,
-                                        bedId: newBedId,
-                                        workCoords: { x: Math.floor(Math.random() * 5), y: Math.floor(Math.random() * 5) },
-                                        currentCoords: { x: 2, y: 4 }, // Spawn at edge
-                                        state: 'commuting_to_home',
-                                        dialogue: "New arrival!",
-                                        dialogueTimer: 5
-                                    };
-                                    nextPops.push(newPop);
-                                }
-                                if (addLog && actualCount > 0) {
-                                    // setTimeout so we don't trigger a warning about updating another component while rendering
-                                    setTimeout(() => addLog(`[+] Word of mouth brings ${actualCount} new settler(s) to the kingdom!`), 0);
-                                }
-                            }
-                        }
-                    }
-
-                    return nextPops.map(pop => {
+                    let nextPops = prevPops.map(pop => {
                         let nextPop = { ...pop };
-
-                        // Circadian Rhythm
-                        const isNight = nextGameTime.hour >= 22 || nextGameTime.hour < 6;
 
                         // 1. Dialogue Engine
                         if (nextPop.dialogueTimer > 0) {
@@ -366,6 +203,9 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                 nextPop.dialogueTimer = 3;
                             }
                         }
+
+                        // Circadian Rhythm
+                        const isNight = nextGameTime.hour >= 22 || nextGameTime.hour < 6;
 
                         // 2. State Transitions & Pathfinding
                         if (isNight) {
@@ -416,13 +256,109 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
 
                         return nextPop;
                     });
+
+                    // Organic Growth check every 24 hours (at hour 0)
+                    if (nextGameTime.hour === 0) {
+                        let totalPops = nextPops.length;
+
+                        // ⚡ Bolt Optimization: Precompute population by settlement coordinate
+                        const popsByCoord = {};
+                        nextPops.forEach(p => {
+                            const key = `${p.settlementCoords.sx}-${p.settlementCoords.sy}`;
+                            popsByCoord[key] = (popsByCoord[key] || 0) + 1;
+                        });
+
+                        // Calculate total housing capacity across the world
+                        let totalHousing = 0;
+                        let targetSettlement = null;
+                        worldRef.current.forEach((row, sy) => {
+                            row.forEach((hex, sx) => {
+                                if (hex.status === 2 && hex.settlement) {
+                                    const capacity = hex.settlement.resLots * HOUSING_CAPACITY;
+                                    totalHousing += capacity;
+                                    const localPopCount = popsByCoord[`${sx}-${sy}`] || 0;
+                                    if (capacity > localPopCount) {
+                                        targetSettlement = { sx, sy, settlement: hex.settlement };
+                                    }
+                                }
+                            });
+                        });
+
+                        // Ensure at least 1 capacity for the camp if it has 0 resLots but is a settlement
+                        if (totalHousing === 0 && targetSettlement) {
+                             totalHousing = 1;
+                        }
+
+                        const roll = Math.random();
+                        console.log("Immigration Check:", { currentPop: totalPops, maxPop: totalHousing, roll });
+                        if (totalPops < totalHousing && (unrestRef.current || 0) < 10) {
+                            if (roll < 0.20 && targetSettlement) { // 20% chance
+                                const settlersCount = Math.random() < 0.5 ? 1 : 2;
+                                const actualCount = Math.min(settlersCount, totalHousing - totalPops);
+
+                                for(let i=0; i<actualCount; i++) {
+                                    // Find an available bed/home
+                                    let houseLocations = [];
+                                    targetSettlement.settlement.grid.forEach((sRow, gy) => {
+                                        sRow.forEach((cell, gx) => {
+                                            if (cell === "houses") houseLocations.push({ x: gx, y: gy });
+                                        });
+                                    });
+
+                                    let newHome = { x: 2, y: 2 };
+                                    let newBedId = 0;
+
+                                    if (houseLocations.length > 0) {
+                                        let availableBeds = [];
+                                        houseLocations.forEach(hl => {
+                                            for(let j=0; j<HOUSING_CAPACITY; j++) {
+                                                availableBeds.push({ ...hl, bedId: j });
+                                            }
+                                        });
+                                        const takenBeds = nextPops.map(p => p.bedId !== undefined ? `${p.homeCoords.x},${p.homeCoords.y}-${p.bedId}` : null);
+                                        availableBeds = availableBeds.filter(b => !takenBeds.includes(`${b.x},${b.y}-${b.bedId}`));
+
+                                        if (availableBeds.length > 0) {
+                                            const bed = availableBeds[Math.floor(Math.random() * availableBeds.length)];
+                                            newHome = { x: bed.x, y: bed.y };
+                                            newBedId = bed.bedId;
+                                        } else {
+                                            const h = houseLocations[Math.floor(Math.random() * houseLocations.length)];
+                                            newHome = { x: h.x, y: h.y };
+                                        }
+                                    }
+
+                                    const newPop = {
+                                        id: popIdCounter.current++,
+                                        name: NAMES[Math.floor(Math.random() * NAMES.length)],
+                                        settlementCoords: { sx: targetSettlement.sx, sy: targetSettlement.sy },
+                                        homeCoords: newHome,
+                                        bedId: newBedId,
+                                        workCoords: { x: Math.floor(Math.random() * 5), y: Math.floor(Math.random() * 5) },
+                                        currentCoords: { x: 2, y: 4 }, // Spawn at edge
+                                        state: 'commuting_to_home',
+                                        dialogue: "New arrival!",
+                                        dialogueTimer: 5
+                                    };
+                                    nextPops.push(newPop);
+                                }
+                                if (addLogRef.current && actualCount > 0) {
+                                    // setTimeout so we don't trigger a warning about updating another component while rendering
+                                    setTimeout(() => addLogRef.current(`[+] Word of mouth brings ${actualCount} new settler(s) to the kingdom!`), 0);
+                                }
+                            }
+                        }
+                    }
+
+                    return nextPops;
                 });
+
                 return nextGameTime;
             });
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [stage, unrest, world, addLog]);
+    }, [stage]);
 
     return { pops, gameTime };
 };

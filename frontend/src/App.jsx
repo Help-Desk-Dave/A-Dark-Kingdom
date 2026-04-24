@@ -597,6 +597,12 @@ const App = () => {
         }
     }, [constructionQueue, stage]);
 
+// ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
+    const totalPopRef = useRef(totalPop);
+    useEffect(() => {
+        totalPopRef.current = totalPop;
+    }, [totalPop]);
+
     // Construction Loop (every 1 second)
     useEffect(() => {
         if (stage < 2) return; // Settlements don't exist before stage 2
@@ -606,7 +612,7 @@ const App = () => {
                 if (prevQueue.length === 0) return prevQueue;
 
                 const assignedPops = 0; // Pops assigned to jobs/gatherers (to be implemented)
-                let availableBuilders = totalPop === 0 ? 1 : Math.max(0, totalPop - assignedPops);
+                let availableBuilders = totalPopRef.current === 0 ? 1 : Math.max(0, totalPopRef.current - assignedPops);
 
                 return prevQueue.map(job => {
                     if (availableBuilders > 0 && job.progress < job.requiredProgress) {
@@ -619,7 +625,7 @@ const App = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [stage, totalPop]);
+    }, [stage]);
 
     // Prominent Citizens Observer
     const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());

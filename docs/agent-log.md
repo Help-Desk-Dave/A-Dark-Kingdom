@@ -161,3 +161,6 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 - Implemented the "Death Spiral" fix: Buildings like "Castle" and "Barracks" now reduce `unrest` by 2 upon completion.
 - Adjusted "Sweat Equity" scaling: Manual resource gathering (Timber, Rations, Stone) yields now scale with the current progression stage. "Help Build" yields were previously bumped to `+10` and are viable.
 - Purged resolved reports from `BALANCE_LEDGER.md` (Death Spiral, Help Build, Resource Scaling) and `NIGHTWATCH_REPORT.md` (Sweat Equity Trap, Ineffective Help Build).
+
+### Bolt ⚡ - 2026-04-24
+- Optimized `usePopulationEngine.jsx` by memoizing dependencies into `useRef`s to prevent `setInterval` stale closures and combined `setGameTime` and `setPops` logic to eliminate nested re-renders. The simulation tick is now much smoother and runs O(N) gracefully.
