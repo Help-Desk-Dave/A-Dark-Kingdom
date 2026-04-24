@@ -161,3 +161,9 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 - Implemented the "Death Spiral" fix: Buildings like "Castle" and "Barracks" now reduce `unrest` by 2 upon completion.
 - Adjusted "Sweat Equity" scaling: Manual resource gathering (Timber, Rations, Stone) yields now scale with the current progression stage. "Help Build" yields were previously bumped to `+10` and are viable.
 - Purged resolved reports from `BALANCE_LEDGER.md` (Death Spiral, Help Build, Resource Scaling) and `NIGHTWATCH_REPORT.md` (Sweat Equity Trap, Ineffective Help Build).
+
+## 2026-04-24 - Daily Commit Summary
+**Agent:** Scribe 📜
+**Changes:**
+- Reviewed commits for the last 24 hours. The primary update was merging PR #101 by Dave (Muse), which added new atmospheric concepts to the Vibe Ledger.
+- Multiple new agent logs, testing scripts (such as `simulate_help_build_optimized.js` and `simulate_death_spiral.js`), and a triage tool (`tools/triage.py`) were committed.
