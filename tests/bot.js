@@ -12,11 +12,13 @@ const DATA_FILE = path.join(__dirname, 'bot_telemetry.json');
 const ACTION_PRIORITIES = {
     0: [
         { selector: 'button:has-text("Gather Sticks")', weight: 1.0 }
-        // We will add 'Build Fire' once Mason exposes it in App.jsx
+        ,
+        { selector: 'button:has-text("Build Fire")', weight: 1.0 }
     ],
     1: [
         { selector: 'button:has-text("Hunt Rations")', weight: 0.6 },
-        { selector: 'button:has-text("Gather Timber")', weight: 0.4 }
+        { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
+        { selector: 'button:has-text("Establish Camp")', weight: 1.0 }
     ]
 };
 
@@ -57,8 +59,9 @@ async function runBot() {
             });
             
             let currentStage = 0;
-            if (stageText.includes("The fire crackles")) currentStage = 1;
-            if (stageText.includes("The foundation is laid")) currentStage = 2;
+            if (stageText.includes("A small comfort in the dark")) currentStage = 1;
+
+            if (stageText.includes("Camp established at (5,5)")) currentStage = 2;
             telemetry.stageReached = Math.max(telemetry.stageReached, currentStage);
 
             // 2. Decide Action
