@@ -49,3 +49,30 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 - **Secret Trigger:** If `unrest > 0` and it's night time (`gameTime.hour > 20 || gameTime.hour < 5`), randomly append atmospheric Event Logs such as `[!] Shadowy figures stalk the perimeter of the camp.` or `[*] The militia repels a swarm of giant mosquitoes.`
 - **Easter Egg:** A 1% chance on `handleHuntRations` to trigger a purely cosmetic log: `[!] Your hunters return empty-handed, speaking of glowing eyes in the mangroves.`
 - These logs should be purely visual and NEVER alter raw resources or block core progression actions.
+
+### 🌀 Vibe Proposal: 2026-04-24/Building Collapse
+**Target Vibe:** The oppressive fragility of progress.
+**The Concept:** When a building finishes constructing, sometimes the swamp fights back, giving a sense that the structures are barely holding on in the muck.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When a job completes, if `stage === 1`, add a 2% chance to push a rare log: `[!] The new timbers sink inches into the mud before settling. For now.`
+* `index.css`: Add a `.settle-mud` animation keyframe that Palette can apply to newly completed structure UI components, making them briefly shake downwards.
+* **Secret Trigger:** If the user clicks on a newly completed building 5 times within 10 seconds of completion, unlock a rare log: `[!] Stop shaking it. The foundations are weak enough.`
+
+### 🌀 Vibe Proposal: 2026-04-24/Advisor Despair
+**Target Vibe:** The psychological toll of ruling the dark.
+**The Concept:** The advisors shouldn't just be mechanical cogs; they are living in this nightmare too. Over time, their demeanor should crack if unrest is high.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: If `unrest > 50` and the user opens the Advisor panel, push a rare log: `[?] The advisors avoid your gaze. They whisper when you look away.`
+* `index.css`: Add a `.flicker-shadow` keyframe animation that occasionally applies a dark text shadow to the advisor names when `unrest > 50`, as if the light in the room is failing.
+* **Secret Trigger:** If the user assigns and unassigns the same advisor 3 times in a row, unlock a rare log: `[!] "We serve, my liege," they say. But their voices are hollow.`
+
+### 🌀 Vibe Proposal: 2026-04-24/The Witching Hour
+**Target Vibe:** The terror of the true dark.
+**The Concept:** The game time cycle shouldn't just change the resource tick; night time should feel palpably more dangerous and isolating, even if no actual danger exists mechanically.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: During the in-game night (`gameTime.hour === 2` specifically), push a rare log: `[*] A strange mist rolls in from the swamps. The borders feel very close.`
+* `index.css`: Add a `.vignette-creep` keyframe that Palette can apply to the main app container, slowly increasing a dark edge vignette around the screen between 1 AM and 3 AM in-game.
+* **Secret Trigger:** If the user clicks on the time display exactly at `00:00` (midnight), unlock a rare log: `[!] The clock strikes. Something in the swamp strikes back.`
