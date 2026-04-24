@@ -4,7 +4,7 @@ State Machine Reference (UI Progression)
 
 Stage 0: The Wilderness
 
-Visuals: Entire screen is black/hidden except for the Event Log and a single action button: [Gather Sticks].
+Visuals: Entire screen is black/hidden except for the Event Log, progressive ASCII art of a campfire, and a single ProgressBar action: [Gather Sticks]. (Note: Hero Selection modal appears before this via lazy initialization).
 
 Logic: The background simulation tick is Paused. No resources drain.
 
@@ -12,7 +12,7 @@ Transition: After `sticks >= 10`, unlock [Build Fire]. Clicking it transitions t
 
 Stage 1: Survival Mode
 
-Visuals: Basic manual gathering column appears ([Gather Timber], [Hunt Rations], [Gather Stone]).
+Visuals: Basic manual gathering column appears as ProgressBar components ([Gather Timber], [Hunt Rations], [Gather Stone]) disabled by `isRulerBusy`.
 
 Logic: The background simulation tick is Paused. The player must manually gather to survive.
 
@@ -30,9 +30,9 @@ Stage 3: Automation & Expansion
 
 Visuals: Worker assignment UI is revealed.
 
-Logic: The 1-second simulation tick begins (`gameTime` interval). Players can assign Pops to roles (Woodcutter, Trapper) to automate resource generation. The Hero Selection overlay is active during transition.
+Logic: The 1-second simulation tick begins (`gameTime` interval). Players can assign Pops to roles (Woodcutter, Trapper) to automate resource generation.
 
-Transition: Once the housing capacity population reaches a threshold (`pop >= 5`), the [Sign the Charter] button appears. Clicking it transitions to Stage 4.
+Transition: Once the housing capacity population reaches a threshold by calculating `hex.settlement.resLots * HOUSING_CAPACITY` resulting in `pop >= 5`, the [Sign the Charter] button appears. Clicking it transitions directly to Stage 4.
 
 Stage 4: The Dark Kingdom
 
