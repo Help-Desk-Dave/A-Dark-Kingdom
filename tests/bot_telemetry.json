@@ -1,0 +1,35 @@
+[
+  {
+    "runDate": "2026-04-25T14:26:39.621Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 0,
+      "rations": 118,
+      "sticks": 0
+    },
+    "stageReached": 1,
+    "failures": 452
+  },
+  {
+    "runDate": "2026-04-25T14:32:38.157Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 0,
+      "rations": 0,
+      "sticks": 0
+    },
+    "stageReached": 0,
+    "failures": 500
+  },
+  {
+    "runDate": "2026-04-25T14:42:08.798Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 0,
+      "rations": 180,
+      "sticks": 0
+    },
+    "stageReached": 1,
+    "failures": 436
+  }
+]

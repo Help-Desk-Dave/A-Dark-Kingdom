@@ -18,3 +18,7 @@
 ## 2026-04-24 - Population Engine Memoization Optimization
 **Learning:** React `setInterval` hooks using nested state setter chaining (e.g. `setGameTime(prev => { setPops(prevPops => ...) })`) trigger massive synchronous re-render thrashing when computing loops.
 **Action:** Unified the simulation tick using `useRef` to track constant dependencies (world, unrest) and decoupled the interval so it updates `pops` and `gameTime` efficiently in a single tick scope without chaining React setters.
+
+## 2026-04-25 - Interval Loop Memoization
+**Learning:** React `setInterval` hooks relying on nested state setters (e.g., `setGameTime(prev => { setPops(prevPops => ...) })`) trigger massive synchronous re-render thrashing. Furthermore, intervals with wide dependencies get torn down and recreated too frequently.
+**Action:** In `App.jsx` and `usePopulationEngine.jsx`, use `useRef` to track fast-changing interval inputs like `gameTime` and decouple the setter logic to avoid stale closures without breaking the interval out of its isolated closure scope.
