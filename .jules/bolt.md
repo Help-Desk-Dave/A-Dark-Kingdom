@@ -18,3 +18,7 @@
 ## 2026-04-24 - Population Engine Memoization Optimization
 **Learning:** React `setInterval` hooks using nested state setter chaining (e.g. `setGameTime(prev => { setPops(prevPops => ...) })`) trigger massive synchronous re-render thrashing when computing loops.
 **Action:** Unified the simulation tick using `useRef` to track constant dependencies (world, unrest) and decoupled the interval so it updates `pops` and `gameTime` efficiently in a single tick scope without chaining React setters.
+
+## 2026-04-26 - Date Sync
+**Learning:** The correct system date is 2026-04-26.
+**Action:** Use 2026-04-26 for all generated reports and logs in this session.
