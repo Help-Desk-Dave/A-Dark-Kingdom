@@ -76,3 +76,30 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 * `App.jsx`: During the in-game night (`gameTime.hour === 2` specifically), push a rare log: `[*] A strange mist rolls in from the swamps. The borders feel very close.`
 * `index.css`: Add a `.vignette-creep` keyframe that Palette can apply to the main app container, slowly increasing a dark edge vignette around the screen between 1 AM and 3 AM in-game.
 * **Secret Trigger:** If the user clicks on the time display exactly at `00:00` (midnight), unlock a rare log: `[!] The clock strikes. Something in the swamp strikes back.`
+
+### 🌀 Vibe Proposal: 2026-04-26/Unearthed Secrets
+**Target Vibe:** The oppressive, ancient nature of the earth.
+**The Concept:** Gathering stone shouldn't just be picking up rocks, it should feel like unearthing things best left buried in the dark soil.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: On `handleGatherStone` completion, add a 2% chance to push a rare log: `[!] The stone you unearthed is carved with runes that hurt your eyes. You drop it back into the muck.`
+* `index.css`: Add a `.shatter-dust` animation keyframe for the stone gather progress bar, making it occasionally dissolve into ash on completion.
+* **Secret Trigger:** If the user clicks `Gather Stone` exactly 7 times in a row without gathering anything else, unlock a rare log: `[!] The earth groans under your constant digging. It wants to sleep.`
+
+### 🌀 Vibe Proposal: 2026-04-26/Illusion of Safety
+**Target Vibe:** The fragile illusion of safety upon reaching Stage 2.
+**The Concept:** Building the first houses gives a false sense of security. The structures are frail in a hostile, swallowing environment.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When `stage` transitions from 1 to 2, push a log: `[*] Walls of timber and mud rise from the swamp. They won't keep the dark out, but they hide you from it.`
+* `index.css`: Add a `.flicker-candle` animation for the settlement grid UI elements, simulating weak firelight struggling against encroaching darkness.
+* **Secret Trigger:** If the user idles for 120 seconds immediately after reaching Stage 2, unlock a rare log: `[?] Something scratches against the outside of your new walls.`
+
+### 🌀 Vibe Proposal: 2026-04-26/Swamp Reclamation
+**Target Vibe:** The vast, uncharted horrors of the murky wilderness.
+**The Concept:** Expanding the map into Swamp tiles isn't just uncovering terrain; it's pushing into hostile, diseased territory that resents your presence.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When a user recons or claims a `Swamp` tile in the `WorldGrid`, add a 5% chance to push a rare log: `[!] The murky waters here are choked with strange, pale roots. The air smells of copper.`
+* `index.css`: Add a `.murk-reveal` transition for newly revealed swamp tiles, making them appear slowly from blackness rather than snapping into view.
+* **Secret Trigger:** If the user clicks the same unexplored map tile 5 times rapidly, unlock a rare log: `[!] Stop staring into the fog. It's starting to stare back.`
