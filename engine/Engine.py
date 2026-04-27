@@ -33,7 +33,6 @@ class Settlement:
     # Computed property to check if the settlement is overcrowded based on residential vs non-residential lots.
     @property
     def is_overcrowded(self):
-        # Overcrowded if residential lots are less than 1 for every HOUSING_CAPACITY other lots
         # Overcrowded if residential lots are less than 1 for every HOUSING_CAPACITY other lots.
         return self.residential_lots < (self.other_lots // HOUSING_CAPACITY)
 
