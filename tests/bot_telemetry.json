@@ -1,0 +1,24 @@
+[
+  {
+    "runDate": "2026-04-25T14:42:08.798Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 0,
+      "rations": 180,
+      "sticks": 0
+    },
+    "stageReached": 1,
+    "failures": 436
+  },
+  {
+    "runDate": "2026-04-27T14:34:02.428Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 6,
+      "rations": 4,
+      "sticks": 0
+    },
+    "stageReached": 2,
+    "failures": 112
+  }
+]

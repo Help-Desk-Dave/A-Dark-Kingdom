@@ -126,6 +126,14 @@ const App = () => {
         return { day: 1, month: 1, year: 4710, hour: 0 };
     });
 
+    // ⚡ Bolt Optimization: Use ref for gameTime to avoid dependency triggers
+    const gameTimeRef = useRef(gameTime);
+    useEffect(() => {
+        gameTimeRef.current = gameTime;
+    }, [gameTime]);
+
+    // ⚡ Bolt Optimization: Use ref for gameTime to avoid dependency triggers
+
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
     const [unrest, setUnrest] = useState(() => {
         const saved = localStorage.getItem('adk_unrest');
@@ -490,23 +498,23 @@ const App = () => {
         if (stage < 3 || showHeroSelection) return;
 
         const interval = setInterval(() => {
-            setGameTime(prev => {
-                let { day, month, year, hour } = prev;
-                hour += 1;
-                if (hour >= 24) {
-                    hour = 0;
-                    day += 1;
-                    if (day > 30) {
-                        day = 1;
-                        month += 1;
-                        if (month > 12) {
-                            month = 1;
-                            year += 1;
-                        }
+            let { day, month, year, hour } = gameTimeRef.current;
+            hour += 1;
+            if (hour >= 24) {
+                hour = 0;
+                day += 1;
+                if (day > 30) {
+                    day = 1;
+                    month += 1;
+                    if (month > 12) {
+                        month = 1;
+                        year += 1;
                     }
                 }
-                return { day, month, year, hour };
-            });
+            }
+            const nextGameTime = { day, month, year, hour };
+            gameTimeRef.current = nextGameTime;
+            setGameTime(nextGameTime);
         }, 1000);
 
         return () => clearInterval(interval);
