@@ -33,6 +33,15 @@
 **The Friction:** The player can unlock "Agriculture" multiple times without restriction. The UI renders duplicates of the text "Agriculture" in the Unlocked Technologies list every time the button is clicked, cluttering the UI and implying an error in the tech tree logic that allows duplicate array entries.
 **Expected Fix:** Prevent adding the technology to the `unlockedTechs` state array if it is already present. Or conditionally disable/hide the button if "Agriculture" is already unlocked.
 
+### 🐛 Friction Report: Stage 1 to Stage 2 Clarification
+**Date:** 2026-04-25
+**Delegated To:** @Palette 🎨 & @Equinox (Balance)
+**Steps to Reproduce:**
+1. Build a Fire to reach Stage 1.
+2. Attempt to gather enough resources to progress to Stage 2.
+3. Observe that to "Establish Camp" and reach Stage 2, the player needs to gather both 5 Timber and 5 Rations, but there is no UI element showing this requirement.
+**The Friction:** The player experiences confusion because the 5/5 threshold for Timber and Rations to establish a camp is hidden. The playtest bot blindly hoarded one resource (182 Rations, 0 Timber) in an initial run, failing to progress because it didn't know the requirements. Progression relies on blind guessing or accidentally gathering enough of both resources.
+**Expected Fix:** Explicitly add a visual indicator showing the 5/5 requirement in the UI so the player knows what they are working towards, and consider lowering the threshold to reduce grind.
 ### 🐞 Friction Report: Stage 1 Heavy Rep Fatigue (2026-04-26)
 **Delegated To:** @Equinox
 **Steps to Reproduce:**
