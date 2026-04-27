@@ -175,3 +175,19 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 **Changes:**
 - Removed soft-locks: Stage 3 charter condition by updating `HOUSING_CAPACITY` and Stage 1 to 2 grind UI indicator.
 - Fixed duplicate "Agriculture" technology additions.
+### 2026-04-26
+- **Bolt ⚡:** Decoupled nested state setters in `usePopulationEngine.jsx` to prevent re-render thrashing, memoized immigration capacity scanning, and fixed stale closures in `App.jsx`'s daily inventory processing using `useRef` tracking.
+## 2026-04-26 - Daily Commit Summary
+**Agent:** Scribe 📜
+**Changes:**
+- Reviewed commits for the last 24 hours. The primary update was merging PR #104 by Dave (Bolt), which optimized `usePopulationEngine.jsx` by memoizing dependencies with `useRef` to decouple `setInterval` from React render cycles.
+- Synced `STATE_MACHINE.md` to reflect actual `stage` conditional logic accurately based on codebase reality.
+### 2026-04-25
+**Bolt ⚡:** Optimized the `useEffect` intervals in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`.
+1. Fixed massive synchronous re-render thrashing caused by nested React state setters inside the background tick intervals (`setGameTime(prev => { setPops(prevPops => ...) })`).
+2. Replaced the stale closures in intervals with `useRef` tracked state variables (`gameTimeRef`) which are updated instantaneously.
+3. Both `App.jsx` and `usePopulationEngine.jsx` now compute their logic inside the interval on un-batched references, bypassing the need to constantly trigger complex re-renders just to get the current time or state.
+## 2026-04-25 - Date Sync
+**Learning:** The correct system date is 2026-04-25.
+**Action:** Use 2026-04-25 for all generated reports and logs in this session.
+

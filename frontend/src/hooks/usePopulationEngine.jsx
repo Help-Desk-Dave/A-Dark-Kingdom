@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 const NAMES = ["Algar", "Bryn", "Cael", "Doran", "Elara", "Fen", "Gael", "Halia", "Ivor", "Jarek"];
 const DIALOGUE_CHANCE = 0.05;
@@ -44,6 +44,31 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
     });
 
     const popIdCounter = useRef(pops.length > 0 ? Math.max(...pops.map(p => p.id)) + 1 : 0);
+
+    const gameTimeRef = useRef(gameTime);
+    useEffect(() => { gameTimeRef.current = gameTime; }, [gameTime]);
+
+    const settlementInfo = useMemo(() => {
+        let totalHousing = 0;
+        let targetSettlement = null;
+        world.forEach((row, sy) => {
+            row.forEach((hex, sx) => {
+                if (hex.status === 2 && hex.settlement) {
+                    const capacity = hex.settlement.resLots * HOUSING_CAPACITY;
+                    totalHousing += capacity;
+                    targetSettlement = { sx, sy, settlement: hex.settlement };
+                }
+            });
+        });
+        return { totalHousing, targetSettlement };
+    }, [world, HOUSING_CAPACITY]);
+
+    const settlementInfoRef = useRef(settlementInfo);
+    useEffect(() => { settlementInfoRef.current = settlementInfo; }, [settlementInfo]);
+    useEffect(() => {
+        gameTimeRef.current = gameTime;
+    }, [gameTime]);
+
 
     // ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
     const worldRef = useRef(world);
@@ -170,18 +195,36 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
         if (stage < 2) return;
 
         const interval = setInterval(() => {
-            setGameTime(prevTime => {
-                let nextHour = prevTime.hour + 1;
-                let nextDay = prevTime.day;
-                if (nextHour >= 24) {
-                    nextHour = 0;
-                    nextDay++;
-                }
-                const nextGameTime = { day: nextDay, hour: nextHour };
+            let nextGameTime = { ...gameTimeRef.current };
+            nextGameTime.hour += 1;
+            if (nextGameTime.hour >= 24) {
+                nextGameTime.hour = 0;
+                nextGameTime.day += 1;
+            }
+            setGameTime(nextGameTime);
 
-                // Do the pops update based on the NEW game time
-                setPops(prevPops => {
+            // Do the pops update based on the NEW game time
+            setPops(prevPops => {
                     let nextPops = prevPops.map(pop => {
+            const currentHour = gameTimeRef.current.hour || 0;
+            const currentDay = gameTimeRef.current.day || 1;
+
+            let nextHour = currentHour + 1;
+            let nextDay = currentDay;
+            if (nextHour >= 24) {
+                nextHour = 0;
+                nextDay++;
+            }
+            const nextGameTime = { ...gameTimeRef.current, day: nextDay, hour: nextHour };
+
+            // Instantly update ref so next interval tick has it if React batches slowly
+            gameTimeRef.current = nextGameTime;
+
+            // Update states side-by-side instead of nesting to prevent synchronous re-render thrashing
+            setGameTime(nextGameTime);
+
+            setPops(prevPops => {
+                let nextPops = prevPops.map(pop => {
                         let nextPop = { ...pop };
 
                         // 1. Dialogue Engine
@@ -268,21 +311,15 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                             popsByCoord[key] = (popsByCoord[key] || 0) + 1;
                         });
 
-                        // Calculate total housing capacity across the world
-                        let totalHousing = 0;
-                        let targetSettlement = null;
-                        worldRef.current.forEach((row, sy) => {
-                            row.forEach((hex, sx) => {
-                                if (hex.status === 2 && hex.settlement) {
-                                    const capacity = hex.settlement.resLots * HOUSING_CAPACITY;
-                                    totalHousing += capacity;
-                                    const localPopCount = popsByCoord[`${sx}-${sy}`] || 0;
-                                    if (capacity > localPopCount) {
-                                        targetSettlement = { sx, sy, settlement: hex.settlement };
-                                    }
-                                }
-                            });
-                        });
+                        // Use memoized housing capacity
+                        let { totalHousing, targetSettlement } = settlementInfoRef.current;
+
+                        // We still need to check if targetSettlement is full.
+                        if (targetSettlement) {
+                            const localPopCount = popsByCoord[`${targetSettlement.sx}-${targetSettlement.sy}`] || 0;
+                            const capacity = targetSettlement.settlement.resLots * HOUSING_CAPACITY;
+                            if (capacity <= localPopCount) targetSettlement = null;
+                        }
 
                         // Ensure at least 1 capacity for the camp if it has 0 resLots but is a settlement
                         if (totalHousing === 0 && targetSettlement) {
@@ -353,7 +390,6 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                     return nextPops;
                 });
 
-                return nextGameTime;
             });
         }, 1000);
 
