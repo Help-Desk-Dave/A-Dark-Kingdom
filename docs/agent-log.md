@@ -169,15 +169,38 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 **Changes:**
 - Reviewed commits for the last 24 hours. The primary update was merging PR #101 by Dave (Muse), which added new atmospheric concepts to the Vibe Ledger.
 - Multiple new agent logs, testing scripts (such as `simulate_help_build_optimized.js` and `simulate_death_spiral.js`), and a triage tool (`tools/triage.py`) were committed.
+## 2026-04-27
+- Merged PR #104: ⚡ Bolt Optimization: Decouple setInterval and memoize dependencies with useRef
 
-<<<<<<< bolt-optimize-intervals-11554207241284664498
+## 2026-04-27 - Implement Ledger Blueprints
+**Agent:** Mason 🧱
+**Changes:**
+- Addressed Stage 3 Charter Soft-Lock by updating HOUSING_CAPACITY from 4 to 5 in library.js.
+- Addressed Stage 1 to Stage 2 Grind & Clarification by adding visual indicators showing the 5/5 requirement for Timber and Rations in App.jsx.
+- Addressed Duplicate Tech Tree Unlocks by conditionally hiding the "Unlock Agriculture" button in the TechTree component if "Agriculture" is already unlocked in App.jsx.
+- Cleared the specific items addressed from NIGHTWATCH_REPORT.md and BALANCE_LEDGER.md.
+## 2026-04-27 - Date Sync
+**Agent:** Scribe 📜
+**Changes:**
+- Verified the system date and synced it across all agent logs to 2026-04-27 to prevent hallucinating dates.
+## 2026-04-26
+**Agent:** Mason 🧱
+**Changes:**
+- Removed soft-locks: Stage 3 charter condition by updating `HOUSING_CAPACITY` and Stage 1 to 2 grind UI indicator.
+- Fixed duplicate "Agriculture" technology additions.
+### 2026-04-26
+- **Bolt ⚡:** Decoupled nested state setters in `usePopulationEngine.jsx` to prevent re-render thrashing, memoized immigration capacity scanning, and fixed stale closures in `App.jsx`'s daily inventory processing using `useRef` tracking.
+## 2026-04-26 - Daily Commit Summary
+**Agent:** Scribe 📜
+**Changes:**
+- Reviewed commits for the last 24 hours. The primary update was merging PR #104 by Dave (Bolt), which optimized `usePopulationEngine.jsx` by memoizing dependencies with `useRef` to decouple `setInterval` from React render cycles.
+- Synced `STATE_MACHINE.md` to reflect actual `stage` conditional logic accurately based on codebase reality.
 ### 2026-04-25
 **Bolt ⚡:** Optimized the `useEffect` intervals in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`.
 1. Fixed massive synchronous re-render thrashing caused by nested React state setters inside the background tick intervals (`setGameTime(prev => { setPops(prevPops => ...) })`).
 2. Replaced the stale closures in intervals with `useRef` tracked state variables (`gameTimeRef`) which are updated instantaneously.
 3. Both `App.jsx` and `usePopulationEngine.jsx` now compute their logic inside the interval on un-batched references, bypassing the need to constantly trigger complex re-renders just to get the current time or state.
-=======
 ## 2026-04-25 - Date Sync
 **Learning:** The correct system date is 2026-04-25.
 **Action:** Use 2026-04-25 for all generated reports and logs in this session.
->>>>>>> main
+

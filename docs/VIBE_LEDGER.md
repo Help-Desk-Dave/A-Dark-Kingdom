@@ -2,6 +2,33 @@
 
 ## Atmospheric Concepts
 
+### 🌀 Vibe Proposal: 2026-04-27/Flickering Hope
+**Target Vibe:** The flickering hope and creeping darkness in Stage 1.
+**The Concept:** When the player establishes a fire but remains idle, the light should feel fragile against the oppressive dark of the swamp.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: Add an idle timer in Stage 1. If no clicks occur for 45 seconds, push log: `[?] The fire sputters. The shadows inch closer.`
+* `index.css`: Add a `.flicker-die` keyframe to make the fire icon dim occasionally.
+* **Secret Trigger:** If the user clicks the fire icon exactly 7 times while idle, unlock a rare log: `[!] Sparks fly. You see a face in the flames for a fraction of a second.`
+
+### 🌀 Vibe Proposal: 2026-04-27/The Vast Dark
+**Target Vibe:** The daunting realization of a larger, hostile world when reaching Stage 4.
+**The Concept:** Opening the world map shouldn't just be a mechanical UI change; it should feel like standing on a precipice. The world is vast, murky, and unforgiving.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When `stage` transitions to 4, pause for 1 second and push log: `[!] The fog parts slightly. The world is vast, and you are very small.`
+* `index.css`: Add a `.map-reveal-creep` animation keyframe to make the map grid slowly fade in from the edges, as if clearing away dark mist.
+* **Secret Trigger:** If the user clicks the center of the world map 5 times immediately after it opens, unlock log: `[?] A drop of black ink bleeds across the parchment.`
+
+### 🌀 Vibe Proposal: 2026-04-27/The Swamp Reclaims
+**Target Vibe:** The inevitable decay of the swamp claiming hoarded wealth.
+**The Concept:** If the player gathers resources but hoards them endlessly without building, the atmosphere should imply that the damp rot of the environment is setting in.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: If a resource like `timber` or `rations` remains unspent for over 2 minutes, occasionally push log: `[*] The damp rot spreads. What you hoard, the swamp reclaims.`
+* `index.css`: Add a `.rot-text` animation keyframe that applies a subtle brownish-green tinge to the stagnant resource counter.
+* **Secret Trigger:** If the user clicks a stagnant resource exactly 13 times, unlock log: `[!] You wipe away the mold, but it grows back as you watch.`
+
 ### 🌀 Vibe Proposal: Oppressive Isolation in Stage 0
 **Target Vibe:** Oppressive Isolation in Stage 0
 **The Concept:** The game should emphasize the crushing solitude of the wilderness. The terminal is an ancient, spectral interface that occasionally glitches, and the silence should feel heavy when the player hesitates.
@@ -77,6 +104,36 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 * `index.css`: Add a `.vignette-creep` keyframe that Palette can apply to the main app container, slowly increasing a dark edge vignette around the screen between 1 AM and 3 AM in-game.
 * **Secret Trigger:** If the user clicks on the time display exactly at `00:00` (midnight), unlock a rare log: `[!] The clock strikes. Something in the swamp strikes back.`
 
+### 🌀 Vibe Proposal: 2026-04-27
+**Target Vibe:** Date Sync
+**The Concept:** Verified the system date is 2026-04-27.
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):** N/A
+### 🌀 Vibe Proposal: 2026-04-26/Unearthed Secrets
+**Target Vibe:** The oppressive, ancient nature of the earth.
+**The Concept:** Gathering stone shouldn't just be picking up rocks, it should feel like unearthing things best left buried in the dark soil.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: On `handleGatherStone` completion, add a 2% chance to push a rare log: `[!] The stone you unearthed is carved with runes that hurt your eyes. You drop it back into the muck.`
+* `index.css`: Add a `.shatter-dust` animation keyframe for the stone gather progress bar, making it occasionally dissolve into ash on completion.
+* **Secret Trigger:** If the user clicks `Gather Stone` exactly 7 times in a row without gathering anything else, unlock a rare log: `[!] The earth groans under your constant digging. It wants to sleep.`
+
+### 🌀 Vibe Proposal: 2026-04-26/Illusion of Safety
+**Target Vibe:** The fragile illusion of safety upon reaching Stage 2.
+**The Concept:** Building the first houses gives a false sense of security. The structures are frail in a hostile, swallowing environment.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When `stage` transitions from 1 to 2, push a log: `[*] Walls of timber and mud rise from the swamp. They won't keep the dark out, but they hide you from it.`
+* `index.css`: Add a `.flicker-candle` animation for the settlement grid UI elements, simulating weak firelight struggling against encroaching darkness.
+* **Secret Trigger:** If the user idles for 120 seconds immediately after reaching Stage 2, unlock a rare log: `[?] Something scratches against the outside of your new walls.`
+
+### 🌀 Vibe Proposal: 2026-04-26/Swamp Reclamation
+**Target Vibe:** The vast, uncharted horrors of the murky wilderness.
+**The Concept:** Expanding the map into Swamp tiles isn't just uncovering terrain; it's pushing into hostile, diseased territory that resents your presence.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When a user recons or claims a `Swamp` tile in the `WorldGrid`, add a 5% chance to push a rare log: `[!] The murky waters here are choked with strange, pale roots. The air smells of copper.`
+* `index.css`: Add a `.murk-reveal` transition for newly revealed swamp tiles, making them appear slowly from blackness rather than snapping into view.
+* **Secret Trigger:** If the user clicks the same unexplored map tile 5 times rapidly, unlock a rare log: `[!] Stop staring into the fog. It's starting to stare back.`
 ### 🌀 Vibe Proposal: 2026-04-25 / The Deep Quarry
 **Target Vibe:** The oppressive, suffocating atmosphere of digging into the cursed earth.
 **The Concept:** When the player gathers stone, it shouldn't just feel like mining; it should feel like unearthing something that was buried for a reason.

@@ -61,7 +61,7 @@ class TestEnginePrologue(unittest.TestCase):
         self.game.tick()
 
         self.assertEqual(self.game.timber, initial_timber + 4)
-        self.assertEqual(self.game.rations, max(0, initial_rations + 2 - 1))
+        self.assertEqual(self.game.rations, initial_rations + 1)
 
     def test_stage_3_charter_requirement(self):
         self.game.stage = 3
@@ -323,7 +323,7 @@ class TestSettlement(unittest.TestCase):
         self.assertFalse(settlement.is_overcrowded)
 
         # 4 other, 0 residential -> overcrowded
-        settlement.other_lots = 4
+        settlement.other_lots = 5
         settlement.residential_lots = 0
         self.assertTrue(settlement.is_overcrowded)
 
@@ -331,13 +331,13 @@ class TestSettlement(unittest.TestCase):
         settlement.residential_lots = 1
         self.assertFalse(settlement.is_overcrowded)
 
-        # 9 other, 2 residential -> not overcrowded (9 // 4 = 2, 2 < 2 is false)
-        settlement.other_lots = 9
+        # 9 other, 2 residential -> not overcrowded (10 // 5 = 2, 2 < 2 is false)
+        settlement.other_lots = 10
         settlement.residential_lots = 2
         self.assertFalse(settlement.is_overcrowded)
 
-        # 8 other, 1 residential -> overcrowded (8 // 4 = 2, 1 < 2 is true)
-        settlement.other_lots = 8
+        # 10 other, 1 residential -> overcrowded (10 // 5 = 2, 1 < 2 is true)
+        settlement.other_lots = 10
         settlement.residential_lots = 1
         self.assertTrue(settlement.is_overcrowded)
 
