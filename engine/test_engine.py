@@ -61,7 +61,7 @@ class TestEnginePrologue(unittest.TestCase):
         self.game.tick()
 
         self.assertEqual(self.game.timber, initial_timber + 4)
-        self.assertEqual(self.game.rations, max(0, initial_rations + 2 - 1))
+        self.assertEqual(self.game.rations, initial_rations + 1)
 
     def test_stage_3_charter_requirement(self):
         self.game.stage = 3

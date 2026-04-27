@@ -606,6 +606,18 @@ const App = () => {
     }, [constructionQueue, stage]);
 
 // ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
+
+// ⚡ Bolt Optimization: Fix stale closures for inventory and world stats
+    const inventoryRef = useRef({ timber, lumber, rations, stone, bp });
+    useEffect(() => {
+        inventoryRef.current = { timber, lumber, rations, stone, bp };
+    }, [timber, lumber, rations, stone, bp]);
+
+    const worldStatsRef = useRef(worldStats);
+    useEffect(() => {
+        worldStatsRef.current = worldStats;
+    }, [worldStats]);
+
     const totalPopRef = useRef(totalPop);
     useEffect(() => {
         totalPopRef.current = totalPop;
@@ -717,7 +729,7 @@ const App = () => {
             let maxStone = 100;
 
             // Calculate Dynamic Storage Capacities
-            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+            Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
                 const structData = STRUCTURES_DB[structName];
                 if (structData && structData.storage_cap) {
                     const actualCount = Math.floor(cellCount / structData.lots);
@@ -735,7 +747,7 @@ const App = () => {
             let dailyStone = 0;
 
             // Sequential Processing (Deficit Protocol)
-            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+            Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
                 const structData = STRUCTURES_DB[structName];
                 if (structData) {
                     const actualCount = Math.floor(cellCount / structData.lots);
@@ -744,10 +756,10 @@ const App = () => {
 
                         // Check Consumes
                         if (structData.consumes) {
-                            if (structData.consumes.timber && timber + dailyTimber < structData.consumes.timber) canProduce = false;
-                            if (structData.consumes.lumber && lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
-                            if (structData.consumes.rations && rations + dailyRations < structData.consumes.rations) canProduce = false;
-                            if (structData.consumes.stone && stone + dailyStone < structData.consumes.stone) canProduce = false;
+                            if (structData.consumes.timber && inventoryRef.current.timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                            if (structData.consumes.lumber && inventoryRef.current.lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
+                            if (structData.consumes.rations && inventoryRef.current.rations + dailyRations < structData.consumes.rations) canProduce = false;
+                            if (structData.consumes.stone && inventoryRef.current.stone + dailyStone < structData.consumes.stone) canProduce = false;
                         }
 
                         if (canProduce) {
@@ -796,7 +808,7 @@ const App = () => {
                 setBp(currentBp => currentBp - ANNUAL_UPKEEP);
                 addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
 
-                const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
+                const expectedBp = inventoryRef.current.bp + treasurerBonus - ANNUAL_UPKEEP;
                 if (expectedBp < 0) {
                     setUnrest(u => u + 1);
                     addLog("[!] Debt causes unrest!");
@@ -804,7 +816,7 @@ const App = () => {
             }
         }
 
-    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]);
+    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]); // Removed volatile dependencies to prevent effect teardown
 
     const [treasurerWarning, setTreasurerWarning] = useState(null);
 
