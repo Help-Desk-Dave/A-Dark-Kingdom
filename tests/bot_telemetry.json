@@ -20,5 +20,27 @@
     },
     "stageReached": 2,
     "failures": 477
+  },
+  {
+    "runDate": "2026-04-27T19:09:02.834Z",
+    "ticksCompleted": 116,
+    "resources": {
+      "timber": 0,
+      "rations": 0,
+      "sticks": 0
+    },
+    "stageReached": 2,
+    "failures": 96
+  },
+  {
+    "runDate": "2026-04-27T19:10:40.217Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 8,
+      "rations": 10,
+      "sticks": 0
+    },
+    "stageReached": 2,
+    "failures": 480
   }
 ]

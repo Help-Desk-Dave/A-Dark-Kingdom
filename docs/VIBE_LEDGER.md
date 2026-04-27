@@ -165,3 +165,13 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 * The first crude huts, built of mud and desperation, now clung like parasites to the bog's dark, breathing skin.
 * The air still hummed with the unseen watchfulness of the swamp's true denizens, their ancient patience a chilling presence around the crude palisades.
 * Their hands were raw, their eyes hollow, but the meager settlement stood, a stubborn insult to the bog's eternal, patient hunger.
+
+### 🌀 Muse Injection (4/27/2026)
+* The crude palisade, slick with swamp rot and dried ichor, marks a fragile defiance against the creeping embrace of the bog.
+* The ground beneath the settlement feels strangely solid now, though the lingering stench of iron and fear still clings to the damp air like a second skin.
+* The swamp holds its breath, the skeletal trees observing the flickering torchlight, as if waiting for the opportune moment to reclaim its stolen patch of solid ground.
+
+### 🌀 Muse Injection (4/27/2026)
+* Against the constant, suffocating press of the swamp, the crude timbers stand, a jagged wound in the bog's ancient, green flesh.
+* The marsh, which swallows roots and secrets alike, has now grudgingly accepted the new, fragile heartbeat of human defiance within its depths.
+* The reek of human smoke now mingles with the stagnant water and decay, a scent carried on the wind to things that merely watch from beneath the unseen canopy.
