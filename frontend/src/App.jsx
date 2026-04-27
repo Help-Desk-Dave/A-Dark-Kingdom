@@ -1285,7 +1285,9 @@ const App = () => {
                 {stage === 1 && (
                     <>
                         {timber < 5 || rations < 5 ? (
-                            <>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="text-gray-400 italic">Hint: Gather at least 5 Timber and 5 Rations to establish a camp.</div>
+                                <div className="flex gap-4">
                                 <ProgressBar
                                     onClick={handleGatherTimber}
                                     disabled={isRulerBusy}
@@ -1304,7 +1306,8 @@ const App = () => {
                                     progress={gatherStoneProgress}
                                     label={`Gather Stone (${stone})`}
                                 />
-                            </>
+                                </div>
+                            </div>
                         ) : (
                             <button
                                 onClick={() => {
@@ -1344,12 +1347,14 @@ const TechTree = ({ unlockedTechs, setUnlockedTechs }) => {
             <h2 className="text-xl font-bold text-cyan-400 mb-2">Tech Tree (Stub)</h2>
             <div className="text-sm text-gray-400">
                 <p>Unlocked Technologies: {unlockedTechs.length > 0 ? unlockedTechs.join(', ') : 'None'}</p>
+                {!unlockedTechs.includes('Agriculture') && (
                 <button
-                    onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
+                    onClick={() => setUnlockedTechs(prev => prev.includes('Agriculture') ? prev : [...prev, 'Agriculture'])}
                     className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
                 >
                     Unlock Agriculture
                 </button>
+                )}
             </div>
         </div>
     );
