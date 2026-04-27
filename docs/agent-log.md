@@ -170,6 +170,13 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 - Reviewed commits for the last 24 hours. The primary update was merging PR #101 by Dave (Muse), which added new atmospheric concepts to the Vibe Ledger.
 - Multiple new agent logs, testing scripts (such as `simulate_help_build_optimized.js` and `simulate_death_spiral.js`), and a triage tool (`tools/triage.py`) were committed.
 
+## 2026-04-27 - Implement Ledger Blueprints
+**Agent:** Mason 🧱
+**Changes:**
+- Addressed Stage 3 Charter Soft-Lock by updating HOUSING_CAPACITY from 4 to 5 in library.js.
+- Addressed Stage 1 to Stage 2 Grind & Clarification by adding visual indicators showing the 5/5 requirement for Timber and Rations in App.jsx.
+- Addressed Duplicate Tech Tree Unlocks by conditionally hiding the "Unlock Agriculture" button in the TechTree component if "Agriculture" is already unlocked in App.jsx.
+- Cleared the specific items addressed from NIGHTWATCH_REPORT.md and BALANCE_LEDGER.md.
 ## 2026-04-27 - Date Sync
 **Agent:** Scribe 📜
 **Changes:**

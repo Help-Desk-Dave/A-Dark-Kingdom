@@ -12,16 +12,6 @@
 **Expected Fix:** Either lower the Charter requirement to 4 capacity, increase base `HOUSING_CAPACITY` to 5, or add a persistent UI hint during Stage 3 that explicitly states "Build additional housing to increase capacity to 5."
 
 
-### 🐛 Friction Report: Stage 1 to Stage 2 Grind & Clarification
-**Date:** 2026-04-24
-**Delegated To:** @Equinox (Balance) & @Mason (Structure)
-**Steps to Reproduce:**
-1. Build a Fire to reach Stage 1.
-2. Attempt to gather enough resources to progress to Stage 2.
-3. Observe that to "Establish Camp" and reach Stage 2, the player needs to gather both 5 Timber and 5 Rations, but there is no UI element showing this requirement.
-**The Friction:** The player experiences "Heavy Rep" fatigue and confusion. The playtest bot generated over 400 manual clicks alternating between gathering Timber and Rations but never progressed to Stage 2 because the required 5/5 threshold is not communicated in the UI, leading to aimless clicking. Establishing the camp requires 10+ clicks of waiting for progress bars just to transition from Stage 1 to Stage 2.
-**Expected Fix:** Lower the requirement for Establish Camp to reduce "Heavy Rep" fatigue, and explicitly add a visual indicator showing the 5/5 requirement in the UI so the player knows what they are working towards.
-
 
 ### 🐛 Friction Report: Duplicate Tech Tree Unlocks
 **Date:** 2026-04-24
