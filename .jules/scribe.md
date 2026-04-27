@@ -12,3 +12,14 @@
 ## 2026-04-21 - Documenting explicit UI transitions
  **Learning:** I learned that documentation like STATE_MACHINE.md can drift from the codebase if explicit variable conditions aren't used. I noticed `WorldGrid.jsx` checked for `stage >= 3` to allow interactions, but `App.jsx` conditionally renders `WorldGrid` only when `stage >= 4`. I also verified exact conditions from `App.jsx` like `sticks >= 10` and `!(timber < 5 || rations < 5)` for transitions.
  **Action:** Next time, I will read the specific codebase logic and use exact variable states when documenting state machine transitions to avoid descriptive narrative that can become out of sync.
+
+## 2026-04-27 - Date Sync
+**Learning:** The correct system date is 2026-04-27.
+**Action:** Use 2026-04-27 for all generated reports and logs in this session.
+## 2026-04-26 - Scribe Journal Initialized
+**Learning:** Found need to align documentation of state machine with codebase logic.
+**Action:** Always verify conditions via grep or explicit file reading before editing markdown.
+
+## 2026-04-25 - Date Sync
+**Learning:** The correct system date is 2026-04-25.
+**Action:** Use 2026-04-25 for all generated reports and logs in this session.
