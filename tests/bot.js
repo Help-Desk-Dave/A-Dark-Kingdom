@@ -72,9 +72,13 @@ async function runBot() {
                 continue;
             }
 
-            // Simple RNG to pick an action based on weight (for now, just pick the first visible one)
+            // Simple RNG to pick an action based on weight
             let actionTaken = false;
-            for (const action of availableActions) {
+
+            // Randomize action order to prevent getting stuck on the first one
+            const shuffledActions = [...availableActions].sort(() => Math.random() - 0.5);
+
+            for (const action of shuffledActions) {
                 const button = await page.$(action.selector);
                 if (button) {
                     const isDisabled = await button.evaluate(b => b.disabled);
