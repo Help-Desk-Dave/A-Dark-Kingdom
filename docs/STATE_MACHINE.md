@@ -22,15 +22,15 @@ Stage 2: The First Companions
 
 Visuals: Settlement Map (5x5 grid) is revealed. Allows interacting with plot grids if `stage >= 2 && cell === null && !activeJob`. Ruler's Actions section appears, enabling manual resource gathering and a new [Sell Resources] button which requires `timber >= 5` and `rations >= 5` to exchange for 2 BP.
 
-Logic: The background simulation tick remains Paused (`if (stage < 3 || showHeroSelection) return;`). Rations begin to drain based on population. The player can construct basic survival structures (Tents, Wagons).
+Logic: The population simulation tick (`usePopulationEngine`) begins (`if (stage < 2) return;`), managing circadian rhythms and organic growth. The kingdom production simulation tick remains Paused (`if (stage < 3 || showHeroSelection) return;`). There is no population-based ration drain. The player can construct basic survival structures (Tents, Wagons).
 
 Transition: Once a `houses` structure is constructed (`job.structureName === "houses"`), transition to Stage 3.
 
 Stage 3: Automation & Expansion
 
-Visuals: Worker assignment UI is revealed.
+Visuals: No new UI is permanently revealed during this stage until the population condition is met.
 
-Logic: The 1-second simulation tick begins (`gameTime` interval). Players can assign Pops to roles (Woodcutter, Trapper) to automate resource generation.
+Logic: The kingdom 1-second production simulation tick begins (`if (stage < 3 || showHeroSelection) return;`). Structures start consuming and producing resources based on the Deficit Protocol. Automated roles (Woodcutter, Trapper) do not currently exist.
 
 Transition: Once the total population across all settlements reaches a threshold by summing `hex.settlement.resLots * HOUSING_CAPACITY` for each claimed hex, resulting in `pop >= 5`, the [Sign the Charter] button appears. Clicking it transitions directly to Stage 4.
 

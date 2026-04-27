@@ -126,6 +126,14 @@ const App = () => {
         return { day: 1, month: 1, year: 4710, hour: 0 };
     });
 
+    // ⚡ Bolt Optimization: Use ref for gameTime to avoid dependency triggers
+    const gameTimeRef = useRef(gameTime);
+    useEffect(() => {
+        gameTimeRef.current = gameTime;
+    }, [gameTime]);
+
+    // ⚡ Bolt Optimization: Use ref for gameTime to avoid dependency triggers
+
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
     const [unrest, setUnrest] = useState(() => {
         const saved = localStorage.getItem('adk_unrest');
@@ -490,23 +498,23 @@ const App = () => {
         if (stage < 3 || showHeroSelection) return;
 
         const interval = setInterval(() => {
-            setGameTime(prev => {
-                let { day, month, year, hour } = prev;
-                hour += 1;
-                if (hour >= 24) {
-                    hour = 0;
-                    day += 1;
-                    if (day > 30) {
-                        day = 1;
-                        month += 1;
-                        if (month > 12) {
-                            month = 1;
-                            year += 1;
-                        }
+            let { day, month, year, hour } = gameTimeRef.current;
+            hour += 1;
+            if (hour >= 24) {
+                hour = 0;
+                day += 1;
+                if (day > 30) {
+                    day = 1;
+                    month += 1;
+                    if (month > 12) {
+                        month = 1;
+                        year += 1;
                     }
                 }
-                return { day, month, year, hour };
-            });
+            }
+            const nextGameTime = { day, month, year, hour };
+            gameTimeRef.current = nextGameTime;
+            setGameTime(nextGameTime);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -598,6 +606,18 @@ const App = () => {
     }, [constructionQueue, stage]);
 
 // ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
+
+// ⚡ Bolt Optimization: Fix stale closures for inventory and world stats
+    const inventoryRef = useRef({ timber, lumber, rations, stone, bp });
+    useEffect(() => {
+        inventoryRef.current = { timber, lumber, rations, stone, bp };
+    }, [timber, lumber, rations, stone, bp]);
+
+    const worldStatsRef = useRef(worldStats);
+    useEffect(() => {
+        worldStatsRef.current = worldStats;
+    }, [worldStats]);
+
     const totalPopRef = useRef(totalPop);
     useEffect(() => {
         totalPopRef.current = totalPop;
@@ -709,7 +729,7 @@ const App = () => {
             let maxStone = 100;
 
             // Calculate Dynamic Storage Capacities
-            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+            Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
                 const structData = STRUCTURES_DB[structName];
                 if (structData && structData.storage_cap) {
                     const actualCount = Math.floor(cellCount / structData.lots);
@@ -727,7 +747,7 @@ const App = () => {
             let dailyStone = 0;
 
             // Sequential Processing (Deficit Protocol)
-            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+            Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
                 const structData = STRUCTURES_DB[structName];
                 if (structData) {
                     const actualCount = Math.floor(cellCount / structData.lots);
@@ -736,10 +756,10 @@ const App = () => {
 
                         // Check Consumes
                         if (structData.consumes) {
-                            if (structData.consumes.timber && timber + dailyTimber < structData.consumes.timber) canProduce = false;
-                            if (structData.consumes.lumber && lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
-                            if (structData.consumes.rations && rations + dailyRations < structData.consumes.rations) canProduce = false;
-                            if (structData.consumes.stone && stone + dailyStone < structData.consumes.stone) canProduce = false;
+                            if (structData.consumes.timber && inventoryRef.current.timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                            if (structData.consumes.lumber && inventoryRef.current.lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
+                            if (structData.consumes.rations && inventoryRef.current.rations + dailyRations < structData.consumes.rations) canProduce = false;
+                            if (structData.consumes.stone && inventoryRef.current.stone + dailyStone < structData.consumes.stone) canProduce = false;
                         }
 
                         if (canProduce) {
@@ -788,7 +808,7 @@ const App = () => {
                 setBp(currentBp => currentBp - ANNUAL_UPKEEP);
                 addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
 
-                const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
+                const expectedBp = inventoryRef.current.bp + treasurerBonus - ANNUAL_UPKEEP;
                 if (expectedBp < 0) {
                     setUnrest(u => u + 1);
                     addLog("[!] Debt causes unrest!");
@@ -796,7 +816,7 @@ const App = () => {
             }
         }
 
-    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]);
+    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]); // Removed volatile dependencies to prevent effect teardown
 
     const [treasurerWarning, setTreasurerWarning] = useState(null);
 
@@ -1169,13 +1189,13 @@ const App = () => {
                             onClick={handleGatherTimber}
                             disabled={isRulerBusy}
                             progress={gatherTimberProgress}
-                            label={`Gather Timber (${timber})`}
+                            label={stage === 1 ? `Gather Timber (${timber}/5)` : `Gather Timber (${timber})`}
                         />
                         <ProgressBar
                             onClick={handleHuntRations}
                             disabled={isRulerBusy}
                             progress={huntProgress}
-                            label={`Hunt Rations (${rations})`}
+                            label={stage === 1 ? `Hunt Rations (${rations}/5)` : `Hunt Rations (${rations})`}
                         />
                         <ProgressBar
                             onClick={handleGatherStone}
@@ -1265,18 +1285,20 @@ const App = () => {
                 {stage === 1 && (
                     <>
                         {timber < 5 || rations < 5 ? (
-                            <>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="text-gray-400 italic">Hint: Gather at least 5 Timber and 5 Rations to establish a camp.</div>
+                                <div className="flex gap-4">
                                 <ProgressBar
                                     onClick={handleGatherTimber}
                                     disabled={isRulerBusy}
                                     progress={gatherTimberProgress}
-                                    label={`Gather Timber (${timber})`}
+                                    label={stage === 1 ? `Gather Timber (${timber}/5)` : `Gather Timber (${timber})`}
                                 />
                                 <ProgressBar
                                     onClick={handleHuntRations}
                                     disabled={isRulerBusy}
                                     progress={huntProgress}
-                                    label={`Hunt Rations (${rations})`}
+                                    label={stage === 1 ? `Hunt Rations (${rations}/5)` : `Hunt Rations (${rations})`}
                                 />
                                 <ProgressBar
                                     onClick={handleGatherStone}
@@ -1284,7 +1306,8 @@ const App = () => {
                                     progress={gatherStoneProgress}
                                     label={`Gather Stone (${stone})`}
                                 />
-                            </>
+                                </div>
+                            </div>
                         ) : (
                             <button
                                 onClick={() => {
@@ -1324,12 +1347,14 @@ const TechTree = ({ unlockedTechs, setUnlockedTechs }) => {
             <h2 className="text-xl font-bold text-cyan-400 mb-2">Tech Tree (Stub)</h2>
             <div className="text-sm text-gray-400">
                 <p>Unlocked Technologies: {unlockedTechs.length > 0 ? unlockedTechs.join(', ') : 'None'}</p>
-                <button
-                    onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
-                    className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
-                >
-                    Unlock Agriculture
-                </button>
+                {!unlockedTechs.includes('Agriculture') && (
+                    <button
+                        onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
+                        className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
+                    >
+                        Unlock Agriculture
+                    </button>
+                )}
             </div>
         </div>
     );
