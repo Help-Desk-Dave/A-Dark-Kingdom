@@ -1169,13 +1169,13 @@ const App = () => {
                             onClick={handleGatherTimber}
                             disabled={isRulerBusy}
                             progress={gatherTimberProgress}
-                            label={`Gather Timber (${timber})`}
+                            label={stage === 1 ? `Gather Timber (${timber}/5)` : `Gather Timber (${timber})`}
                         />
                         <ProgressBar
                             onClick={handleHuntRations}
                             disabled={isRulerBusy}
                             progress={huntProgress}
-                            label={`Hunt Rations (${rations})`}
+                            label={stage === 1 ? `Hunt Rations (${rations}/5)` : `Hunt Rations (${rations})`}
                         />
                         <ProgressBar
                             onClick={handleGatherStone}
@@ -1270,13 +1270,13 @@ const App = () => {
                                     onClick={handleGatherTimber}
                                     disabled={isRulerBusy}
                                     progress={gatherTimberProgress}
-                                    label={`Gather Timber (${timber})`}
+                                    label={stage === 1 ? `Gather Timber (${timber}/5)` : `Gather Timber (${timber})`}
                                 />
                                 <ProgressBar
                                     onClick={handleHuntRations}
                                     disabled={isRulerBusy}
                                     progress={huntProgress}
-                                    label={`Hunt Rations (${rations})`}
+                                    label={stage === 1 ? `Hunt Rations (${rations}/5)` : `Hunt Rations (${rations})`}
                                 />
                                 <ProgressBar
                                     onClick={handleGatherStone}
@@ -1324,12 +1324,14 @@ const TechTree = ({ unlockedTechs, setUnlockedTechs }) => {
             <h2 className="text-xl font-bold text-cyan-400 mb-2">Tech Tree (Stub)</h2>
             <div className="text-sm text-gray-400">
                 <p>Unlocked Technologies: {unlockedTechs.length > 0 ? unlockedTechs.join(', ') : 'None'}</p>
-                <button
-                    onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
-                    className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
-                >
-                    Unlock Agriculture
-                </button>
+                {!unlockedTechs.includes('Agriculture') && (
+                    <button
+                        onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
+                        className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
+                    >
+                        Unlock Agriculture
+                    </button>
+                )}
             </div>
         </div>
     );

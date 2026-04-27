@@ -1,7 +1,7 @@
 export const RECON_COST = 5;
 export const CLAIM_COST = 10;
 export const ANNUAL_UPKEEP = 25;
-export const HOUSING_CAPACITY = 4;
+export const HOUSING_CAPACITY = 5;
 
 export const FLAVORS = {
     swamp: {
