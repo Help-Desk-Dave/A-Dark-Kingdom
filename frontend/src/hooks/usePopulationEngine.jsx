@@ -45,6 +45,12 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
 
     const popIdCounter = useRef(pops.length > 0 ? Math.max(...pops.map(p => p.id)) + 1 : 0);
 
+    const gameTimeRef = useRef(gameTime);
+    useEffect(() => {
+        gameTimeRef.current = gameTime;
+    }, [gameTime]);
+
+
     // ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
     const worldRef = useRef(world);
     const unrestRef = useRef(unrest);
@@ -170,18 +176,25 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
         if (stage < 2) return;
 
         const interval = setInterval(() => {
-            setGameTime(prevTime => {
-                let nextHour = prevTime.hour + 1;
-                let nextDay = prevTime.day;
-                if (nextHour >= 24) {
-                    nextHour = 0;
-                    nextDay++;
-                }
-                const nextGameTime = { day: nextDay, hour: nextHour };
+            const currentHour = gameTimeRef.current.hour || 0;
+            const currentDay = gameTimeRef.current.day || 1;
 
-                // Do the pops update based on the NEW game time
-                setPops(prevPops => {
-                    let nextPops = prevPops.map(pop => {
+            let nextHour = currentHour + 1;
+            let nextDay = currentDay;
+            if (nextHour >= 24) {
+                nextHour = 0;
+                nextDay++;
+            }
+            const nextGameTime = { ...gameTimeRef.current, day: nextDay, hour: nextHour };
+
+            // Instantly update ref so next interval tick has it if React batches slowly
+            gameTimeRef.current = nextGameTime;
+
+            // Update states side-by-side instead of nesting to prevent synchronous re-render thrashing
+            setGameTime(nextGameTime);
+
+            setPops(prevPops => {
+                let nextPops = prevPops.map(pop => {
                         let nextPop = { ...pop };
 
                         // 1. Dialogue Engine
@@ -351,9 +364,6 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                     }
 
                     return nextPops;
-                });
-
-                return nextGameTime;
             });
         }, 1000);
 
