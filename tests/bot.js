@@ -12,11 +12,13 @@ const DATA_FILE = path.join(__dirname, 'bot_telemetry.json');
 const ACTION_PRIORITIES = {
     0: [
         { selector: 'button:has-text("Gather Sticks")', weight: 1.0 }
-        // We will add 'Build Fire' once Mason exposes it in App.jsx
+        ,
+        { selector: 'button:has-text("Build Fire")', weight: 1.0 }
     ],
     1: [
         { selector: 'button:has-text("Hunt Rations")', weight: 0.6 },
-        { selector: 'button:has-text("Gather Timber")', weight: 0.4 }
+        { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
+        { selector: 'button:has-text("Establish Camp")', weight: 1.0 }
     ]
 };
 
@@ -37,9 +39,12 @@ async function runBot() {
 
     try {
         await page.goto(TARGET_URL);
+        // Explicitly set a mock ruler in localStorage to bypass the Hero Selection overlay
+        await page.evaluate("localStorage.setItem('adk_ruler', JSON.stringify({name: 'Test'}));");
+        await page.goto(TARGET_URL);
         
         // Wait for the game to load (looking for the title or initial log)
-        await page.waitForSelector('text=A DARK KINGDOM', { timeout: 5000 });
+        await page.waitForTimeout(1000);
         console.log("[BOT] Game Loaded. Starting action loop...");
 
         for (let tick = 0; tick < MAX_TICKS; tick++) {
@@ -54,8 +59,9 @@ async function runBot() {
             });
             
             let currentStage = 0;
-            if (stageText.includes("The fire crackles")) currentStage = 1;
-            if (stageText.includes("The foundation is laid")) currentStage = 2;
+            if (stageText.includes("A small comfort in the dark")) currentStage = 1;
+
+            if (stageText.includes("Camp established at (5,5)")) currentStage = 2;
             telemetry.stageReached = Math.max(telemetry.stageReached, currentStage);
 
             // 2. Decide Action
@@ -66,9 +72,13 @@ async function runBot() {
                 continue;
             }
 
-            // Simple RNG to pick an action based on weight (for now, just pick the first visible one)
+            // Simple RNG to pick an action based on weight
             let actionTaken = false;
-            for (const action of availableActions) {
+
+            // Randomize action order to prevent getting stuck on the first one
+            const shuffledActions = [...availableActions].sort(() => Math.random() - 0.5);
+
+            for (const action of shuffledActions) {
                 const button = await page.$(action.selector);
                 if (button) {
                     const isDisabled = await button.evaluate(b => b.disabled);

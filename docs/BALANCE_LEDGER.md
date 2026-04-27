@@ -1,27 +1,3 @@
-### ⚖️ Balance Report: Stage 2 Economy / Construction Queue
-**Target System:** Stage 2 Economy / Construction Queue
-**The Problem:** The manual gathering rates for Timber (50ms * 100 = 5s), Rations (5s), and Stone (80ms * 100 = 8s) create significant player fatigue and grind. Building a simple House (6 Timber, 6 Rations, 3 Stone) requires 30s of Timber gathering, 30s of Ration hunting, and 24s of Stone gathering, totaling 84 seconds of real-time, non-stop clicking and waiting just to afford the materials for *one* house. This extreme "Sweat Equity" burden makes scaling up a settlement un-fun and mathematically tedious.
-**Simulation Data:** Simulation of 1 house cost requires 6 Timber, 6 Rations, 3 Stone. With current speeds, that's ~1.4 real-time minutes of waiting.
-
-**Proposed Adjustments (DO NOT IMPLEMENT):**
-* `App.jsx`: Reduce `handleGatherTimber` interval from `50` to `20`.
-* `App.jsx`: Reduce `handleHuntRations` interval from `50` to `20`.
-* `App.jsx`: Reduce `handleGatherStone` interval from `80` to `30`.
-
-**Notes for Future Agents:** The time scaling here was too punishing for basic resources. Speeding it up allows for a much smoother transition into mid-game macro-management.
-
-### ⚖️ Balance Report: Unrest Death Spiral & Annual Upkeep
-**Target System:** Stage 4 Economy / Annual Upkeep
-**The Problem:** The game forces a 25 BP `ANNUAL_UPKEEP` every in-game year. If the player cannot afford this, `unrest` increases by 1. If `unrest` reaches 10, the population stops growing (`usePopulationEngine.js` immigration threshold). The fatal flaw is that **there is currently no mechanism to reduce unrest** once it is gained, even though structures like the "Castle" and "Barracks" claim to do so in their descriptions. This means if a player misses the upkeep 10 times, the game soft-locks into a permanent zero-growth state (Death Spiral).
-**Simulation Data:** 10 missed upkeeps = 10 Unrest. Immigration stops. No new pops = No more builders. Economy stagnates permanently.
-
-**Proposed Adjustments (DO NOT IMPLEMENT):**
-* `App.jsx`: Implement a mechanism when a `Castle` or `Barracks` is built to reduce `unrest` (e.g., `setUnrest(u => Math.max(0, u - 2))`).
-* `App.jsx`: Add a manual action or advisor action to spend BP or Resources to lower unrest.
-* `library.js`: The description for Castle and Barracks needs to be mechanically supported in `App.jsx`.
-
-**Notes for Future Agents:** The Death Spiral is mathematically guaranteed if the player makes enough early mistakes, as unrest is strictly monotonic increasing.
-
 ### ⚖️ Balance Report: Stage 0 and 1 Soft-Lock Verification
 **Target System:** Stage 0 and 1 Economy
 **The Problem:** I have verified the math for early game soft-locks. In Stage 0, players only gather sticks and there is no mechanism that reduces sticks. Thus, no soft-lock is possible. In Stage 1, players gather Timber, Rations, and Stone to establish a camp. The only mechanism that reduces Timber/Rations is the "Sell Resources" button, but that requires Stage 2 to appear. Therefore, Stage 1 is perfectly safe from soft-locks. The player is guaranteed a mathematical path forward.
@@ -32,14 +8,25 @@
 
 **Notes for Future Agents:** Guardrails passed successfully.
 
-### ⚖️ Balance Report: Late Game Resource Scaling
-**Target System:** Stage 3+ Economy
-**The Problem:** Mid-to-late game structures have high resource costs that do not scale well with manual gathering rates. For example, a `Castle` costs 108 Timber, 108 Rations, and 54 Stone. With current base gather rates, it takes 1512 real-time seconds (over 25 minutes) of non-stop clicking to afford the materials for a single Castle if relying primarily on manual gathering. This fundamentally breaks the "Sweat Equity" pacing, turning what should be a milestone achievement into a tedious grind.
-**Simulation Data:** 108 clicks * 5s (Timber) + 108 clicks * 5s (Rations) + 54 clicks * 8s (Stone) = 1512s.
+## Pending Proposals
+
+### ⚖️ Balance Report: 2026-04-24
+**Target System:** Stage 3 Economy / Charter Condition
+**The Problem:** The "Sign the Charter" condition mathematically requires a population of 5 (`pop >= 5`). However, `HOUSING_CAPACITY` is set to 4 in `frontend/src/library.js`. When a player builds their first house to transition to Stage 3, they hit a hard capacity cap of 4. Because there are no UI prompts instructing them to build a second residential structure, they wait endlessly for a 5th citizen that can never spawn.
+**Simulation Data:** `tests/simulate_stage3_charter.js` confirmed that after 1000 macro-ticks with 1 residential lot, population maxes out at 4. Changing `HOUSING_CAPACITY` to 5 allows the population to reach 5, mathematically un-bricking the progression state.
 
 **Proposed Adjustments (DO NOT IMPLEMENT):**
-* `App.jsx`: Increase the base yield of `handleGatherTimber`, `handleHuntRations`, and `handleGatherStone` based on the current `stage` (e.g., `setTimber(t => t + (1 + stage))`).
-* `App.jsx`: Alternatively, increase the click yield multiplier if specific structures (like `Lumberyard` or `Granary`) have been built.
-* `library.js`: Consider reducing the material costs of high-end `edifice` structures if manual gathering is intended to remain the primary fallback.
+* `library.js`: Change `HOUSING_CAPACITY` from `4` to `5`.
 
-**Notes for Future Agents:** Ensuring "Sweat Equity" remains viable means manual clicks should still feel impactful even when the kingdom scales. A flat +1 yield in late game is mathematically demoralizing.
+**Notes for Future Agents:** Mason/Jules, if you implement this, ensure the frontend population derivations in `App.jsx` cleanly reflect the new max capacity without breaking the UI grid spacing.
+
+### ⚖️ Balance Report: 2026-04-25 / Stage 1 to Stage 2 Grind
+**Target System:** Stage 1 Economy / Establish Camp Condition
+**The Problem:** The transition from Stage 1 to Stage 2 requires gathering 5 Timber and 5 Rations. The lack of UI feedback combined with the wait times for progress bars creates "Heavy Rep" fatigue. The playtest bot generated over 400 manual clicks alternating between gathering Timber and Rations but never progressed to Stage 2 because the required 5/5 threshold is not communicated in the UI, leading to aimless clicking. Establishing the camp requires 10+ clicks of waiting for progress bars just to transition.
+**Simulation Data:** `tests/simulate_stage2_grind.js` confirmed that simulating a player alternating gathering Timber and Rations to reach 5 each requires 10 manual wait cycles/ticks.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `frontend/src/App.jsx`: Lower the condition for the "Establish Camp" button from `timber < 5 || rations < 5` to `timber < 3 || rations < 3`.
+* `frontend/src/App.jsx`: Update the UI to explicitly show the `(3/3)` requirement on the gather buttons.
+
+**Notes for Future Agents:** Mason/Palette, if you implement this, ensure the UI explicitly displays the 3/3 goal so players know what they are clicking towards.

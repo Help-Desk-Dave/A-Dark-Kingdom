@@ -21,13 +21,28 @@ const SettlementGrid = ({
 
     const localPops = pops.filter(p => p.settlementCoords.sx === sx && p.settlementCoords.sy === sy);
 
+    // ⚡ Bolt Optimization: Replace O(n²) nested loops with O(n) hash maps
+    const popsByCoord = {};
+    localPops.forEach(p => {
+        const key = `${p.currentCoords.x}-${p.currentCoords.y}`;
+        if (!popsByCoord[key]) popsByCoord[key] = [];
+        popsByCoord[key].push(p);
+    });
+
+    const jobsByCoord = {};
+    constructionQueue.forEach(job => {
+        if (job.sx === sx && job.sy === sy) {
+            job.positionsToFill.forEach(([px, py]) => {
+                jobsByCoord[`${px}-${py}`] = job;
+            });
+        }
+    });
+
     return (
         <div className={`grid grid-cols-5 gap-2 w-fit bg-black p-4 border ${isOvercrowded ? 'border-red-600' : 'border-blue-800'}`}>
             {settlement.grid.map((row, y) => (
                 row.map((cell, x) => {
-                    const activeJob = constructionQueue.find(job =>
-                        job.sx === sx && job.sy === sy && job.positionsToFill.some(p => p[0] === x && p[1] === y)
-                    );
+                    const activeJob = jobsByCoord[`${x}-${y}`];
 
                     if (activeJob) {
                         const percent = Math.floor((activeJob.progress / activeJob.requiredProgress) * 100);
@@ -41,42 +56,20 @@ const SettlementGrid = ({
                             </div>
                         );
                     }
-                    // Check if cell is under construction
-                    const job = constructionQueue.find(q =>
-                        q.sx === sx &&
-                        q.sy === sy &&
-                        q.positionsToFill.some(([px, py]) => px === x && py === y)
-                    );
 
-                    if (job) {
-                        const percent = Math.floor((job.progress / job.requiredProgress) * 100);
-                        return (
-                            <div
-                                key={`${x}-${y}`}
-                                className="w-16 h-16 border border-yellow-500 flex items-center justify-center bg-yellow-900 text-xs text-center cursor-not-allowed flex-col"
-                                style={{
-                                    backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.2) 5px, rgba(0,0,0,0.2) 10px)"
-                                }}
-                            >
-                                {job.active ? (
-                                    <span className="text-white font-bold bg-black/50 px-1 rounded">{percent}%</span>
-                                ) : (
-                                    <span className="text-red-500 font-bold leading-tight bg-black/50 px-1 rounded">Awaiting Builder</span>
-                                )}
-                            </div>
-                        );
-                    }
-                    const cellPops = localPops.filter(p => p.currentCoords.x === x && p.currentCoords.y === y);
+                    const cellPops = popsByCoord[`${x}-${y}`] || [];
                     const isPath = settlement.pathValues && settlement.pathValues[y] && settlement.pathValues[y][x] > 5;
 
                     return (
-                        <div
+                        <button
                             key={`${x}-${y}`}
-                            className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover}`}
+                            type="button"
+                            aria-label="Settlement Cell"
+                            className={`relative w-16 h-16 border border-gray-700 flex items-center justify-center ${isPath ? 'bg-orange-900/40' : 'bg-gray-900'} text-base cursor-pointer ${FLAVORS[flavor].hover} focus-visible:ring-2 focus-visible:ring-blue-500 focus:outline-none`}
                             onClick={() => {
-                                if (stage >= 2 && cell === null && !job) {
+                                if (stage >= 2 && cell === null && !activeJob) {
                                     setBuildMenuTarget({ x, y });
-                                } else if (stage >= 2 && cell !== null && !job) {
+                                } else if (stage >= 2 && cell !== null && !activeJob) {
                                     setInspectorPlot({ x, y, sx, sy, building: cell });
                                     setInspectorHex(null);
                                     setInspectorPop(null);
@@ -94,7 +87,7 @@ const SettlementGrid = ({
                                     <div className="w-2 h-2 bg-yellow-400 rounded-full border border-yellow-700" title={`${p.name} (${p.state})`} />
                                 </div>
                             ))}
-                        </div>
+                        </button>
                     );
                 })
             ))}

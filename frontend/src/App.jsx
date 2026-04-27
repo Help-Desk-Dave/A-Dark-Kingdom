@@ -8,6 +8,8 @@ import HeroSelection from './components/HeroSelection';
 import GameMenu from './components/GameMenu';
 import WorldGrid from './components/WorldGrid';
 import SettlementGrid from './components/SettlementGrid';
+import InspectorPanel from './components/InspectorPanel';
+import { KingdomLedger } from './components/KingdomLedger';
 
 // --- REACT COMPONENT: APP ---
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
@@ -63,6 +65,12 @@ const App = () => {
         return isNaN(parsed) ? 0 : parsed;
     });
 
+    const [lumber, setLumber] = useState(() => {
+        const saved = localStorage.getItem('adk_lumber');
+        const parsed = saved !== null ? parseInt(saved) : 0;
+        return isNaN(parsed) ? 0 : parsed;
+    });
+
     const [rations, setRations] = useState(() => {
         const saved = localStorage.getItem('adk_rations');
         const parsed = saved !== null ? parseInt(saved) : 0;
@@ -102,19 +110,29 @@ const App = () => {
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                return {
-                    day: 1,
-                    month: 1,
-                    year: 4710,
-                    hour: 0,
-                    ...parsed
-                };
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return {
+                        day: 1,
+                        month: 1,
+                        year: 4710,
+                        hour: 0,
+                        ...parsed
+                    };
+                }
             } catch (e) {
                 console.error("Failed to parse adk_gameTime:", e);
             }
         }
         return { day: 1, month: 1, year: 4710, hour: 0 };
     });
+
+    // ⚡ Bolt Optimization: Use ref for gameTime to avoid dependency triggers
+    const gameTimeRef = useRef(gameTime);
+    useEffect(() => {
+        gameTimeRef.current = gameTime;
+    }, [gameTime]);
+
+    // ⚡ Bolt Optimization: Use ref for gameTime to avoid dependency triggers
 
     // `unrest`: High unrest triggers negative events. Decreased by specific structures (e.g., Castle).
     const [unrest, setUnrest] = useState(() => {
@@ -156,13 +174,17 @@ const App = () => {
                         if (Array.isArray(row)) {
                             return row.map(hex => ({
                                 terrain: 'Plain', // Fallback terrain
-                                ...hex
+                                ...hex,
+                                settlement: hex.settlement ? {
+                                    ...hex.settlement,
+                                    pathValues: hex.settlement.pathValues || Array(5).fill(0).map(() => Array(5).fill(0))
+                                } : null
                             }));
                         }
-                        return row;
+                        // Fallback for corrupted row
+                        return Array.from({ length: 10 }, () => ({ terrain: 'Plain', status: 0, settlement: null, poi: null }));
                     });
                 }
-                return parsed;
             } catch (e) {
                 console.error("Failed to parse adk_world:", e);
             }
@@ -214,7 +236,14 @@ const App = () => {
     // Secret Dev Tool: Toggled by clicking the Terminal icon 3 times within 2 seconds.
     const [vibeMode, setVibeMode] = useState(() => {
         const saved = localStorage.getItem('adk_vibeMode');
-        return saved ? JSON.parse(saved) : false;
+        if (saved) {
+            try {
+                return Boolean(JSON.parse(saved));
+            } catch (e) {
+                console.error("Failed to parse adk_vibeMode:", e);
+            }
+        }
+        return false;
     });
     const terminalClickTimestamps = useRef([]);
 
@@ -224,10 +253,33 @@ const App = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Hero Selection State
-    const [showHeroSelection, setShowHeroSelection] = useState(() => !localStorage.getItem('adk_ruler'));
+    const [showHeroSelection, setShowHeroSelection] = useState(() => {
+        const saved = localStorage.getItem('adk_ruler');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return false;
+                }
+            } catch (e) {
+                return true;
+            }
+        }
+        return true;
+    });
     const [ruler, setRuler] = useState(() => {
         const saved = localStorage.getItem('adk_ruler');
-        return saved ? JSON.parse(saved) : null;
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    return parsed;
+                }
+            } catch (e) {
+                console.error("Failed to parse adk_ruler:", e);
+            }
+        }
+        return null;
     });
 
     // Ref for log auto-scrolling
@@ -253,13 +305,28 @@ const App = () => {
     };
 
     const addLog = React.useCallback((msg) => {
-        setLogs(prev => [...prev.slice(-19), msg]);
+        setLogs(prev => {
+            if (prev.length === 0) return [msg];
+            const lastLog = prev[prev.length - 1];
+            const regex = /^(.*?)(\s+\(x(\d+)\))?$/;
+            const newMatch = msg.match(regex);
+            const lastMatch = lastLog.match(regex);
+
+            if (newMatch && lastMatch && newMatch[1] === lastMatch[1]) {
+                const count = lastMatch[3] ? parseInt(lastMatch[3], 10) : 1;
+                return [...prev.slice(0, -1), `${newMatch[1]} (x${count + 1})`];
+            }
+            return [...prev.slice(-19), msg];
+        });
     }, []);
 
 
     const { pops } = usePopulationEngine(world, stage, HOUSING_CAPACITY, unrest, ruler, addLog);
     const handleGatherSticks = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsGatheringSticks(true);
         setGatherProgress(0);
 
@@ -283,7 +350,10 @@ const App = () => {
     };
 
     const handleGatherStone = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsGatheringStone(true);
         setGatherStoneProgress(0);
 
@@ -295,8 +365,9 @@ const App = () => {
                     if (ruler && Math.random() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
-                        setStone(s => s + 1);
-                        addLog("[+] Gathered stone.");
+                        const yieldAmount = Math.max(1, stage * 2);
+                        setStone(s => s + yieldAmount);
+                        addLog(`[+] Gathered ${yieldAmount} stone.`);
                     }
                     return 100;
                 }
@@ -306,7 +377,10 @@ const App = () => {
     };
 
     const handleGatherTimber = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsGatheringTimber(true);
         setGatherTimberProgress(0);
 
@@ -318,8 +392,9 @@ const App = () => {
                     if (ruler && Math.random() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
-                        setTimber(t => t + 1);
-                        addLog("[+] Gathered timber.");
+                        const yieldAmount = Math.max(1, stage * 2);
+                        setTimber(t => t + yieldAmount);
+                        addLog(`[+] Gathered ${yieldAmount} timber.`);
                     }
                     return 100;
                 }
@@ -329,7 +404,10 @@ const App = () => {
     };
 
     const handleHuntRations = () => {
-        if (isRulerBusy) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
         setIsHunting(true);
         setHuntProgress(0);
 
@@ -341,8 +419,9 @@ const App = () => {
                     if (ruler && Math.random() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
-                        setRations(r => r + 1);
-                        addLog("[+] Hunted for rations.");
+                        const yieldAmount = Math.max(1, stage * 2);
+                        setRations(r => r + yieldAmount);
+                        addLog(`[+] Hunted for ${yieldAmount} rations.`);
                     }
                     return 100;
                 }
@@ -352,7 +431,14 @@ const App = () => {
     };
 
     const handleHelpBuild = () => {
-        if (isRulerBusy || constructionQueue.length === 0) return;
+        if (isRulerBusy) {
+            addLog("[-] You are already busy.");
+            return;
+        }
+        if (constructionQueue.length === 0) {
+            addLog("[-] No active construction to help with.");
+            return;
+        }
         setIsHelpingBuild(true);
         setHelpBuildProgress(0);
 
@@ -367,7 +453,7 @@ const App = () => {
                         setConstructionQueue(prevQueue => {
                             const newQueue = [...prevQueue];
                             if (newQueue.length > 0) {
-                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 2 };
+                                newQueue[0] = { ...newQueue[0], progress: newQueue[0].progress + 20 };
                             }
                             return newQueue;
                         });
@@ -385,6 +471,7 @@ const App = () => {
         localStorage.setItem('adk_stage', stage);
         localStorage.setItem('adk_sticks', sticks);
         localStorage.setItem('adk_timber', timber);
+        localStorage.setItem('adk_lumber', lumber);
         localStorage.setItem('adk_rations', rations);
         localStorage.setItem('adk_logs', JSON.stringify(logs));
         localStorage.setItem('adk_bp', bp);
@@ -411,23 +498,23 @@ const App = () => {
         if (stage < 3 || showHeroSelection) return;
 
         const interval = setInterval(() => {
-            setGameTime(prev => {
-                let { day, month, year, hour } = prev;
-                hour += 1;
-                if (hour >= 24) {
-                    hour = 0;
-                    day += 1;
-                    if (day > 30) {
-                        day = 1;
-                        month += 1;
-                        if (month > 12) {
-                            month = 1;
-                            year += 1;
-                        }
+            let { day, month, year, hour } = gameTimeRef.current;
+            hour += 1;
+            if (hour >= 24) {
+                hour = 0;
+                day += 1;
+                if (day > 30) {
+                    day = 1;
+                    month += 1;
+                    if (month > 12) {
+                        month = 1;
+                        year += 1;
                     }
                 }
-                return { day, month, year, hour };
-            });
+            }
+            const nextGameTime = { day, month, year, hour };
+            gameTimeRef.current = nextGameTime;
+            setGameTime(nextGameTime);
         }, 1000);
 
         return () => clearInterval(interval);
@@ -497,18 +584,32 @@ const App = () => {
                 return nextWorld;
             });
 
-            completedJobs.forEach(job => {
-                addLog(`[+] Construction complete: ${job.structureName}.`);
-                if (stage === 2 && job.structureName === "houses") {
+            if (completedJobs.length > 0) {
+                const structureNames = completedJobs.map(job => job.structureName).join(', ');
+                addLog(`[+] Construction complete: ${structureNames}.`);
+                if (stage === 2 && completedJobs.some(job => job.structureName === "houses")) {
                     setStage(3);
                     addLog("[!] Citizens arrive and build houses. The Kingdom expands!");
                 }
-            });
+                if (completedJobs.some(job => {
+                    const lowerName = job.structureName.toLowerCase();
+                    return lowerName === "castle" || lowerName === "barracks";
+                })) {
+                    setUnrest(u => Math.max(0, u - 2));
+                    addLog("[+] The presence of your new fortifications eases the minds of the people. Unrest decreased.");
+                }
+            }
 
             // Clean up completed jobs
             setConstructionQueue(prevQueue => prevQueue.filter(job => job.progress < job.requiredProgress));
         }
     }, [constructionQueue, stage]);
+
+// ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
+    const totalPopRef = useRef(totalPop);
+    useEffect(() => {
+        totalPopRef.current = totalPop;
+    }, [totalPop]);
 
     // Construction Loop (every 1 second)
     useEffect(() => {
@@ -519,7 +620,7 @@ const App = () => {
                 if (prevQueue.length === 0) return prevQueue;
 
                 const assignedPops = 0; // Pops assigned to jobs/gatherers (to be implemented)
-                let availableBuilders = totalPop === 0 ? 1 : Math.max(0, totalPop - assignedPops);
+                let availableBuilders = totalPopRef.current === 0 ? 1 : Math.max(0, totalPopRef.current - assignedPops);
 
                 return prevQueue.map(job => {
                     if (availableBuilders > 0 && job.progress < job.requiredProgress) {
@@ -532,7 +633,7 @@ const App = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [stage, totalPop]);
+    }, [stage]);
 
     // Prominent Citizens Observer
     const [spawnedCitizens, setSpawnedCitizens] = useState(new Set());
@@ -551,6 +652,7 @@ const App = () => {
                 return Math.floor(count / lots);
             };
 
+            const arrivingCitizens = [];
             PROMINENT_CITIZENS.forEach(citizen => {
                 if (newSpawned.has(citizen.name)) return;
 
@@ -582,9 +684,13 @@ const App = () => {
                 if (conditionsMet) {
                     newSpawned.add(citizen.name);
                     spawnedAny = true;
-                    addLog(`[*] PROMINENT CITIZEN ARRIVES: ${citizen.name}, ${citizen.title}. Quest: ${citizen.quest}`);
+                    arrivingCitizens.push(`[*] PROMINENT CITIZEN ARRIVES: ${citizen.name}, ${citizen.title}. Quest: ${citizen.quest}`);
                 }
             });
+
+            if (arrivingCitizens.length > 0) {
+                addLog(arrivingCitizens.join(' | '));
+            }
 
             if (spawnedAny) {
                 setSpawnedCitizens(newSpawned);
@@ -606,6 +712,7 @@ const App = () => {
 
             // Base Storage Capacities
             let maxTimber = 100;
+            let maxLumber = 100;
             let maxRations = 100;
             let maxStone = 100;
 
@@ -615,6 +722,7 @@ const App = () => {
                 if (structData && structData.storage_cap) {
                     const actualCount = Math.floor(cellCount / structData.lots);
                     if (structData.storage_cap.timber) maxTimber += structData.storage_cap.timber * actualCount;
+                    if (structData.storage_cap.lumber) maxLumber += structData.storage_cap.lumber * actualCount;
                     if (structData.storage_cap.rations) maxRations += structData.storage_cap.rations * actualCount;
                     if (structData.storage_cap.stone) maxStone += structData.storage_cap.stone * actualCount;
                 }
@@ -622,6 +730,7 @@ const App = () => {
 
             // Daily Production Calculation
             let dailyTimber = 0;
+            let dailyLumber = 0;
             let dailyRations = 0;
             let dailyStone = 0;
 
@@ -636,6 +745,7 @@ const App = () => {
                         // Check Consumes
                         if (structData.consumes) {
                             if (structData.consumes.timber && timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                            if (structData.consumes.lumber && lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
                             if (structData.consumes.rations && rations + dailyRations < structData.consumes.rations) canProduce = false;
                             if (structData.consumes.stone && stone + dailyStone < structData.consumes.stone) canProduce = false;
                         }
@@ -644,6 +754,7 @@ const App = () => {
                             // Deduct Consumes
                             if (structData.consumes) {
                                 if (structData.consumes.timber) dailyTimber -= structData.consumes.timber;
+                                if (structData.consumes.lumber) dailyLumber -= structData.consumes.lumber;
                                 if (structData.consumes.rations) dailyRations -= structData.consumes.rations;
                                 if (structData.consumes.stone) dailyStone -= structData.consumes.stone;
                             }
@@ -652,6 +763,7 @@ const App = () => {
                             const produces = structData.produces || structData.production;
                             if (produces) {
                                 if (produces.timber) dailyTimber += produces.timber;
+                                if (produces.lumber) dailyLumber += produces.lumber;
                                 if (produces.rations) dailyRations += produces.rations;
                                 if (produces.stone) dailyStone += produces.stone;
                             }
@@ -661,11 +773,17 @@ const App = () => {
             });
 
             setTimber(t => Math.min(Math.max(0, t + dailyTimber), maxTimber));
+            setLumber(l => Math.min(Math.max(0, l + dailyLumber), maxLumber));
             setRations(r => Math.min(Math.max(0, r + dailyRations), maxRations));
             setStone(s => Math.min(Math.max(0, s + dailyStone), maxStone));
 
-            if (dailyTimber > 0 || dailyRations > 0 || dailyStone > 0) {
-                addLog(`[+] Daily Yield: +${dailyTimber} Timber, +${dailyRations} Rations, +${dailyStone} Stone`);
+            if (dailyTimber !== 0 || dailyLumber !== 0 || dailyRations !== 0 || dailyStone !== 0) {
+                const yields = [];
+                if (dailyTimber !== 0) yields.push(`${dailyTimber > 0 ? '+' : ''}${dailyTimber} Timber`);
+                if (dailyLumber !== 0) yields.push(`${dailyLumber > 0 ? '+' : ''}${dailyLumber} Lumber`);
+                if (dailyRations !== 0) yields.push(`${dailyRations > 0 ? '+' : ''}${dailyRations} Rations`);
+                if (dailyStone !== 0) yields.push(`${dailyStone > 0 ? '+' : ''}${dailyStone} Stone`);
+                addLog(`[+] Daily Yield: ${yields.join(', ')}`);
             }
 
             if (gameTime.day === 1) {
@@ -724,7 +842,10 @@ const App = () => {
     };
 
     const handleReconnoiter = (x, y) => {
-        if (stage < 2) return;
+        if (stage < 2) {
+            addLog("[-] You cannot reconnoiter yet.");
+            return;
+        }
         handleAction(RECON_COST, "recon", () => {
             const newWorld = [...world];
             if (newWorld[y][x].status === 0) {
@@ -742,7 +863,10 @@ const App = () => {
     };
 
     const handleClaim = (x, y) => {
-        if (stage < 2) return;
+        if (stage < 2) {
+            addLog("[-] You cannot claim land yet.");
+            return;
+        }
         handleAction(CLAIM_COST, "claim", () => {
             const newWorld = [...world];
             if (newWorld[y][x].status === 1) {
@@ -881,123 +1005,6 @@ const App = () => {
         setBuildMenuCategory(null);
     };
 
-    const renderHeroSelection = () => {
-        if (!showHeroSelection) return null;
-
-        return (
-            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                <div className="bg-gray-900 border-2 border-yellow-500 p-6 max-w-2xl w-full max-h-[90vh] flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-2xl font-bold text-yellow-400">Choose your Background</h2>
-                    </div>
-                    <p className="text-gray-300 mb-6 italic">Who shall rule these lands?</p>
-
-                    <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3">
-                        {KINGMAKER_BACKGROUNDS.map((bg, index) => (
-                            <div
-                                key={index}
-                                onClick={() => {
-                                    setRuler(bg);
-                                    setShowHeroSelection(false);
-                                    // Set stage to 0 to start the "Dark Room" gathering sequence
-                                    setStage(0);
-                                    addLog(`[+] You remember your past as a ${bg.name}... but right now, you are alone in the freezing dark.`);
-                                }}
-                                className="bg-black border border-gray-700 p-4 hover:border-yellow-400 cursor-pointer transition-colors"
-                            >
-                                <div className="font-bold text-white text-lg">{bg.name}</div>
-                                <div className="text-sm text-cyan-400 mt-1">Skill: {bg.skill} | Bonus: +1 {bg.attribute}</div>
-                                <div className="text-sm text-gray-400 mt-2">{bg.desc}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-
-    // --- RENDER GAME MENU ---
-    // This function creates a fixed/absolute positioned overlay in the top right corner.
-    // It provides system-level controls to the user, such as restarting the game or
-    // accessing debug shortcuts for rapid testing.
-    const renderGameMenu = () => {
-        return (
-            // Position the wrapper in the absolute top right corner. z-50 ensures it floats above the main UI.
-            <div className="absolute top-4 right-4 z-50">
-                {/*
-                  Menu Toggle Button
-                  Clicking this button toggles the boolean `isMenuOpen` state.
-                  It displays the imported `Menu` icon from lucide-react.
-                */}
-                <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="p-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded text-white transition-colors"
-                    aria-label="Toggle Game Menu"
-                >
-                    <Menu size={24} />
-                </button>
-
-                {/*
-                  Conditional Dropdown
-                  If `isMenuOpen` is true, render the dropdown menu containing the options.
-                */}
-                {isMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-600 rounded shadow-xl flex flex-col p-2 gap-2">
-                        {/*
-                          Option 1: Restart Game
-                          This button iterates through all items in localStorage.
-                          Any key starting with the prefix 'adk_' is removed to clear the kingdom simulator's saved state.
-                          After clearing, it calls window.location.reload() to forcefully refresh the application
-                          and re-initialize all default states.
-                        */}
-                        <button
-                            onClick={() => {
-                                // Iterate backwards or gather keys first to safely remove while iterating.
-                                const keysToRemove = [];
-                                for (let i = 0; i < localStorage.length; i++) {
-                                    const key = localStorage.key(i);
-                                    if (key && key.startsWith('adk_')) {
-                                        keysToRemove.push(key);
-                                    }
-                                }
-                                // Remove all gathered 'adk_' prefixed keys.
-                                keysToRemove.forEach(k => localStorage.removeItem(k));
-                                // Reload the window to guarantee a clean slate.
-                                window.location.reload();
-                            }}
-                            className="w-full text-left p-2 hover:bg-red-900 text-red-400 font-bold border border-transparent hover:border-red-500 rounded transition-colors"
-                        >
-                            Restart Game
-                        </button>
-
-                        {/*
-                          Option 2: Debug - Skip to Hero Selection
-                          This debug shortcut fast-forwards the simulation for testing late-game mechanics.
-                          It forces the `stage` to 3, directly shows the Hero Selection screen,
-                          closes the menu to clean up the UI, and logs the debug action.
-                        */}
-                        <button
-                            onClick={() => {
-                                // Force stage to 3, skipping the early game sequence.
-                                setStage(3);
-                                // Trigger the hero selection overlay, bypassing the normal population trigger.
-                                setShowHeroSelection(true);
-                                // Close the game menu after selection to keep the view unobstructed.
-                                setIsMenuOpen(false);
-                                // Inform the user via the in-game event ledger that a debug action occurred.
-                                addLog("[*] DEBUG: Fast-forwarded to Hero Selection via Game Menu.");
-                            }}
-                            className="w-full text-left p-2 hover:bg-yellow-900 text-yellow-400 font-bold border border-transparent hover:border-yellow-500 rounded transition-colors"
-                        >
-                            Debug: Skip to Hero Selection
-                        </button>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     // --- RENDER (JSX) ---
     // The main layout uses Tailwind CSS for a dashboard-style interface.
     // Conditional rendering blocks elements based on the current `stage`.
@@ -1109,150 +1116,41 @@ const App = () => {
                 </div>
 
                 {/* Ledger Area */}
-                <div className={`w-full md:w-64 flex-shrink-0 bg-black p-4 rounded flex flex-col gap-2 transition-all duration-1000 ease-in-out ${bpShake ? 'border-2 border-red-500 animate-[shake_0.5s_ease-in-out]' : `border ${FLAVORS[flavor].border}`}`}>
-                    <h2 className={`text-xl font-bold border-b ${FLAVORS[flavor].border} pb-2`}>Kingdom Ledger</h2>
-                    {stage >= 4 && (
-                        <div className="flex flex-col gap-1 mb-2">
-                            {ruler && (
-                                <>
-                                    <span className="text-yellow-500 font-bold mt-1">Ruler: {ruler.name}</span>
-                                    <span className="text-xs text-gray-400 italic">Skill: {ruler.skill}</span>
-                                    <span className="text-xs text-green-400">Bonus: +1 {ruler.attribute}</span>
-                                    <div className={`border-t ${FLAVORS[flavor].border} mt-1 mb-1`}></div>
-                                </>
-                            )}
-                            <span className="text-gray-400 text-sm font-bold mt-2">Advisors (Click to inspect)</span>
-                            {Object.entries(advisors).map(([role, advisor]) => (
-                                <div
-                                    key={role}
-                                    onClick={() => {
-                                        setInspectorPop({ role, ...advisor });
-                                        setInspectorHex(null); // Clear hex inspector
-                                        setInspectorPlot(null);
-                                    }}
-                                    className="text-sm cursor-pointer hover:text-yellow-400 text-gray-300"
-                                >
-                                    - {role}: {advisor.name} <span className="text-gray-500 text-xs">(Attr: {advisor.attribute})</span>
-                                </div>
-                            ))}
-                            <div className={`border-t ${FLAVORS[flavor].border} mt-1 mb-1`}></div>
-                        </div>
-                    )}
-                    <div className="flex justify-between"><span>Stage:</span> <span>{stage}</span></div>
-                    <div className="flex justify-between"><span>Time:</span> <span>{stage >= 4 ? `Day ${gameTime.day}, Month ${gameTime.month}, Year ${gameTime.year} - ${gameTime.hour}:00` : "???"}</span></div>
-                    <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
-                    <div className="flex justify-between"><span>BP (Influence):</span> <span className={`transition-all duration-300 ${bpFlash ? 'text-yellow-400 font-bold scale-110' : ''}`}>{stage >= 2 ? bp : "???"}</span></div>
-                    <div className="grid grid-cols-3 gap-2 text-center my-2 text-sm">
-                        <div className="bg-gray-800 p-1 rounded flex flex-col">
-                            <span className="text-xs text-gray-400 font-bold">TIMBER</span>
-                            <span className="font-bold text-amber-600">{stage >= 2 ? timber : "???"}</span>
-                        </div>
-                        <div className="bg-gray-800 p-1 rounded flex flex-col">
-                            <span className="text-xs text-gray-400 font-bold">RATIONS</span>
-                            <span className="font-bold text-red-400">{stage >= 2 ? rations : "???"}</span>
-                        </div>
-                        <div className="bg-gray-800 p-1 rounded flex flex-col">
-                            <span className="text-xs text-gray-400 font-bold">STONE</span>
-                            <span className="font-bold text-gray-400">{stage >= 2 ? stone : "???"}</span>
-                        </div>
-                    </div>
-                    <div className={`border-t ${FLAVORS[flavor].border} my-1`}></div>
-                    <div className="flex justify-between"><span>Unrest:</span> <span>{stage >= 4 ? unrest : "???"}</span></div>
-                    <div className="flex justify-between"><span>XP:</span> <span>{stage >= 4 ? xp : "???"}</span></div>
-                    <div className="flex justify-between"><span>Tick:</span> <span>{stage >= 4 ? tickCount : "???"}</span></div>
-                    {vibeMode && (
-                        <div className="flex justify-between items-center text-xs text-cyan-400 mt-2 border-t border-cyan-900 pt-2">
-                            <span>Vibe Variance:</span>
-                            <span dangerouslySetInnerHTML={{ __html: '$$V_v = \\frac{\\sum_{i=1}^{n} (x_i - \\bar{x})^2}{n - 1}$$' }} />
-                        </div>
-                    )}
-
-                    {currentView !== "world" && stage >= 2 && world[currentView.split(',')[1]][currentView.split(',')[0]]?.settlement && (
-                        <>
-                            <div className={`border-t ${FLAVORS[flavor].border} mt-2 pt-2`}></div>
-                            <div className="flex justify-between"><span>Res. Lots:</span> <span>{world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.resLots}</span></div>
-                            <div className="flex justify-between"><span>Other Lots:</span> <span>{world[currentView.split(',')[1]][currentView.split(',')[0]].settlement.otherLots}</span></div>
-                        </>
-                    )}
-                </div>
+                <KingdomLedger
+                    bpShake={bpShake}
+                    FLAVORS={FLAVORS}
+                    flavor={flavor}
+                    stage={stage}
+                    ruler={ruler}
+                    advisors={advisors}
+                    setInspectorPop={setInspectorPop}
+                    setInspectorHex={setInspectorHex}
+                    setInspectorPlot={setInspectorPlot}
+                    gameTime={gameTime}
+                    bpFlash={bpFlash}
+                    bp={bp}
+                    timber={timber}
+                    rations={rations}
+                    stone={stone}
+                    unrest={unrest}
+                    xp={xp}
+                    tickCount={tickCount}
+                    vibeMode={vibeMode}
+                    currentView={currentView}
+                    world={world}
+                />
 
                 {/* Inspector Area */}
-                {(inspectorHex || inspectorPop || inspectorPlot) && (
-                    <div className={`w-full md:w-64 flex-shrink-0 bg-black border ${FLAVORS[flavor].border} p-4 rounded flex flex-col gap-2 animate-[slideIn_0.3s_ease-out]`}>
-                        <div className="flex justify-between items-center border-b ${FLAVORS[flavor].border} pb-2">
-                            <h2 className="text-xl font-bold text-blue-400">Inspector</h2>
-                            <button onClick={() => { setInspectorHex(null); setInspectorPop(null); setInspectorPlot(null); }} aria-label="Close inspector" className="text-red-500 hover:text-red-300 text-sm font-bold">X</button>
-                        </div>
-
-                        {inspectorHex && (
-                            <div className="flex flex-col gap-2 text-sm mt-2">
-                                <div className="font-bold text-white mb-1">Hex ({inspectorHex.x}, {inspectorHex.y})</div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Terrain:</span>
-                                    <span className="capitalize">{inspectorHex.terrain}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Status:</span>
-                                    <span>{inspectorHex.status === 0 ? "Unexplored" : inspectorHex.status === 1 ? "Mapped" : "Claimed"}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Foraging:</span>
-                                    <span>{inspectorHex.terrain === "Swamp" || inspectorHex.terrain === "Forest" ? "High" : "Low"}</span>
-                                </div>
-                                {inspectorHex.status >= 1 && inspectorHex.poi && (
-                                    <div className="flex justify-between text-orange-400 font-bold">
-                                        <span>POI:</span>
-                                        <span>{inspectorHex.poi}</span>
-                                    </div>
-                                )}
-                                {inspectorHex.settlement && (
-                                    <div className="mt-2 p-2 border border-blue-900 bg-blue-900/20">
-                                        <div className="font-bold text-blue-300">{inspectorHex.settlement.name}</div>
-                                        <div className="text-xs text-gray-400 mt-1">Pop: {pops.filter(p => p.settlementCoords.sx === inspectorHex.x && p.settlementCoords.sy === inspectorHex.y).length} / {inspectorHex.settlement.resLots * HOUSING_CAPACITY}</div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {inspectorPop && (
-                            <div className="flex flex-col gap-2 text-sm mt-2">
-                                <div className="font-bold text-yellow-400 mb-1">{inspectorPop.name}</div>
-                                <div className="text-gray-400 italic mb-2">{inspectorPop.role}</div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Attribute:</span>
-                                    <span>{inspectorPop.attribute}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Bonus Yield:</span>
-                                    <span className="text-green-400">+{Math.floor(inspectorPop.attribute / 4)} BP/tick</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {inspectorPlot && (
-                            <div className="flex flex-col gap-2 text-sm mt-2">
-                                <div className="font-bold text-blue-400 mb-1 capitalize">{inspectorPlot.building}</div>
-                                <div className="text-gray-400 italic mb-2">Level 1</div>
-                                <button disabled className="bg-gray-800 text-gray-500 font-bold py-1 px-2 mb-2 cursor-not-allowed border border-gray-700">
-                                    Upgrade (Locked)
-                                </button>
-                                <div className="font-bold text-white mb-1 border-b border-gray-700 pb-1">Assigned Pops</div>
-                                <div className="flex flex-col gap-1">
-                                    {pops.filter(p => p.settlementCoords.sx === inspectorPlot.sx && p.settlementCoords.sy === inspectorPlot.sy && ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) || (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))).length > 0 ? (
-                                        pops.filter(p => p.settlementCoords.sx === inspectorPlot.sx && p.settlementCoords.sy === inspectorPlot.sy && ((p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y) || (p.workCoords && p.workCoords.x === inspectorPlot.x && p.workCoords.y === inspectorPlot.y))).map(p => (
-                                            <div key={p.id} className="text-gray-300 flex justify-between">
-                                                <span>{p.name}</span>
-                                                <span className="text-xs text-gray-500">{p.homeCoords && p.homeCoords.x === inspectorPlot.x && p.homeCoords.y === inspectorPlot.y ? 'Resident' : 'Worker'}</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-gray-500 italic">No pops assigned.</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <InspectorPanel
+                    inspectorHex={inspectorHex}
+                    inspectorPop={inspectorPop}
+                    inspectorPlot={inspectorPlot}
+                    setInspectorHex={setInspectorHex}
+                    setInspectorPop={setInspectorPop}
+                    setInspectorPlot={setInspectorPlot}
+                    flavor={flavor}
+                    pops={pops}
+                />
 
             </div>
             )}
@@ -1296,15 +1194,15 @@ const App = () => {
 
                         <button
                             onClick={() => {
-                                setTimber(t => t - 10);
-                                setRations(r => r - 10);
-                                setBp(currentBp => currentBp + 1);
-                                addLog("[+] You sold raw resources to the local market for 1 BP.");
+                                setTimber(t => t - 5);
+                                setRations(r => r - 5);
+                                setBp(currentBp => currentBp + 2);
+                                addLog("[+] You sold raw resources to the local market for 2 BP.");
                             }}
-                            disabled={timber < 10 || rations < 10}
-                            className={`px-4 py-2 font-bold rounded border ${timber >= 10 && rations >= 10 ? 'bg-yellow-900 text-yellow-100 hover:bg-yellow-700 border-yellow-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
+                            disabled={timber < 5 || rations < 5}
+                            className={`px-4 py-2 font-bold rounded border ${timber >= 5 && rations >= 5 ? 'bg-yellow-900 text-yellow-100 hover:bg-yellow-700 border-yellow-500' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}
                         >
-                            Sell Resources (10 Timber, 10 Rations -&gt; 1 BP)
+                            Sell Resources (5 Timber, 5 Rations -&gt; 2 BP)
                         </button>
                         <ProgressBar
                             onClick={handleHelpBuild}
@@ -1338,7 +1236,11 @@ const App = () => {
                             </button>
                         );
                     }
-                    return null;
+                    return (
+                        <div className="text-gray-400 italic flex items-center">
+                            Hint: Build additional housing to increase capacity to 5.
+                        </div>
+                    );
                 })()}
                 {stage === 0 && (
                     <div className="flex flex-col items-center gap-4">

@@ -149,3 +149,35 @@ Modified frontend/src/App.jsx to make Hero Selection modal appear immediately fo
 - Applied max storage boundaries using `Math.min(..., maxStorage)` checks to strictly enforce The Storage Bottleneck.
 ### 🗄️ Midnight Log: State Protection Pass
 As The Archivist, I fortified all `localStorage` state initializations in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`. I replaced naive `parseInt` calls with robust `NaN` checks and wrapped all `JSON.parse` calls in `try...catch` blocks, safely injecting missing default properties (like `bedID`, `terrain`, and `gameTime` fields) using the spread operator to ensure absolute forward-compatibility for player save files.
+
+## 2026-04-23 - Date Sync
+**Agent:** The Oracle 👁️
+**Changes:**
+- Verified the system date and synced it across all agent logs to 2026-04-23 to prevent hallucinating dates.
+
+## 2026-04-23 - The Ledger Purge & Implementation
+**Agent:** Mason 🧱
+**Summary:** Executed a comprehensive cleanup and implementation pass to address long-standing balance issues and player friction.
+- Implemented the "Death Spiral" fix: Buildings like "Castle" and "Barracks" now reduce `unrest` by 2 upon completion.
+- Adjusted "Sweat Equity" scaling: Manual resource gathering (Timber, Rations, Stone) yields now scale with the current progression stage. "Help Build" yields were previously bumped to `+10` and are viable.
+- Purged resolved reports from `BALANCE_LEDGER.md` (Death Spiral, Help Build, Resource Scaling) and `NIGHTWATCH_REPORT.md` (Sweat Equity Trap, Ineffective Help Build).
+
+### Bolt ⚡ - 2026-04-24
+- Optimized `usePopulationEngine.jsx` by memoizing dependencies into `useRef`s to prevent `setInterval` stale closures and combined `setGameTime` and `setPops` logic to eliminate nested re-renders. The simulation tick is now much smoother and runs O(N) gracefully.
+## 2026-04-24 - Daily Commit Summary
+**Agent:** Scribe 📜
+**Changes:**
+- Reviewed commits for the last 24 hours. The primary update was merging PR #101 by Dave (Muse), which added new atmospheric concepts to the Vibe Ledger.
+- Multiple new agent logs, testing scripts (such as `simulate_help_build_optimized.js` and `simulate_death_spiral.js`), and a triage tool (`tools/triage.py`) were committed.
+
+<<<<<<< bolt-optimize-intervals-11554207241284664498
+### 2026-04-25
+**Bolt ⚡:** Optimized the `useEffect` intervals in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`.
+1. Fixed massive synchronous re-render thrashing caused by nested React state setters inside the background tick intervals (`setGameTime(prev => { setPops(prevPops => ...) })`).
+2. Replaced the stale closures in intervals with `useRef` tracked state variables (`gameTimeRef`) which are updated instantaneously.
+3. Both `App.jsx` and `usePopulationEngine.jsx` now compute their logic inside the interval on un-batched references, bypassing the need to constantly trigger complex re-renders just to get the current time or state.
+=======
+## 2026-04-25 - Date Sync
+**Learning:** The correct system date is 2026-04-25.
+**Action:** Use 2026-04-25 for all generated reports and logs in this session.
+>>>>>>> main

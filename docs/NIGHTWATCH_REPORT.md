@@ -1,22 +1,51 @@
-# 🦉 Nightwatch QA Reports
+# 🦉 NIGHTWATCH REPORT
 
-## Identified Friction Points
-
-
-
-
-
-### 🐌 Friction Report: "Heavy Rep" Metric on Gathering
-**Delegated To:** @Equinox (Balance)
+### 🐛 Friction Report: The Stage 3 Charter Soft-Lock (Macro-Flow Dead Zone)
+**Delegated To:** @Quartermaster 📦 / @Scribe 📜
 **Steps to Reproduce:**
-1. Start a new game (Stage 0).
-2. Click "Gather Sticks" or "Gather Timber".
-**The Friction:** It takes over 5.05 seconds of real-world waiting per click to gather a single resource, leading to extreme Player Fatigue. A basic progression step in Stage 0 requires gathering 10 sticks, which forces the player to wait over 50 seconds in total while repeatedly clicking the same button. This violates the 4X Macro-Flow by creating a massive "dead zone" of inactive waiting.
-**Expected Fix:** Reduce the interval duration on manual gathering tasks (e.g. from 80ms/50ms to 20ms) or increase the yield per completion to reduce the number of clicks required.
+1. Progress to Stage 2 and construct `houses` to trigger the start of Stage 3.
+2. Observe the stage transition and wait for population growth or further instructions.
+3. The "Sign the Charter" button condition checks if the kingdom's housing capacity is >= 5: `pop >= 5` where `pop = resLots * HOUSING_CAPACITY`.
+4. Since `HOUSING_CAPACITY` is 4, one set of houses only provides 4 capacity.
+5. The player is soft-locked because there is no visual prompt or objective instructing them to build a second residential structure to reach 5 capacity.
+**The Friction:** The player hits a complete macro-flow dead zone. The game expects them to intuitively know they must build a second residential structure to raise the capacity to 5, but provides no visual hint, UI objective, or ledger prompt. They will sit staring at the screen waiting for a 5th citizen that mathematically cannot spawn, effectively soft-locking their playthrough.
+**Expected Fix:** Either lower the Charter requirement to 4 capacity, increase base `HOUSING_CAPACITY` to 5, or add a persistent UI hint during Stage 3 that explicitly states "Build additional housing to increase capacity to 5."
 
-### 🐛 Friction Report: Missing Ruler's Actions Menu
+
+### 🐛 Friction Report: Stage 1 to Stage 2 Grind & Clarification
+**Date:** 2026-04-24
+**Delegated To:** @Equinox (Balance) & @Mason (Structure)
+**Steps to Reproduce:**
+1. Build a Fire to reach Stage 1.
+2. Attempt to gather enough resources to progress to Stage 2.
+3. Observe that to "Establish Camp" and reach Stage 2, the player needs to gather both 5 Timber and 5 Rations, but there is no UI element showing this requirement.
+**The Friction:** The player experiences "Heavy Rep" fatigue and confusion. The playtest bot generated over 400 manual clicks alternating between gathering Timber and Rations but never progressed to Stage 2 because the required 5/5 threshold is not communicated in the UI, leading to aimless clicking. Establishing the camp requires 10+ clicks of waiting for progress bars just to transition from Stage 1 to Stage 2.
+**Expected Fix:** Lower the requirement for Establish Camp to reduce "Heavy Rep" fatigue, and explicitly add a visual indicator showing the 5/5 requirement in the UI so the player knows what they are working towards.
+
+
+### 🐛 Friction Report: Duplicate Tech Tree Unlocks
+**Date:** 2026-04-24
 **Delegated To:** @Mason (Structure)
 **Steps to Reproduce:**
-1. Progress to Stage 2 (The First Companions) by establishing a camp.
-**The Friction:** The player's ability to manually gather resources or access the "Ruler's Actions" menu is completely missing from the UI in Stage 2. The player is soft-locked and cannot gather additional timber/stone to build initial structures.
-**Expected Fix:** Ensure the "Ruler's Actions" (or equivalent gathering buttons) are properly rendered and accessible in the Stage 2 user interface.
+1. Reach Stage 4 (World Map open).
+2. Look at the Tech Tree (Stub).
+3. Click the "Unlock Agriculture" button multiple times.
+**The Friction:** The player can unlock "Agriculture" multiple times without restriction. The UI renders duplicates of the text "Agriculture" in the Unlocked Technologies list every time the button is clicked, cluttering the UI and implying an error in the tech tree logic that allows duplicate array entries.
+**Expected Fix:** Prevent adding the technology to the `unlockedTechs` state array if it is already present. Or conditionally disable/hide the button if "Agriculture" is already unlocked.
+
+### 🐛 Friction Report: Stage 1 to Stage 2 Clarification
+**Date:** 2026-04-25
+**Delegated To:** @Palette 🎨 & @Equinox (Balance)
+**Steps to Reproduce:**
+1. Build a Fire to reach Stage 1.
+2. Attempt to gather enough resources to progress to Stage 2.
+3. Observe that to "Establish Camp" and reach Stage 2, the player needs to gather both 5 Timber and 5 Rations, but there is no UI element showing this requirement.
+**The Friction:** The player experiences confusion because the 5/5 threshold for Timber and Rations to establish a camp is hidden. The playtest bot blindly hoarded one resource (182 Rations, 0 Timber) in an initial run, failing to progress because it didn't know the requirements. Progression relies on blind guessing or accidentally gathering enough of both resources.
+**Expected Fix:** Explicitly add a visual indicator showing the 5/5 requirement in the UI so the player knows what they are working towards, and consider lowering the threshold to reduce grind.
+### 🐞 Friction Report: Stage 1 Heavy Rep Fatigue (2026-04-26)
+**Delegated To:** @Equinox
+**Steps to Reproduce:**
+1. Progress to Stage 1.
+2. Attempt to gather resources by clicking "Hunt Rations".
+**The Friction:** The telemetry data shows 436 failed actions out of 499 ticks. The bot repeatedly clicks "Hunt Rations" but spends ~87% of its time idling and failing to act because the action button is disabled while the progress bar fills. This creates extreme "Heavy Rep" fatigue where manual labor feels overly punishing and tedious due to the constant wait times.
+**Expected Fix:** Adjust the cooldowns or progress bar durations for manual gathering tasks to reduce idle friction, or increase resource yields to lower the total number of clicks required.

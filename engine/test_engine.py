@@ -43,8 +43,10 @@ class TestEnginePrologue(unittest.TestCase):
 
     def test_stage_2_automation(self):
         self.game.stage = 2
+        self.game.tick_count = 0
         self.game.woodcutters = 2
         self.game.trappers = 1
+        self.game.pending_hero_selection = False
         self.game.citizens.append(Engine.Pop("Outcast"))
 
         initial_timber = self.game.timber
@@ -57,8 +59,9 @@ class TestEnginePrologue(unittest.TestCase):
 
         # 2nd tick - produce and consume
         self.game.tick()
+
         self.assertEqual(self.game.timber, initial_timber + 4)
-        self.assertEqual(self.game.rations, initial_rations + 2 - 1)
+        self.assertEqual(self.game.rations, max(0, initial_rations + 2 - 1))
 
     def test_stage_3_charter_requirement(self):
         self.game.stage = 3
@@ -428,6 +431,25 @@ class TestEngineCitizens(unittest.TestCase):
         self.assertIn("Stas", self.game.spawned_citizens)
         self.assertTrue(any("Stas" in entry for entry in self.game.log))
 
+class TestLibrary(unittest.TestCase):
+    def test_get_random_citizen_valid_output(self):
+        from library import get_random_citizen
+        expected_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+        # Call it multiple times to ensure we get valid outputs
+        for _ in range(10):
+            citizen = get_random_citizen()
+            self.assertIn(citizen, expected_names)
+
+    @patch('library.random.choice')
+    def test_get_random_citizen_mocked(self, mock_choice):
+        from library import get_random_citizen
+        mock_choice.return_value = "TestName"
+        citizen = get_random_citizen()
+
+        expected_names = ["Urist", "Bomvur", "Elara", "Mila", "Finn", "Grog", "Kael", "Zora"]
+        # Verify random.choice was called with the expected names
+        mock_choice.assert_called_once_with(expected_names)
+        self.assertEqual(citizen, "TestName")
 class TestWorldGeneration(unittest.TestCase):
     def setUp(self):
         self.game = Engine.Kingdom("Test Kingdom", flavor="swamp")
