@@ -700,14 +700,25 @@ const App = () => {
         checkProminentCitizens();
     }, [gameTime.hour, stage, worldStats, spawnedCitizens]);
 
+    // ⚡ Bolt Optimization: Use refs for state accessed in daily tick to prevent stale closures without re-triggering effect
+    const worldStatsRef = useRef(worldStats);
+    const advisorsRef = useRef(advisors);
+    const resourcesRef = useRef({ timber, lumber, rations, stone, bp });
+
+    useEffect(() => {
+        worldStatsRef.current = worldStats;
+        advisorsRef.current = advisors;
+        resourcesRef.current = { timber, lumber, rations, stone, bp };
+    }, [worldStats, advisors, timber, lumber, rations, stone, bp]);
+
     // Handle Tick Side Effects (Every Day and Year)
     useEffect(() => {
         if (stage < 3) return;
 
         if (gameTime.hour === 0) {
             let treasurerBonus = 0;
-            if (advisors.Treasurer) {
-                treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
+            if (advisorsRef.current.Treasurer) {
+                treasurerBonus = Math.floor((advisorsRef.current.Treasurer.attribute || 0) / 4);
             }
 
             // Base Storage Capacities
@@ -717,7 +728,7 @@ const App = () => {
             let maxStone = 100;
 
             // Calculate Dynamic Storage Capacities
-            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+            Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
                 const structData = STRUCTURES_DB[structName];
                 if (structData && structData.storage_cap) {
                     const actualCount = Math.floor(cellCount / structData.lots);
@@ -734,8 +745,10 @@ const App = () => {
             let dailyRations = 0;
             let dailyStone = 0;
 
+            const currentResources = resourcesRef.current;
+
             // Sequential Processing (Deficit Protocol)
-            Object.entries(worldStats.structureCounts).forEach(([structName, cellCount]) => {
+            Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
                 const structData = STRUCTURES_DB[structName];
                 if (structData) {
                     const actualCount = Math.floor(cellCount / structData.lots);
@@ -744,10 +757,10 @@ const App = () => {
 
                         // Check Consumes
                         if (structData.consumes) {
-                            if (structData.consumes.timber && timber + dailyTimber < structData.consumes.timber) canProduce = false;
-                            if (structData.consumes.lumber && lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
-                            if (structData.consumes.rations && rations + dailyRations < structData.consumes.rations) canProduce = false;
-                            if (structData.consumes.stone && stone + dailyStone < structData.consumes.stone) canProduce = false;
+                            if (structData.consumes.timber && currentResources.timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                            if (structData.consumes.lumber && currentResources.lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
+                            if (structData.consumes.rations && currentResources.rations + dailyRations < structData.consumes.rations) canProduce = false;
+                            if (structData.consumes.stone && currentResources.stone + dailyStone < structData.consumes.stone) canProduce = false;
                         }
 
                         if (canProduce) {
@@ -796,7 +809,7 @@ const App = () => {
                 setBp(currentBp => currentBp - ANNUAL_UPKEEP);
                 addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
 
-                const expectedBp = bp + treasurerBonus - ANNUAL_UPKEEP;
+                const expectedBp = currentResources.bp + treasurerBonus - ANNUAL_UPKEEP;
                 if (expectedBp < 0) {
                     setUnrest(u => u + 1);
                     addLog("[!] Debt causes unrest!");

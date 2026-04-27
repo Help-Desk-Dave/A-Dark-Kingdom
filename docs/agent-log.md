@@ -181,3 +181,5 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 **Learning:** The correct system date is 2026-04-25.
 **Action:** Use 2026-04-25 for all generated reports and logs in this session.
 >>>>>>> main
+## 2026-04-27
+- **Bolt ⚡**: Optimized `App.jsx` and `usePopulationEngine.jsx` interval loops. Used `useRef` in `App.jsx` to prevent stale closures for dynamic states like resources, and decoupled the `useEffect` dependencies, preventing massive re-render thrashing. Extracted nested loop hash map lookup in `usePopulationEngine.jsx` for pop bed assignment to O(1) by pulling `takenBeds` and `availableBeds` map generation out of the actualCount iteration.
