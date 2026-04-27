@@ -160,3 +160,8 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 * `App.jsx`: Add a `useEffect` idle timer. If no clicks occur for 180 seconds, push log: `[?] The rain begins to fall, washing away the tracks in the mud. The settlement feels very small.`
 * `index.css`: Add a `.swamp-rot` animation keyframe that Palette can apply to the main app container, slowly desaturating the UI colors the longer the player is idle.
 * **Secret Trigger:** If the user returns from idle after 5 minutes and immediately clicks a "Gather" action, unlock a rare log: `[!] The mud is thicker than before. It remembers you.`
+
+### 🌀 Muse Injection (4/27/2026)
+* The first crude huts, built of mud and desperation, now clung like parasites to the bog's dark, breathing skin.
+* The air still hummed with the unseen watchfulness of the swamp's true denizens, their ancient patience a chilling presence around the crude palisades.
+* Their hands were raw, their eyes hollow, but the meager settlement stood, a stubborn insult to the bog's eternal, patient hunger.
