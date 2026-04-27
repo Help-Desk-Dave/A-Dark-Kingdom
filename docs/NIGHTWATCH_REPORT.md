@@ -32,3 +32,11 @@
 3. Click the "Unlock Agriculture" button multiple times.
 **The Friction:** The player can unlock "Agriculture" multiple times without restriction. The UI renders duplicates of the text "Agriculture" in the Unlocked Technologies list every time the button is clicked, cluttering the UI and implying an error in the tech tree logic that allows duplicate array entries.
 **Expected Fix:** Prevent adding the technology to the `unlockedTechs` state array if it is already present. Or conditionally disable/hide the button if "Agriculture" is already unlocked.
+
+### 🐞 Friction Report: Stage 1 Heavy Rep Fatigue (2026-04-26)
+**Delegated To:** @Equinox
+**Steps to Reproduce:**
+1. Progress to Stage 1.
+2. Attempt to gather resources by clicking "Hunt Rations".
+**The Friction:** The telemetry data shows 436 failed actions out of 499 ticks. The bot repeatedly clicks "Hunt Rations" but spends ~87% of its time idling and failing to act because the action button is disabled while the progress bar fills. This creates extreme "Heavy Rep" fatigue where manual labor feels overly punishing and tedious due to the constant wait times.
+**Expected Fix:** Adjust the cooldowns or progress bar durations for manual gathering tasks to reduce idle friction, or increase resource yields to lower the total number of clicks required.
