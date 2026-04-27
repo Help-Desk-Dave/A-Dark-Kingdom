@@ -26,7 +26,7 @@ async function runBot() {
     console.log(`[BOT] Initiating Playtest Run. Target: ${MAX_TICKS} ticks.`);
     
     // Launch browser (set headless: false to actually watch it play)
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch({ headless: false });
     const page = await browser.newPage();
     
     let telemetry = {
