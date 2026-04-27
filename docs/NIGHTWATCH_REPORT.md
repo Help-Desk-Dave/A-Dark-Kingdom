@@ -32,3 +32,11 @@
 3. Click the "Unlock Agriculture" button multiple times.
 **The Friction:** The player can unlock "Agriculture" multiple times without restriction. The UI renders duplicates of the text "Agriculture" in the Unlocked Technologies list every time the button is clicked, cluttering the UI and implying an error in the tech tree logic that allows duplicate array entries.
 **Expected Fix:** Prevent adding the technology to the `unlockedTechs` state array if it is already present. Or conditionally disable/hide the button if "Agriculture" is already unlocked.
+
+### 🐞 Friction Report: 2026-04-27 Date Sync
+**Delegated To:** @Scribe
+**Steps to Reproduce:**
+1. Check system date
+2. Update the date across logs
+**The Friction:** Date could be hallucinated if not synced.
+**Expected Fix:** Update logs to use 2026-04-27.

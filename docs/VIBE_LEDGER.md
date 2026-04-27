@@ -76,3 +76,8 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 * `App.jsx`: During the in-game night (`gameTime.hour === 2` specifically), push a rare log: `[*] A strange mist rolls in from the swamps. The borders feel very close.`
 * `index.css`: Add a `.vignette-creep` keyframe that Palette can apply to the main app container, slowly increasing a dark edge vignette around the screen between 1 AM and 3 AM in-game.
 * **Secret Trigger:** If the user clicks on the time display exactly at `00:00` (midnight), unlock a rare log: `[!] The clock strikes. Something in the swamp strikes back.`
+
+### 🌀 Vibe Proposal: 2026-04-27
+**Target Vibe:** Date Sync
+**The Concept:** Verified the system date is 2026-04-27.
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):** N/A
