@@ -5,6 +5,8 @@ const DIALOGUE_CHANCE = 0.05;
 const STATE_CHANGE_CHANCE = 0.1;
 
 export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, ruler, addLog) => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const simSpeed = parseInt(urlParams.get("speed")) || 1;
     const [pops, setPops] = useState(() => {
         const saved = localStorage.getItem('adk_pops');
         if (saved) {
@@ -378,7 +380,7 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
 
                     return nextPops;
             });
-        }, 1000);
+        }, 1000 / simSpeed);
 
         return () => clearInterval(interval);
     }, [stage]);
