@@ -195,17 +195,6 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
         if (stage < 2) return;
 
         const interval = setInterval(() => {
-            let nextGameTime = { ...gameTimeRef.current };
-            nextGameTime.hour += 1;
-            if (nextGameTime.hour >= 24) {
-                nextGameTime.hour = 0;
-                nextGameTime.day += 1;
-            }
-            setGameTime(nextGameTime);
-
-            // Do the pops update based on the NEW game time
-            setPops(prevPops => {
-                    let nextPops = prevPops.map(pop => {
             const currentHour = gameTimeRef.current.hour || 0;
             const currentDay = gameTimeRef.current.day || 1;
 
@@ -388,8 +377,6 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                     }
 
                     return nextPops;
-                });
-
             });
         }, 1000);
 
