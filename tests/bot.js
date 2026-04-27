@@ -4,7 +4,7 @@ const path = require('path');
 
 // --- BOT CONFIGURATION ---
 // Assuming the Vite dev server is running locally on port 5173
-const TARGET_URL = 'http://localhost:5173';
+const TARGET_URL = "http://localhost:5173/?speed=10";
 const MAX_TICKS = 500; // How many actions the bot will attempt before stopping
 const DATA_FILE = path.join(__dirname, 'bot_telemetry.json');
 
@@ -47,7 +47,7 @@ async function runBot() {
     console.log(`[BOT] Initiating Playtest Run. Target: ${MAX_TICKS} ticks.`);
     
     // Launch browser (set headless: false to actually watch it play)
-    const browser = await chromium.launch({ headless: false });
+    const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     
     let telemetry = {
@@ -90,7 +90,7 @@ async function runBot() {
             const availableActions = ACTION_PRIORITIES[currentStage] || [];
             if (availableActions.length === 0) {
                 console.log(`[BOT] No actions mapped for Stage ${currentStage}. Idling.`);
-                await page.waitForTimeout(1000); // Wait 1 second and try again
+                await page.waitForTimeout(100); // Wait 0.1 second and try again
                 continue;
             }
 
@@ -111,7 +111,7 @@ async function runBot() {
                         
                         // Wait for the progress bar to finish (simulated effort)
                         // Assuming tasks take 1-3 seconds
-                        await page.waitForTimeout(1500); 
+                        await page.waitForTimeout(150);
                         break;
                     }
                 }
@@ -120,7 +120,7 @@ async function runBot() {
             if (!actionTaken) {
                 // If the bot couldn't click anything (e.g., activeTask is running, or starving)
                 telemetry.failures++;
-                await page.waitForTimeout(500); // Small wait before polling again
+                await page.waitForTimeout(50); // Small wait before polling again
             }
 
             // Scrape resources occasionally to update telemetry

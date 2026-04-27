@@ -15,6 +15,8 @@ import { KingdomLedger } from './components/KingdomLedger';
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
 const App = () => {
     // --- GAME STATE & LOCALSTORAGE ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const simSpeed = parseInt(urlParams.get("speed")) || 1;
     // All crucial variables persist via lazy initializers reading from localStorage.
     // This ensures refreshing the browser doesn't wipe progress.
     // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
@@ -346,7 +348,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     const handleGatherStone = () => {
@@ -400,7 +402,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     const handleHuntRations = () => {
@@ -427,7 +429,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     const handleHelpBuild = () => {
@@ -463,7 +465,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     // Save State
@@ -515,7 +517,7 @@ const App = () => {
             const nextGameTime = { day, month, year, hour };
             gameTimeRef.current = nextGameTime;
             setGameTime(nextGameTime);
-        }, 1000);
+        }, 1000 / simSpeed);
 
         return () => clearInterval(interval);
     }, [stage, showHeroSelection]);
@@ -642,7 +644,7 @@ const App = () => {
                     return { ...job, active: false };
                 });
             });
-        }, 1000);
+        }, 1000 / simSpeed);
 
         return () => clearInterval(interval);
     }, [stage]);
