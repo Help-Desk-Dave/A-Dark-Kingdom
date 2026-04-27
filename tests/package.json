@@ -8,7 +8,11 @@
     "run:bot": "node bot.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@playwright/test": "^1.59.1",
-    "playwright": "^1.59.1"
+    "dotenv": "^17.4.2",
+    "node-cron": "^4.2.1",
+    "playwright": "^1.59.1",
+    "shelljs": "^0.10.0"
   }
 }
