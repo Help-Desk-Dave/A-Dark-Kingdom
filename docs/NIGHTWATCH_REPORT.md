@@ -42,3 +42,10 @@
 3. Observe that to "Establish Camp" and reach Stage 2, the player needs to gather both 5 Timber and 5 Rations, but there is no UI element showing this requirement.
 **The Friction:** The player experiences confusion because the 5/5 threshold for Timber and Rations to establish a camp is hidden. The playtest bot blindly hoarded one resource (182 Rations, 0 Timber) in an initial run, failing to progress because it didn't know the requirements. Progression relies on blind guessing or accidentally gathering enough of both resources.
 **Expected Fix:** Explicitly add a visual indicator showing the 5/5 requirement in the UI so the player knows what they are working towards, and consider lowering the threshold to reduce grind.
+### 🐞 Friction Report: Stage 1 Heavy Rep Fatigue (2026-04-26)
+**Delegated To:** @Equinox
+**Steps to Reproduce:**
+1. Progress to Stage 1.
+2. Attempt to gather resources by clicking "Hunt Rations".
+**The Friction:** The telemetry data shows 436 failed actions out of 499 ticks. The bot repeatedly clicks "Hunt Rations" but spends ~87% of its time idling and failing to act because the action button is disabled while the progress bar fills. This creates extreme "Heavy Rep" fatigue where manual labor feels overly punishing and tedious due to the constant wait times.
+**Expected Fix:** Adjust the cooldowns or progress bar durations for manual gathering tasks to reduce idle friction, or increase resource yields to lower the total number of clicks required.
