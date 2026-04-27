@@ -20,7 +20,7 @@ Transition: Once the condition `!(timber < 5 || rations < 5)` is met (meaning `t
 
 Stage 2: The First Companions
 
-Visuals: Settlement Map (5x5 grid) is revealed. Allows interacting with plot grids if `stage >= 2 && cell === null && !activeJob`.
+Visuals: Settlement Map (5x5 grid) is revealed. Allows interacting with plot grids if `stage >= 2 && cell === null && !activeJob`. Ruler's Actions section appears, enabling manual resource gathering and a new [Sell Resources] button which requires `timber >= 5` and `rations >= 5` to exchange for 2 BP.
 
 Logic: The population simulation tick (`usePopulationEngine`) begins (`if (stage < 2) return;`), managing circadian rhythms and organic growth. The kingdom production simulation tick remains Paused (`if (stage < 3 || showHeroSelection) return;`). There is no population-based ration drain. The player can construct basic survival structures (Tents, Wagons).
 
@@ -32,7 +32,7 @@ Visuals: No new UI is permanently revealed during this stage until the populatio
 
 Logic: The kingdom 1-second production simulation tick begins (`if (stage < 3 || showHeroSelection) return;`). Structures start consuming and producing resources based on the Deficit Protocol. Automated roles (Woodcutter, Trapper) do not currently exist.
 
-Transition: Once the housing capacity population reaches a threshold by calculating `hex.settlement.resLots * HOUSING_CAPACITY` resulting in `pop >= 5`, the [Sign the Charter] button appears. Clicking it transitions directly to Stage 4.
+Transition: Once the total population across all settlements reaches a threshold by summing `hex.settlement.resLots * HOUSING_CAPACITY` for each claimed hex, resulting in `pop >= 5`, the [Sign the Charter] button appears. Clicking it transitions directly to Stage 4.
 
 Stage 4: The Dark Kingdom
 
