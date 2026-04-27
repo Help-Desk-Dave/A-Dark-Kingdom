@@ -27,3 +27,13 @@
 **Proposed Adjustments (DO NOT IMPLEMENT):**
 * Verified the system date is 2026-04-27.
 **Notes for Future Agents:** N/A
+### ⚖️ Balance Report: 2026-04-25 / Stage 1 to Stage 2 Grind
+**Target System:** Stage 1 Economy / Establish Camp Condition
+**The Problem:** The transition from Stage 1 to Stage 2 requires gathering 5 Timber and 5 Rations. The lack of UI feedback combined with the wait times for progress bars creates "Heavy Rep" fatigue. The playtest bot generated over 400 manual clicks alternating between gathering Timber and Rations but never progressed to Stage 2 because the required 5/5 threshold is not communicated in the UI, leading to aimless clicking. Establishing the camp requires 10+ clicks of waiting for progress bars just to transition.
+**Simulation Data:** `tests/simulate_stage2_grind.js` confirmed that simulating a player alternating gathering Timber and Rations to reach 5 each requires 10 manual wait cycles/ticks.
+
+**Proposed Adjustments (DO NOT IMPLEMENT):**
+* `frontend/src/App.jsx`: Lower the condition for the "Establish Camp" button from `timber < 5 || rations < 5` to `timber < 3 || rations < 3`.
+* `frontend/src/App.jsx`: Update the UI to explicitly show the `(3/3)` requirement on the gather buttons.
+
+**Notes for Future Agents:** Mason/Palette, if you implement this, ensure the UI explicitly displays the 3/3 goal so players know what they are clicking towards.

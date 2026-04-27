@@ -16,3 +16,10 @@
 ## 2026-04-27 - Date Sync
 **Learning:** The correct system date is 2026-04-27.
 **Action:** Use 2026-04-27 for all generated reports and logs in this session.
+## 2026-04-26 - Scribe Journal Initialized
+**Learning:** Found need to align documentation of state machine with codebase logic.
+**Action:** Always verify conditions via grep or explicit file reading before editing markdown.
+
+## 2026-04-25 - Date Sync
+**Learning:** The correct system date is 2026-04-25.
+**Action:** Use 2026-04-25 for all generated reports and logs in this session.
