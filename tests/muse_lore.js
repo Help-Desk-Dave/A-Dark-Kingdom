@@ -14,12 +14,22 @@ async function generateFlavorText() {
     // 1. Read what happened in the last bot run
     let lastRun = "The founder just arrived in the swamp.";
     if (fs.existsSync(DATA_FILE)) {
-        const rawData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-        const run = rawData[rawData.length - 1];
-        if (run.deathSpiralDetected) {
-            lastRun = "The founder starved to death surrounded by unrefined timber.";
-        } else if (run.stageReached >= 2) {
-            lastRun = "The founder successfully built a settlement and survived the early days.";
+        let rawData = [];
+        try {
+            rawData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        } catch (err) {
+            console.error("[THE MUSE] Telemetry file corrupted. Wiping and resetting.");
+            fs.writeFileSync(DATA_FILE, '[]');
+            rawData = [];
+        }
+
+        if (rawData.length > 0) {
+            const run = rawData[rawData.length - 1];
+            if (run.deathSpiralDetected) {
+                lastRun = "The founder starved to death surrounded by unrefined timber.";
+            } else if (run.stageReached >= 2) {
+                lastRun = "The founder successfully built a settlement and survived the early days.";
+            }
         }
     }
 
