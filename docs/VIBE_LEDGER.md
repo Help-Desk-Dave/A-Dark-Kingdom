@@ -2,6 +2,33 @@
 
 ## Atmospheric Concepts
 
+### 🌀 Vibe Proposal: 2026-04-27/Flickering Hope
+**Target Vibe:** The flickering hope and creeping darkness in Stage 1.
+**The Concept:** When the player establishes a fire but remains idle, the light should feel fragile against the oppressive dark of the swamp.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: Add an idle timer in Stage 1. If no clicks occur for 45 seconds, push log: `[?] The fire sputters. The shadows inch closer.`
+* `index.css`: Add a `.flicker-die` keyframe to make the fire icon dim occasionally.
+* **Secret Trigger:** If the user clicks the fire icon exactly 7 times while idle, unlock a rare log: `[!] Sparks fly. You see a face in the flames for a fraction of a second.`
+
+### 🌀 Vibe Proposal: 2026-04-27/The Vast Dark
+**Target Vibe:** The daunting realization of a larger, hostile world when reaching Stage 4.
+**The Concept:** Opening the world map shouldn't just be a mechanical UI change; it should feel like standing on a precipice. The world is vast, murky, and unforgiving.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When `stage` transitions to 4, pause for 1 second and push log: `[!] The fog parts slightly. The world is vast, and you are very small.`
+* `index.css`: Add a `.map-reveal-creep` animation keyframe to make the map grid slowly fade in from the edges, as if clearing away dark mist.
+* **Secret Trigger:** If the user clicks the center of the world map 5 times immediately after it opens, unlock log: `[?] A drop of black ink bleeds across the parchment.`
+
+### 🌀 Vibe Proposal: 2026-04-27/The Swamp Reclaims
+**Target Vibe:** The inevitable decay of the swamp claiming hoarded wealth.
+**The Concept:** If the player gathers resources but hoards them endlessly without building, the atmosphere should imply that the damp rot of the environment is setting in.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: If a resource like `timber` or `rations` remains unspent for over 2 minutes, occasionally push log: `[*] The damp rot spreads. What you hoard, the swamp reclaims.`
+* `index.css`: Add a `.rot-text` animation keyframe that applies a subtle brownish-green tinge to the stagnant resource counter.
+* **Secret Trigger:** If the user clicks a stagnant resource exactly 13 times, unlock log: `[!] You wipe away the mold, but it grows back as you watch.`
+
 ### 🌀 Vibe Proposal: Oppressive Isolation in Stage 0
 **Target Vibe:** Oppressive Isolation in Stage 0
 **The Concept:** The game should emphasize the crushing solitude of the wilderness. The terminal is an ancient, spectral interface that occasionally glitches, and the silence should feel heavy when the player hesitates.
