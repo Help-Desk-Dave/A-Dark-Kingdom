@@ -103,3 +103,29 @@ While `docs/Rules.md` mentions 'defending', 'ruling', and 'building', the game c
 * `App.jsx`: When a user recons or claims a `Swamp` tile in the `WorldGrid`, add a 5% chance to push a rare log: `[!] The murky waters here are choked with strange, pale roots. The air smells of copper.`
 * `index.css`: Add a `.murk-reveal` transition for newly revealed swamp tiles, making them appear slowly from blackness rather than snapping into view.
 * **Secret Trigger:** If the user clicks the same unexplored map tile 5 times rapidly, unlock a rare log: `[!] Stop staring into the fog. It's starting to stare back.`
+### 🌀 Vibe Proposal: 2026-04-25 / The Deep Quarry
+**Target Vibe:** The oppressive, suffocating atmosphere of digging into the cursed earth.
+**The Concept:** When the player gathers stone, it shouldn't just feel like mining; it should feel like unearthing something that was buried for a reason.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: When `gatherStoneProgress` completes, add a 1% chance to push a rare log: `[!] The stone is cold, and smells faintly of dried blood. You struck something metallic.`
+* `index.css`: Add a `.stone-dust` animation keyframe that Palette can apply to the main screen, creating a subtle grey vignette that fades in and out while `isGatheringStone` is true.
+* **Secret Trigger:** If the user clicks "Gather Stone" 7 times in a row without doing any other action, unlock a rare log: `[!] You dig deeper. The echoes from the quarry don't sound like pickaxes anymore.`
+
+### 🌀 Vibe Proposal: 2026-04-25 / Debt and Despair
+**Target Vibe:** The creeping dread of a failing economy.
+**The Concept:** The game notes `[!] Debt causes unrest!`. The player should feel the weight of this debt, not just as numbers, but as the palpable anger and despair of a ruined kingdom.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: If `bp < 0` (debt) and the user opens the Ledger, push a rare log: `[?] The ledger is covered in angry, scrawled threats. They demand their due.`
+* `index.css`: Add a `.debt-tremor` keyframe animation that slightly shakes the BP counter and turns it a rusted, dried-blood red when BP is negative.
+* **Secret Trigger:** If the user attempts to construct a building while in debt and fails due to lack of BP, unlock a rare log: `[!] The workers throw down their tools. "We don't work for empty promises," they spit.`
+
+### 🌀 Vibe Proposal: 2026-04-25 / The Endless Rain (Idle State)
+**Target Vibe:** The crushing stagnation of the swamp when left alone.
+**The Concept:** If the player stops interacting, the swamp begins to reclaim the UI. It shouldn't feel like a pause; it should feel like abandonment.
+
+**Implementation Details (DO NOT IMPLEMENT DIRECTLY):**
+* `App.jsx`: Add a `useEffect` idle timer. If no clicks occur for 180 seconds, push log: `[?] The rain begins to fall, washing away the tracks in the mud. The settlement feels very small.`
+* `index.css`: Add a `.swamp-rot` animation keyframe that Palette can apply to the main app container, slowly desaturating the UI colors the longer the player is idle.
+* **Secret Trigger:** If the user returns from idle after 5 minutes and immediately clicks a "Gather" action, unlock a rare log: `[!] The mud is thicker than before. It remembers you.`

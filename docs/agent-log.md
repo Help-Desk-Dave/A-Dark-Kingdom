@@ -169,3 +169,15 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 **Changes:**
 - Reviewed commits for the last 24 hours. The primary update was merging PR #101 by Dave (Muse), which added new atmospheric concepts to the Vibe Ledger.
 - Multiple new agent logs, testing scripts (such as `simulate_help_build_optimized.js` and `simulate_death_spiral.js`), and a triage tool (`tools/triage.py`) were committed.
+
+<<<<<<< bolt-optimize-intervals-11554207241284664498
+### 2026-04-25
+**Bolt ⚡:** Optimized the `useEffect` intervals in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`.
+1. Fixed massive synchronous re-render thrashing caused by nested React state setters inside the background tick intervals (`setGameTime(prev => { setPops(prevPops => ...) })`).
+2. Replaced the stale closures in intervals with `useRef` tracked state variables (`gameTimeRef`) which are updated instantaneously.
+3. Both `App.jsx` and `usePopulationEngine.jsx` now compute their logic inside the interval on un-batched references, bypassing the need to constantly trigger complex re-renders just to get the current time or state.
+=======
+## 2026-04-25 - Date Sync
+**Learning:** The correct system date is 2026-04-25.
+**Action:** Use 2026-04-25 for all generated reports and logs in this session.
+>>>>>>> main
