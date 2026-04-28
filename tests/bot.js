@@ -71,6 +71,16 @@ async function runBot() {
         for (let tick = 0; tick < MAX_TICKS; tick++) {
             telemetry.ticksCompleted = tick;
             
+            const warningVisible = await page.evaluate(() => {
+                const elements = Array.from(document.querySelectorAll('*'));
+                return elements.some(el => el.textContent && el.textContent.includes("Treasurer's Warning"));
+            });
+
+            if (warningVisible) {
+                await page.click('button:has-text("Cancel")');
+                continue;
+            }
+
             // 1. Read Current State
             // (We scrape the DOM to find the current stage and resources)
             const stageText = await page.evaluate(() => {
@@ -148,7 +158,13 @@ async function runBot() {
         // Save Telemetry
         let history = [];
         if (fs.existsSync(DATA_FILE)) {
-            history = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            try {
+                history = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            } catch (err) {
+                console.error("[BOT] Telemetry file corrupted. Wiping and resetting.");
+                fs.writeFileSync(DATA_FILE, '[]');
+                history = [];
+            }
         }
         history.push(telemetry);
         fs.writeFileSync(DATA_FILE, JSON.stringify(history, null, 2));
