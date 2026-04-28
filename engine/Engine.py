@@ -804,7 +804,7 @@ if __name__ == "__main__":
     ui_layout = build_layout()
 
     while True:
-        os.system('cls' if os.name == 'nt' else 'clear')
+        console.clear()
         with my_game.lock:
             draw_ui(my_game, ui_layout)
 
