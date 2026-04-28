@@ -1,17 +1,15 @@
-
 import { STRUCTURES_DB } from '../frontend/src/library.js';
 
 const startingResources = {
-    timber: 100,
+    timber: 5,
     lumber: 0,
-    rations: 100,
-    stone: 100
+    rations: 0,
+    stone: 0
 };
 
-// "Mock a kingdom state with 1 Lumberyard and 1 Pier"
-// Lumberyard lot size is 2, so to have actual count = 1, cell count = 2
+// "Mock a kingdom state with 1 Pier and 1 Sawmill"
 const structureCounts = {
-    "lumberyard": 2, // 2 cells = 1 lumberyard
+    "sawmill": 1, // 1 cell = 1 sawmill
     "pier": 1        // 1 cell = 1 pier
 };
 
@@ -23,7 +21,6 @@ let maxStone = 100;
 Object.entries(structureCounts).forEach(([structName, cellCount]) => {
     const structData = STRUCTURES_DB[structName];
     if (structData && structData.storage_cap) {
-        // Here we ensure lot fallbacks if lots missing, though STRUCTURES_DB has lots
         const lots = structData.lots || 1;
         const actualCount = Math.floor(cellCount / lots);
         for (let i = 0; i < actualCount; i++) {

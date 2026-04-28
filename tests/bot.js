@@ -26,20 +26,23 @@ const ACTION_PRIORITIES = {
         { selector: 'button:has-text("Gather Stone")', weight: 1.0 },
         { selector: 'button:has-text("Help Build")', weight: 1.5 },
         { selector: 'button[aria-label="Settlement Cell"]:has-text("[ ]")', weight: 0.5 },
-        { selector: 'button:has-text("Residential")', weight: 2.0 },
+        { selector: 'button:has-text("Residential")', weight: 1.0 },
+        { selector: 'button:has-text("Houses")', weight: 2.0 },
         { selector: 'button.bg-green-900:has-text("Build")', weight: 2.0 },
         { selector: 'button[aria-label="Close build menu"]', weight: 0.1 }
     ],
     3: [
-        { selector: 'button:has-text("Sign the Charter")', weight: 5.0 },
         { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
         { selector: 'button:has-text("Hunt Rations")', weight: 1.0 },
         { selector: 'button:has-text("Gather Stone")', weight: 1.0 },
         { selector: 'button:has-text("Help Build")', weight: 1.5 },
         { selector: 'button[aria-label="Settlement Cell"]:has-text("[ ]")', weight: 0.5 },
-        { selector: 'button:has-text("Residential")', weight: 2.0 },
         { selector: 'button.bg-green-900:has-text("Build")', weight: 2.0 },
-        { selector: 'button[aria-label="Close build menu"]', weight: 0.1 }
+        { selector: 'button[aria-label="Close build menu"]', weight: 0.1 },
+        { selector: 'button:has-text("Industry")', weight: 1.0 },
+        { selector: 'button:has-text("Pier")', weight: 1.0 },
+        { selector: 'button:has-text("Sawmill")', weight: 1.0 },
+        { selector: 'button:has-text("Sign the Charter")', weight: 5.0 }
     ]
 };
 
@@ -82,7 +85,7 @@ async function runBot() {
             let currentStage = 0;
             if (stageText.includes("A small comfort in the dark")) currentStage = 1;
             if (stageText.includes("Camp established at (5,5)")) currentStage = 2;
-            if (stageText.includes("Citizens arrive and build houses")) currentStage = 3;
+            if (stageText.includes("Citizens arrive and build houses") || stageText.includes("The Kingdom expands!")) currentStage = 3;
             if (stageText.includes("The Charter is signed")) currentStage = 4;
             telemetry.stageReached = Math.max(telemetry.stageReached, currentStage);
 
