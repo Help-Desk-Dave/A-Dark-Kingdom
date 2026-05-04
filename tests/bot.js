@@ -4,7 +4,7 @@ const path = require('path');
 
 // --- BOT CONFIGURATION ---
 // Assuming the Vite dev server is running locally on port 5173
-const TARGET_URL = 'http://localhost:5173';
+const TARGET_URL = "http://localhost:5173/?speed=10";
 const MAX_TICKS = 500; // How many actions the bot will attempt before stopping
 const DATA_FILE = path.join(__dirname, 'bot_telemetry.json');
 
@@ -19,6 +19,30 @@ const ACTION_PRIORITIES = {
         { selector: 'button:has-text("Hunt Rations")', weight: 0.6 },
         { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
         { selector: 'button:has-text("Establish Camp")', weight: 1.0 }
+    ],
+    2: [
+        { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
+        { selector: 'button:has-text("Hunt Rations")', weight: 1.0 },
+        { selector: 'button:has-text("Gather Stone")', weight: 1.0 },
+        { selector: 'button:has-text("Help Build")', weight: 1.5 },
+        { selector: 'button[aria-label="Settlement Cell"]:has-text("[ ]")', weight: 0.5 },
+        { selector: 'button:has-text("Residential")', weight: 1.0 },
+        { selector: 'button:has-text("Houses")', weight: 2.0 },
+        { selector: 'button.bg-green-900:has-text("Build")', weight: 2.0 },
+        { selector: 'button[aria-label="Close build menu"]', weight: 0.1 }
+    ],
+    3: [
+        { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
+        { selector: 'button:has-text("Hunt Rations")', weight: 1.0 },
+        { selector: 'button:has-text("Gather Stone")', weight: 1.0 },
+        { selector: 'button:has-text("Help Build")', weight: 1.5 },
+        { selector: 'button[aria-label="Settlement Cell"]:has-text("[ ]")', weight: 0.5 },
+        { selector: 'button.bg-green-900:has-text("Build")', weight: 2.0 },
+        { selector: 'button[aria-label="Close build menu"]', weight: 0.1 },
+        { selector: 'button:has-text("Industry")', weight: 1.0 },
+        { selector: 'button:has-text("Pier")', weight: 1.0 },
+        { selector: 'button:has-text("Sawmill")', weight: 1.0 },
+        { selector: 'button:has-text("Sign the Charter")', weight: 5.0 }
     ]
 };
 
@@ -50,6 +74,16 @@ async function runBot() {
         for (let tick = 0; tick < MAX_TICKS; tick++) {
             telemetry.ticksCompleted = tick;
             
+            const warningVisible = await page.evaluate(() => {
+                const elements = Array.from(document.querySelectorAll('*'));
+                return elements.some(el => el.textContent && el.textContent.includes("Treasurer's Warning"));
+            });
+
+            if (warningVisible) {
+                await page.click('button:has-text("Cancel")');
+                continue;
+            }
+
             // 1. Read Current State
             // (We scrape the DOM to find the current stage and resources)
             const stageText = await page.evaluate(() => {
@@ -60,15 +94,16 @@ async function runBot() {
             
             let currentStage = 0;
             if (stageText.includes("A small comfort in the dark")) currentStage = 1;
-
             if (stageText.includes("Camp established at (5,5)")) currentStage = 2;
+            if (stageText.includes("Citizens arrive and build houses") || stageText.includes("The Kingdom expands!")) currentStage = 3;
+            if (stageText.includes("The Charter is signed")) currentStage = 4;
             telemetry.stageReached = Math.max(telemetry.stageReached, currentStage);
 
             // 2. Decide Action
             const availableActions = ACTION_PRIORITIES[currentStage] || [];
             if (availableActions.length === 0) {
                 console.log(`[BOT] No actions mapped for Stage ${currentStage}. Idling.`);
-                await page.waitForTimeout(1000); // Wait 1 second and try again
+                await page.waitForTimeout(100); // Wait 0.1 second and try again
                 continue;
             }
 
@@ -89,7 +124,7 @@ async function runBot() {
                         
                         // Wait for the progress bar to finish (simulated effort)
                         // Assuming tasks take 1-3 seconds
-                        await page.waitForTimeout(1500); 
+                        await page.waitForTimeout(150);
                         break;
                     }
                 }
@@ -98,7 +133,7 @@ async function runBot() {
             if (!actionTaken) {
                 // If the bot couldn't click anything (e.g., activeTask is running, or starving)
                 telemetry.failures++;
-                await page.waitForTimeout(500); // Small wait before polling again
+                await page.waitForTimeout(50); // Small wait before polling again
             }
 
             // Scrape resources occasionally to update telemetry
@@ -126,7 +161,13 @@ async function runBot() {
         // Save Telemetry
         let history = [];
         if (fs.existsSync(DATA_FILE)) {
-            history = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            try {
+                history = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+            } catch (err) {
+                console.error("[BOT] Telemetry file corrupted. Wiping and resetting.");
+                fs.writeFileSync(DATA_FILE, '[]');
+                history = [];
+            }
         }
         history.push(telemetry);
         fs.writeFileSync(DATA_FILE, JSON.stringify(history, null, 2));

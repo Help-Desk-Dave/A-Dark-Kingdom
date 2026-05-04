@@ -15,6 +15,8 @@ import { KingdomLedger } from './components/KingdomLedger';
 // This is the root component containing all logic, state, and UI rendering for the Kingdom Simulator.
 const App = () => {
     // --- GAME STATE & LOCALSTORAGE ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const simSpeed = parseInt(urlParams.get("speed")) || 1;
     // All crucial variables persist via lazy initializers reading from localStorage.
     // This ensures refreshing the browser doesn't wipe progress.
     // `stage`: Controls progression (1: Awakening, 2: Survival, 3: Expansion, 4: Charter/World Map).
@@ -346,7 +348,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     const handleGatherStone = () => {
@@ -400,7 +402,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     const handleHuntRations = () => {
@@ -427,7 +429,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     const handleHelpBuild = () => {
@@ -463,7 +465,7 @@ const App = () => {
                 }
                 return prev + 1;
             });
-        }, 50);
+        }, 50 / simSpeed);
     };
 
     // Save State
@@ -515,7 +517,7 @@ const App = () => {
             const nextGameTime = { day, month, year, hour };
             gameTimeRef.current = nextGameTime;
             setGameTime(nextGameTime);
-        }, 1000);
+        }, 1000 / simSpeed);
 
         return () => clearInterval(interval);
     }, [stage, showHeroSelection]);
@@ -606,6 +608,18 @@ const App = () => {
     }, [constructionQueue, stage]);
 
 // ⚡ Bolt Optimization: Use refs for frequent states to prevent setInterval from resetting
+
+// ⚡ Bolt Optimization: Fix stale closures for inventory and world stats
+    const inventoryRef = useRef({ timber, lumber, rations, stone, bp });
+    useEffect(() => {
+        inventoryRef.current = { timber, lumber, rations, stone, bp };
+    }, [timber, lumber, rations, stone, bp]);
+
+    const worldStatsRef = useRef(worldStats);
+    useEffect(() => {
+        worldStatsRef.current = worldStats;
+    }, [worldStats]);
+
     const totalPopRef = useRef(totalPop);
     useEffect(() => {
         totalPopRef.current = totalPop;
@@ -630,7 +644,7 @@ const App = () => {
                     return { ...job, active: false };
                 });
             });
-        }, 1000);
+        }, 1000 / simSpeed);
 
         return () => clearInterval(interval);
     }, [stage]);
@@ -757,10 +771,10 @@ const App = () => {
 
                         // Check Consumes
                         if (structData.consumes) {
-                            if (structData.consumes.timber && currentResources.timber + dailyTimber < structData.consumes.timber) canProduce = false;
-                            if (structData.consumes.lumber && currentResources.lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
-                            if (structData.consumes.rations && currentResources.rations + dailyRations < structData.consumes.rations) canProduce = false;
-                            if (structData.consumes.stone && currentResources.stone + dailyStone < structData.consumes.stone) canProduce = false;
+                            if (structData.consumes.timber && inventoryRef.current.timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                            if (structData.consumes.lumber && inventoryRef.current.lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
+                            if (structData.consumes.rations && inventoryRef.current.rations + dailyRations < structData.consumes.rations) canProduce = false;
+                            if (structData.consumes.stone && inventoryRef.current.stone + dailyStone < structData.consumes.stone) canProduce = false;
                         }
 
                         if (canProduce) {
@@ -810,6 +824,7 @@ const App = () => {
                 addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
 
                 const expectedBp = currentResources.bp + treasurerBonus - ANNUAL_UPKEEP;
+                const expectedBp = inventoryRef.current.bp + treasurerBonus - ANNUAL_UPKEEP;
                 if (expectedBp < 0) {
                     setUnrest(u => u + 1);
                     addLog("[!] Debt causes unrest!");
@@ -817,7 +832,7 @@ const App = () => {
             }
         }
 
-    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]);
+    }, [gameTime.hour, gameTime.day, gameTime.month, gameTime.year]); // Removed volatile dependencies to prevent effect teardown
 
     const [treasurerWarning, setTreasurerWarning] = useState(null);
 
@@ -1190,13 +1205,13 @@ const App = () => {
                             onClick={handleGatherTimber}
                             disabled={isRulerBusy}
                             progress={gatherTimberProgress}
-                            label={`Gather Timber (${timber})`}
+                            label={stage === 1 ? `Gather Timber (${timber}/5)` : `Gather Timber (${timber})`}
                         />
                         <ProgressBar
                             onClick={handleHuntRations}
                             disabled={isRulerBusy}
                             progress={huntProgress}
-                            label={`Hunt Rations (${rations})`}
+                            label={stage === 1 ? `Hunt Rations (${rations}/5)` : `Hunt Rations (${rations})`}
                         />
                         <ProgressBar
                             onClick={handleGatherStone}
@@ -1286,18 +1301,20 @@ const App = () => {
                 {stage === 1 && (
                     <>
                         {timber < 5 || rations < 5 ? (
-                            <>
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="text-gray-400 italic">Hint: Gather at least 5 Timber and 5 Rations to establish a camp.</div>
+                                <div className="flex gap-4">
                                 <ProgressBar
                                     onClick={handleGatherTimber}
                                     disabled={isRulerBusy}
                                     progress={gatherTimberProgress}
-                                    label={`Gather Timber (${timber})`}
+                                    label={stage === 1 ? `Gather Timber (${timber}/5)` : `Gather Timber (${timber})`}
                                 />
                                 <ProgressBar
                                     onClick={handleHuntRations}
                                     disabled={isRulerBusy}
                                     progress={huntProgress}
-                                    label={`Hunt Rations (${rations})`}
+                                    label={stage === 1 ? `Hunt Rations (${rations}/5)` : `Hunt Rations (${rations})`}
                                 />
                                 <ProgressBar
                                     onClick={handleGatherStone}
@@ -1305,7 +1322,8 @@ const App = () => {
                                     progress={gatherStoneProgress}
                                     label={`Gather Stone (${stone})`}
                                 />
-                            </>
+                                </div>
+                            </div>
                         ) : (
                             <button
                                 onClick={() => {
@@ -1345,12 +1363,14 @@ const TechTree = ({ unlockedTechs, setUnlockedTechs }) => {
             <h2 className="text-xl font-bold text-cyan-400 mb-2">Tech Tree (Stub)</h2>
             <div className="text-sm text-gray-400">
                 <p>Unlocked Technologies: {unlockedTechs.length > 0 ? unlockedTechs.join(', ') : 'None'}</p>
-                <button
-                    onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
-                    className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
-                >
-                    Unlock Agriculture
-                </button>
+                {!unlockedTechs.includes('Agriculture') && (
+                    <button
+                        onClick={() => setUnlockedTechs(prev => [...prev, 'Agriculture'])}
+                        className="mt-2 bg-gray-800 text-white px-2 py-1 hover:bg-gray-700 border border-gray-600"
+                    >
+                        Unlock Agriculture
+                    </button>
+                )}
             </div>
         </div>
     );

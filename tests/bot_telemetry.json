@@ -1,21 +1,43 @@
 [
   {
-    "runDate": "2026-04-25T14:42:08.798Z",
-    "ticksCompleted": 499,
+    "runDate": "2026-04-27T18:12:47.921Z",
+    "ticksCompleted": 137,
     "resources": {
       "timber": 0,
-      "rations": 180,
+      "rations": 0,
       "sticks": 0
     },
-    "stageReached": 1,
-    "failures": 436
+    "stageReached": 2,
+    "failures": 112
   },
   {
-    "runDate": "2026-04-27T14:34:02.428Z",
+    "runDate": "2026-04-27T19:05:35.896Z",
     "ticksCompleted": 499,
     "resources": {
-      "timber": 6,
-      "rations": 4,
+      "timber": 8,
+      "rations": 10,
+      "sticks": 0
+    },
+    "stageReached": 2,
+    "failures": 477
+  },
+  {
+    "runDate": "2026-04-27T19:09:02.834Z",
+    "ticksCompleted": 116,
+    "resources": {
+      "timber": 0,
+      "rations": 0,
+      "sticks": 0
+    },
+    "stageReached": 2,
+    "failures": 96
+  },
+  {
+    "runDate": "2026-04-27T19:10:40.217Z",
+    "ticksCompleted": 499,
+    "resources": {
+      "timber": 8,
+      "rations": 10,
       "sticks": 0
     },
     "stageReached": 2,

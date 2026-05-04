@@ -3,7 +3,7 @@ import random
 RECON_COST = 5
 CLAIM_COST = 10
 ANNUAL_UPKEEP = 25
-HOUSING_CAPACITY = 4
+HOUSING_CAPACITY = 5
 
 FLAVORS = {
     "swamp": {

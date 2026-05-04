@@ -19,15 +19,19 @@
 **Learning:** React `setInterval` hooks using nested state setter chaining (e.g. `setGameTime(prev => { setPops(prevPops => ...) })`) trigger massive synchronous re-render thrashing when computing loops.
 **Action:** Unified the simulation tick using `useRef` to track constant dependencies (world, unrest) and decoupled the interval so it updates `pops` and `gameTime` efficiently in a single tick scope without chaining React setters.
 
-<<<<<<< bolt-optimize-intervals-11554207241284664498
+## 2026-04-27 - Date Sync
+**Learning:** The correct system date is 2026-04-27.
+**Action:** Use 2026-04-27 for all generated reports and logs in this session.
+## 2026-04-26 - Decoupled Nested State Setters and Memoized Interval Logic
+**Learning:** In the React frontend, chaining state setters inside a `setInterval` (like calling `setPops` inside `setGameTime(prev => ...)` in `usePopulationEngine.jsx`) causes massive synchronous re-render thrashing. Furthermore, scanning the 10x10 world array for housing capacity every single tick is an O(N*M) bottleneck. Finally, using volatile states in the `useEffect` dependency arrays (like `timber`, `worldStats`) in `App.jsx` causes stale closures or forces the interval/effect to constantly tear down.
+**Action:** Always decouple interval logic by extracting the nested setter and computing the required values using a `useRef` tracker (e.g. `gameTimeRef`). Use `useMemo` combined with `useRef` to pre-compute and cache expensive scans (like `settlementInfoRef`). Use `inventoryRef` and `worldStatsRef` to read the latest state inside effects without tearing them down.
 ## 2026-04-25 - Interval Loop Memoization
 **Learning:** React `setInterval` hooks relying on nested state setters (e.g., `setGameTime(prev => { setPops(prevPops => ...) })`) trigger massive synchronous re-render thrashing. Furthermore, intervals with wide dependencies get torn down and recreated too frequently.
 **Action:** In `App.jsx` and `usePopulationEngine.jsx`, use `useRef` to track fast-changing interval inputs like `gameTime` and decouple the setter logic to avoid stale closures without breaking the interval out of its isolated closure scope.
-=======
 ## 2026-04-25 - Date Sync
 **Learning:** The correct system date is 2026-04-25.
 **Action:** Use 2026-04-25 for all generated reports and logs in this session.
->>>>>>> main
 ## 2026-04-27 - O(N) Immigration Precomputation
 **Learning:** During the 24-hour immigration check in `usePopulationEngine.jsx`, placing the `houseLocations` and `takenBeds` filter logic inside the `for(let i=0; i<actualCount; i++)` loop forces O(N^2) evaluation on array manipulation when processing multiple new settlers, which can spike latency on the frontend if scaled. Also, array mapping inside interval hooks without `useRef` causes stale closures and unneeded interval resets.
 **Action:** Always pre-compute map arrays, like `houseLocations` and `takenBeds` out of the iteration bounds for settlers. Remove assigned beds directly from a pre-computed array pool `.splice(bedIndex, 1)` rather than re-filtering `takenBeds` each iteration. Applied `useRef` to resource tracking in `App.jsx` to break synchronous re-rendering on interval ticks.
+=======

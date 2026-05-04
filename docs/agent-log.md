@@ -169,17 +169,177 @@ As The Archivist, I fortified all `localStorage` state initializations in `front
 **Changes:**
 - Reviewed commits for the last 24 hours. The primary update was merging PR #101 by Dave (Muse), which added new atmospheric concepts to the Vibe Ledger.
 - Multiple new agent logs, testing scripts (such as `simulate_help_build_optimized.js` and `simulate_death_spiral.js`), and a triage tool (`tools/triage.py`) were committed.
+## 2026-04-27
+- Merged PR #104: ⚡ Bolt Optimization: Decouple setInterval and memoize dependencies with useRef
 
-<<<<<<< bolt-optimize-intervals-11554207241284664498
+## 2026-04-27 - Implement Ledger Blueprints
+**Agent:** Mason 🧱
+**Changes:**
+- Addressed Stage 3 Charter Soft-Lock by updating HOUSING_CAPACITY from 4 to 5 in library.js.
+- Addressed Stage 1 to Stage 2 Grind & Clarification by adding visual indicators showing the 5/5 requirement for Timber and Rations in App.jsx.
+- Addressed Duplicate Tech Tree Unlocks by conditionally hiding the "Unlock Agriculture" button in the TechTree component if "Agriculture" is already unlocked in App.jsx.
+- Cleared the specific items addressed from NIGHTWATCH_REPORT.md and BALANCE_LEDGER.md.
+## 2026-04-27 - Date Sync
+**Agent:** Scribe 📜
+**Changes:**
+- Verified the system date and synced it across all agent logs to 2026-04-27 to prevent hallucinating dates.
+## 2026-04-26
+**Agent:** Mason 🧱
+**Changes:**
+- Removed soft-locks: Stage 3 charter condition by updating `HOUSING_CAPACITY` and Stage 1 to 2 grind UI indicator.
+- Fixed duplicate "Agriculture" technology additions.
+### 2026-04-26
+- **Bolt ⚡:** Decoupled nested state setters in `usePopulationEngine.jsx` to prevent re-render thrashing, memoized immigration capacity scanning, and fixed stale closures in `App.jsx`'s daily inventory processing using `useRef` tracking.
+## 2026-04-26 - Daily Commit Summary
+**Agent:** Scribe 📜
+**Changes:**
+- Reviewed commits for the last 24 hours. The primary update was merging PR #104 by Dave (Bolt), which optimized `usePopulationEngine.jsx` by memoizing dependencies with `useRef` to decouple `setInterval` from React render cycles.
+- Synced `STATE_MACHINE.md` to reflect actual `stage` conditional logic accurately based on codebase reality.
 ### 2026-04-25
 **Bolt ⚡:** Optimized the `useEffect` intervals in `frontend/src/App.jsx` and `frontend/src/hooks/usePopulationEngine.jsx`.
 1. Fixed massive synchronous re-render thrashing caused by nested React state setters inside the background tick intervals (`setGameTime(prev => { setPops(prevPops => ...) })`).
 2. Replaced the stale closures in intervals with `useRef` tracked state variables (`gameTimeRef`) which are updated instantaneously.
 3. Both `App.jsx` and `usePopulationEngine.jsx` now compute their logic inside the interval on un-batched references, bypassing the need to constantly trigger complex re-renders just to get the current time or state.
-=======
 ## 2026-04-25 - Date Sync
 **Learning:** The correct system date is 2026-04-25.
 **Action:** Use 2026-04-25 for all generated reports and logs in this session.
->>>>>>> main
 ## 2026-04-27
 - **Bolt ⚡**: Optimized `App.jsx` and `usePopulationEngine.jsx` interval loops. Used `useRef` in `App.jsx` to prevent stale closures for dynamic states like resources, and decoupled the `useEffect` dependencies, preventing massive re-render thrashing. Extracted nested loop hash map lookup in `usePopulationEngine.jsx` for pop bed assignment to O(1) by pulling `takenBeds` and `availableBeds` map generation out of the actualCount iteration.
+=======
+
+
+### 🦉 Nightwatch & Quartermaster Patch - 2026-04-27
+
+#### 🦉 Nightwatch Code
+
+```javascript
+// From tests/bot.js
+            let currentStage = 0;
+            if (stageText.includes("A small comfort in the dark")) currentStage = 1;
+            if (stageText.includes("Camp established at (5,5)")) currentStage = 2;
+            if (stageText.includes("Citizens arrive and build houses") || stageText.includes("The Kingdom expands!")) currentStage = 3;
+            if (stageText.includes("The Charter is signed")) currentStage = 4;
+            telemetry.stageReached = Math.max(telemetry.stageReached, currentStage);
+
+// ACTION_PRIORITIES[2] updates
+        { selector: 'button:has-text("Residential")', weight: 1.0 },
+        { selector: 'button:has-text("Houses")', weight: 2.0 },
+
+// ACTION_PRIORITIES[3] updates
+    3: [
+        { selector: 'button:has-text("Gather Timber")', weight: 1.0 },
+        { selector: 'button:has-text("Hunt Rations")', weight: 1.0 },
+        { selector: 'button:has-text("Gather Stone")', weight: 1.0 },
+        { selector: 'button:has-text("Help Build")', weight: 1.5 },
+        { selector: 'button[aria-label="Settlement Cell"]:has-text("[ ]")', weight: 0.5 },
+        { selector: 'button.bg-green-900:has-text("Build")', weight: 2.0 },
+        { selector: 'button[aria-label="Close build menu"]', weight: 0.1 },
+        { selector: 'button:has-text("Industry")', weight: 1.0 },
+        { selector: 'button:has-text("Pier")', weight: 1.0 },
+        { selector: 'button:has-text("Sawmill")', weight: 1.0 },
+        { selector: 'button:has-text("Sign the Charter")', weight: 5.0 }
+    ]
+```
+
+#### 📦 Quartermaster Code
+
+```javascript
+// tests/simulate_production.js
+import { STRUCTURES_DB } from '../frontend/src/library.js';
+
+const startingResources = {
+    timber: 5,
+    lumber: 0,
+    rations: 0,
+    stone: 0
+};
+
+// "Mock a kingdom state with 1 Pier and 1 Sawmill"
+const structureCounts = {
+    "sawmill": 1, // 1 cell = 1 sawmill
+    "pier": 1        // 1 cell = 1 pier
+};
+
+let maxTimber = 100;
+let maxLumber = 100;
+let maxRations = 100;
+let maxStone = 100;
+
+Object.entries(structureCounts).forEach(([structName, cellCount]) => {
+    const structData = STRUCTURES_DB[structName];
+    if (structData && structData.storage_cap) {
+        const lots = structData.lots || 1;
+        const actualCount = Math.floor(cellCount / lots);
+        for (let i = 0; i < actualCount; i++) {
+            if (structData.storage_cap.timber) maxTimber += structData.storage_cap.timber;
+            if (structData.storage_cap.lumber) maxLumber += structData.storage_cap.lumber;
+            if (structData.storage_cap.rations) maxRations += structData.storage_cap.rations;
+            if (structData.storage_cap.stone) maxStone += structData.storage_cap.stone;
+        }
+    }
+});
+
+let resources = { ...startingResources };
+
+console.log("=== 📦 Quartermaster Production Simulation ===");
+console.log(`[Start] Timber: ${resources.timber}/${maxTimber}, Lumber: ${resources.lumber}/${maxLumber}, Rations: ${resources.rations}/${maxRations}, Stone: ${resources.stone}/${maxStone}`);
+
+for (let tick = 1; tick <= 24; tick++) {
+    let dailyTimber = 0;
+    let dailyLumber = 0;
+    let dailyRations = 0;
+    let dailyStone = 0;
+
+    Object.entries(structureCounts).forEach(([structName, cellCount]) => {
+        const structData = STRUCTURES_DB[structName];
+        if (structData) {
+            const lots = structData.lots || 1;
+            const actualCount = Math.floor(cellCount / lots);
+            for (let i = 0; i < actualCount; i++) {
+                let canProduce = true;
+
+                if (structData.consumes) {
+                    if (structData.consumes.timber && resources.timber + dailyTimber < structData.consumes.timber) canProduce = false;
+                    if (structData.consumes.lumber && resources.lumber + dailyLumber < structData.consumes.lumber) canProduce = false;
+                    if (structData.consumes.rations && resources.rations + dailyRations < structData.consumes.rations) canProduce = false;
+                    if (structData.consumes.stone && resources.stone + dailyStone < structData.consumes.stone) canProduce = false;
+                }
+
+                if (canProduce) {
+                    if (structData.consumes) {
+                        if (structData.consumes.timber) dailyTimber -= structData.consumes.timber;
+                        if (structData.consumes.lumber) dailyLumber -= structData.consumes.lumber;
+                        if (structData.consumes.rations) dailyRations -= structData.consumes.rations;
+                        if (structData.consumes.stone) dailyStone -= structData.consumes.stone;
+                    }
+
+                    const produces = structData.produces || structData.production;
+                    if (produces) {
+                        if (produces.timber) dailyTimber += produces.timber;
+                        if (produces.lumber) dailyLumber += produces.lumber;
+                        if (produces.rations) dailyRations += produces.rations;
+                        if (produces.stone) dailyStone += produces.stone;
+                    }
+                }
+            }
+        }
+    });
+
+    resources.timber = Math.min(Math.max(0, resources.timber + dailyTimber), maxTimber);
+    resources.lumber = Math.min(Math.max(0, resources.lumber + dailyLumber), maxLumber);
+    resources.rations = Math.min(Math.max(0, resources.rations + dailyRations), maxRations);
+    resources.stone = Math.min(Math.max(0, resources.stone + dailyStone), maxStone);
+}
+
+console.log(`[End]   Timber: ${resources.timber}/${maxTimber}, Lumber: ${resources.lumber}/${maxLumber}, Rations: ${resources.rations}/${maxRations}, Stone: ${resources.stone}/${maxStone}`);
+
+const netTimber = resources.timber - startingResources.timber;
+const netLumber = resources.lumber - startingResources.lumber;
+const netRations = resources.rations - startingResources.rations;
+const netStone = resources.stone - startingResources.stone;
+
+console.log("\n[Daily Yield]");
+console.log(`Timber:  ${netTimber > 0 ? '+' : ''}${netTimber}`);
+console.log(`Lumber:  ${netLumber > 0 ? '+' : ''}${netLumber}`);
+console.log(`Rations: ${netRations > 0 ? '+' : ''}${netRations}`);
+console.log(`Stone:   ${netStone > 0 ? '+' : ''}${netStone}`);

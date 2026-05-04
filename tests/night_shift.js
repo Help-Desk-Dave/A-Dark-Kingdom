@@ -36,3 +36,9 @@ cron.schedule('0 2 * * *', () => {
         console.log("[+] The Kingdom rests safely. All systems green.");
     }
 });
+
+// Run the Agent Alignment Audit every night at 3:00 AM
+cron.schedule('0 3 * * *', () => {
+    console.log("\n--- Phase 6: Internal Auditor (Agent Alignment) ---");
+    shell.exec('node agent_feedback.js');
+});
