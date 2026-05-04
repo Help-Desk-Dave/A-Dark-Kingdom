@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { secureRandom } from '../utils/random';
 
 const NAMES = ["Algar", "Bryn", "Cael", "Doran", "Elara", "Fen", "Gael", "Halia", "Ivor", "Jarek"];
 const DIALOGUE_CHANCE = 0.05;
@@ -143,7 +144,7 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                 });
 
                                 if (availableBeds.length > 0) {
-                                    const bed = availableBeds[Math.floor(Math.random() * availableBeds.length)];
+                                    const bed = availableBeds[Math.floor(secureRandom() * availableBeds.length)];
                                     updatedPop.homeCoords = { x: bed.x, y: bed.y };
                                     updatedPop.bedId = bed.bedId;
                                     takenBedsLocal.add(`${bed.x},${bed.y}-${bed.bedId}`);
@@ -157,10 +158,10 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                         if (currentPops.length === 0 && ruler) {
                             currentPops.push({
                                 id: popIdCounter.current++,
-                                name: ruler.name || NAMES[Math.floor(Math.random() * NAMES.length)],
+                                name: ruler.name || NAMES[Math.floor(secureRandom() * NAMES.length)],
                                 settlementCoords: { sx, sy },
                                 homeCoords: defaultHome,
-                                workCoords: { x: Math.floor(Math.random() * 5), y: Math.floor(Math.random() * 5) },
+                                workCoords: { x: Math.floor(secureRandom() * 5), y: Math.floor(secureRandom() * 5) },
                                 currentCoords: defaultHome,
                                 state: 'home',
                                 dialogue: null,
@@ -224,7 +225,7 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                             if (nextPop.dialogueTimer <= 0) {
                                 nextPop.dialogue = null;
                             }
-                        } else if (Math.random() < DIALOGUE_CHANCE) {
+                        } else if (secureRandom() < DIALOGUE_CHANCE) {
                             let messages = [];
                             if (nextPop.state === 'Sleeping') messages = ["Zzz...", "..."];
                             else if (nextPop.state === 'home') messages = ["Resting...", "Home sweet home.", "Reading."];
@@ -233,7 +234,7 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                             else if (nextPop.state === 'commuting_to_home') messages = ["Heading home.", "Long day.", "Finally done."];
 
                             if (messages.length > 0) {
-                                nextPop.dialogue = messages[Math.floor(Math.random() * messages.length)];
+                                nextPop.dialogue = messages[Math.floor(secureRandom() * messages.length)];
                                 nextPop.dialogueTimer = 3;
                             }
                         }
@@ -255,11 +256,11 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                         }
 
                         if (nextPop.state === 'home' && !isNight) {
-                            if (Math.random() < STATE_CHANGE_CHANCE) {
+                            if (secureRandom() < STATE_CHANGE_CHANCE) {
                                 nextPop.state = 'commuting_to_work';
                             }
                         } else if (nextPop.state === 'working' && !isNight) {
-                            if (Math.random() < STATE_CHANGE_CHANCE) {
+                            if (secureRandom() < STATE_CHANGE_CHANCE) {
                                 nextPop.state = 'commuting_to_home';
                             }
                         }
@@ -317,11 +318,11 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                              totalHousing = 1;
                         }
 
-                        const roll = Math.random();
+                        const roll = secureRandom();
                         console.log("Immigration Check:", { currentPop: totalPops, maxPop: totalHousing, roll });
                         if (totalPops < totalHousing && (unrestRef.current || 0) < 10) {
                             if (roll < 0.20 && targetSettlement) { // 20% chance
-                                const settlersCount = Math.random() < 0.5 ? 1 : 2;
+                                const settlersCount = secureRandom() < 0.5 ? 1 : 2;
                                 const actualCount = Math.min(settlersCount, totalHousing - totalPops);
 
                                     if (actualCount > 0) {
@@ -352,6 +353,11 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                             let newBedId = 0;
 
                                         if (availableBeds.length > 0) {
+                                            const bed = availableBeds[Math.floor(secureRandom() * availableBeds.length)];
+                                            newHome = { x: bed.x, y: bed.y };
+                                            newBedId = bed.bedId;
+                                        } else {
+                                            const h = houseLocations[Math.floor(secureRandom() * houseLocations.length)];
                                                 const bedIndex = Math.floor(Math.random() * availableBeds.length);
                                                 const bed = availableBeds.splice(bedIndex, 1)[0]; // Remove assigned bed to prevent overlaps
                                             newHome = { x: bed.x, y: bed.y };
@@ -361,24 +367,23 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                             newHome = { x: h.x, y: h.y };
                                         }
 
-                                            const newPop = {
-                                                id: popIdCounter.current++,
-                                                name: NAMES[Math.floor(Math.random() * NAMES.length)],
-                                                settlementCoords: { sx: targetSettlement.sx, sy: targetSettlement.sy },
-                                                homeCoords: newHome,
-                                                bedId: newBedId,
-                                                workCoords: { x: Math.floor(Math.random() * 5), y: Math.floor(Math.random() * 5) },
-                                                currentCoords: { x: 2, y: 4 }, // Spawn at edge
-                                                state: 'commuting_to_home',
-                                                dialogue: "New arrival!",
-                                                dialogueTimer: 5
-                                            };
-                                            nextPops.push(newPop);
-                                        }
-                                        if (addLogRef.current) {
-                                            // setTimeout so we don't trigger a warning about updating another component while rendering
-                                            setTimeout(() => addLogRef.current(`[+] Word of mouth brings ${actualCount} new settler(s) to the kingdom!`), 0);
-                                        }
+                                    const newPop = {
+                                        id: popIdCounter.current++,
+                                        name: NAMES[Math.floor(secureRandom() * NAMES.length)],
+                                        settlementCoords: { sx: targetSettlement.sx, sy: targetSettlement.sy },
+                                        homeCoords: newHome,
+                                        bedId: newBedId,
+                                        workCoords: { x: Math.floor(secureRandom() * 5), y: Math.floor(secureRandom() * 5) },
+                                        currentCoords: { x: 2, y: 4 }, // Spawn at edge
+                                        state: 'commuting_to_home',
+                                        dialogue: "New arrival!",
+                                        dialogueTimer: 5
+                                    };
+                                    nextPops.push(newPop);
+                                }
+                                if (addLogRef.current && actualCount > 0) {
+                                    // setTimeout so we don't trigger a warning about updating another component while rendering
+                                    setTimeout(() => addLogRef.current(`[+] Word of mouth brings ${actualCount} new settler(s) to the kingdom!`), 0);
                                 }
                             }
                         }

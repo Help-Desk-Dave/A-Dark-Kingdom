@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Terminal, Map as MapIcon, Home, Compass, User, AlertCircle, Building, TreePine, Hammer, Menu, Apple, Gem, Coins, Lock, Info } from 'lucide-react';
 import { RECON_COST, CLAIM_COST, ANNUAL_UPKEEP, HOUSING_CAPACITY, FLAVORS, STRUCTURES_DB, PROMINENT_CITIZENS, KINGMAKER_BACKGROUNDS } from './library';
 import { usePopulationEngine } from './hooks/usePopulationEngine';
+import { secureRandom } from './utils/random';
 import ProgressBar from './ProgressBar';
 import BuildMenu from './components/BuildMenu';
 import HeroSelection from './components/HeroSelection';
@@ -200,7 +201,7 @@ const App = () => {
             const row = [];
             for (let x = 0; x < 10; x++) {
                 row.push({
-                    terrain: terrains[Math.floor(Math.random() * terrains.length)],
+                    terrain: terrains[Math.floor(secureRandom() * terrains.length)],
                     status: 0,
                     settlement: null,
                     poi: null
@@ -212,11 +213,11 @@ const App = () => {
         // Randomly assign 5 POIs
         let poisAssigned = 0;
         while (poisAssigned < 5) {
-            let px = Math.floor(Math.random() * 10);
-            let py = Math.floor(Math.random() * 10);
+            let px = Math.floor(secureRandom() * 10);
+            let py = Math.floor(secureRandom() * 10);
             // Don't place on capital (5,5) or if already has POI
             if ((px !== 5 || py !== 5) && newWorld[py][px].poi === null) {
-                newWorld[py][px].poi = pois[Math.floor(Math.random() * pois.length)];
+                newWorld[py][px].poi = pois[Math.floor(secureRandom() * pois.length)];
                 poisAssigned++;
             }
         }
@@ -338,7 +339,7 @@ const App = () => {
                 if (prev >= 99) {
                     clearInterval(interval);
                     setIsGatheringSticks(false);
-                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                    if (ruler && secureRandom() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
                         setSticks(s => s + 1);
@@ -364,7 +365,7 @@ const App = () => {
                 if (prev >= 99) {
                     clearInterval(interval);
                     setIsGatheringStone(false);
-                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                    if (ruler && secureRandom() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
                         const yieldAmount = Math.max(1, stage * 2);
@@ -391,7 +392,7 @@ const App = () => {
                 if (prev >= 99) {
                     clearInterval(interval);
                     setIsGatheringTimber(false);
-                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                    if (ruler && secureRandom() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
                         const yieldAmount = Math.max(1, stage * 2);
@@ -418,7 +419,7 @@ const App = () => {
                 if (prev >= 99) {
                     clearInterval(interval);
                     setIsHunting(false);
-                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                    if (ruler && secureRandom() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No resources gained.");
                     } else {
                         const yieldAmount = Math.max(1, stage * 2);
@@ -449,7 +450,7 @@ const App = () => {
                 if (prev >= 99) {
                     clearInterval(interval);
                     setIsHelpingBuild(false);
-                    if (ruler && Math.random() < (ruler.failMod || 0.1)) {
+                    if (ruler && secureRandom() < (ruler.failMod || 0.1)) {
                         addLog("[!] Your lack of experience caused a setback. No progress made.");
                     } else {
                         setConstructionQueue(prevQueue => {
@@ -692,7 +693,7 @@ const App = () => {
                 } else if (trigger === "Claim a swamp hex") {
                     conditionsMet = worldStats.swampClaimed;
                 } else if (trigger === "Random Event") {
-                    conditionsMet = Math.random() < 0.05;
+                    conditionsMet = secureRandom() < 0.05;
                 }
 
                 if (conditionsMet) {
