@@ -1,4 +1,3 @@
-import os
 import random
 import threading
 import time
@@ -243,6 +242,14 @@ class Kingdom:
             self.tick_count += 1
             self.ruler_is_busy = False  # Ruler is free at the start of a new tick
 
+            # Pre-compute structure counts once per tick to avoid repeated O(N*M) world scans.
+            structure_counts_raw = self.get_structure_counts()
+            def get_count(name):
+                target = name.lower()
+                raw = structure_counts_raw.get(target, 0)
+                lots = STRUCTURES_DB.get(target, {}).get("lots", 1)
+                return raw // lots
+
             # Stage 1: Survival Mode
             if self.stage == 1:
                 # 20% chance to find an Outcast
@@ -264,7 +271,7 @@ class Kingdom:
                 # Note: Woodcutters/Trappers are early stage mechanics, not full buildings, but we set limits just in case.
                 for name, data in STRUCTURES_DB.items():
                     if "storage_cap" in data:
-                        count = self.count_structures(name)
+                        count = get_count(name)
                         if count > 0:
                             max_timber += data["storage_cap"].get("timber", 0) * count
                             max_rations += data["storage_cap"].get("rations", 0) * count
@@ -293,7 +300,7 @@ class Kingdom:
                 # Note: stone is not produced in stage 2/3 natively, but capping for consistency
 
                 # Population growth
-                max_capacity = 2 + (self.count_structures("pioneer tent") * 4)
+                max_capacity = 2 + (get_count("pioneer tent") * 4)
                 if len(self.citizens) < max_capacity:
                     # 15% chance to grow
                     if random.random() < 0.15:
@@ -345,7 +352,7 @@ class Kingdom:
                 # Calculate Dynamic Storage Capacities
                 for name, data in STRUCTURES_DB.items():
                     if "storage_cap" in data:
-                        count = self.count_structures(name)
+                        count = get_count(name)
                         if count > 0:
                             max_timber += data["storage_cap"].get("timber", 0) * count
                             max_rations += data["storage_cap"].get("rations", 0) * count
@@ -354,7 +361,7 @@ class Kingdom:
 
                 # Sequential Processing (Deficit Protocol)
                 for struct_name, data in STRUCTURES_DB.items():
-                    count = self.count_structures(struct_name)
+                    count = get_count(struct_name)
                     for _ in range(count):
                         can_produce = True
 

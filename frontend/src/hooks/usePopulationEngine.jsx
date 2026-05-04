@@ -325,8 +325,8 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                 const settlersCount = secureRandom() < 0.5 ? 1 : 2;
                                 const actualCount = Math.min(settlersCount, totalHousing - totalPops);
 
-                                for(let i=0; i<actualCount; i++) {
-                                    // Find an available bed/home
+                                    if (actualCount > 0) {
+                                        // ⚡ Bolt Optimization: Precompute house locations and taken beds once outside the loop
                                     let houseLocations = [];
                                     targetSettlement.settlement.grid.forEach((sRow, gy) => {
                                         sRow.forEach((cell, gx) => {
@@ -334,18 +334,23 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                         });
                                     });
 
-                                    let newHome = { x: 2, y: 2 };
-                                    let newBedId = 0;
+                                        const takenBeds = new Set(nextPops.map(p => p.bedId !== undefined && p.homeCoords ? `${p.homeCoords.x},${p.homeCoords.y}-${p.bedId}` : null));
+                                        let availableBeds = [];
 
                                     if (houseLocations.length > 0) {
-                                        let availableBeds = [];
                                         houseLocations.forEach(hl => {
                                             for(let j=0; j<HOUSING_CAPACITY; j++) {
-                                                availableBeds.push({ ...hl, bedId: j });
+                                                    const bedKey = `${hl.x},${hl.y}-${j}`;
+                                                    if (!takenBeds.has(bedKey)) {
+                                                        availableBeds.push({ ...hl, bedId: j });
+                                                    }
                                             }
                                         });
-                                        const takenBeds = nextPops.map(p => p.bedId !== undefined ? `${p.homeCoords.x},${p.homeCoords.y}-${p.bedId}` : null);
-                                        availableBeds = availableBeds.filter(b => !takenBeds.includes(`${b.x},${b.y}-${b.bedId}`));
+                                        }
+
+                                        for(let i=0; i<actualCount; i++) {
+                                            let newHome = { x: 2, y: 2 };
+                                            let newBedId = 0;
 
                                         if (availableBeds.length > 0) {
                                             const bed = availableBeds[Math.floor(secureRandom() * availableBeds.length)];
@@ -353,9 +358,14 @@ export const usePopulationEngine = (world, stage, HOUSING_CAPACITY, unrest, rule
                                             newBedId = bed.bedId;
                                         } else {
                                             const h = houseLocations[Math.floor(secureRandom() * houseLocations.length)];
+                                                const bedIndex = Math.floor(Math.random() * availableBeds.length);
+                                                const bed = availableBeds.splice(bedIndex, 1)[0]; // Remove assigned bed to prevent overlaps
+                                            newHome = { x: bed.x, y: bed.y };
+                                            newBedId = bed.bedId;
+                                            } else if (houseLocations.length > 0) {
+                                            const h = houseLocations[Math.floor(Math.random() * houseLocations.length)];
                                             newHome = { x: h.x, y: h.y };
                                         }
-                                    }
 
                                     const newPop = {
                                         id: popIdCounter.current++,

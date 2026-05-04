@@ -31,4 +31,7 @@
 ## 2026-04-25 - Date Sync
 **Learning:** The correct system date is 2026-04-25.
 **Action:** Use 2026-04-25 for all generated reports and logs in this session.
-
+## 2026-04-27 - O(N) Immigration Precomputation
+**Learning:** During the 24-hour immigration check in `usePopulationEngine.jsx`, placing the `houseLocations` and `takenBeds` filter logic inside the `for(let i=0; i<actualCount; i++)` loop forces O(N^2) evaluation on array manipulation when processing multiple new settlers, which can spike latency on the frontend if scaled. Also, array mapping inside interval hooks without `useRef` causes stale closures and unneeded interval resets.
+**Action:** Always pre-compute map arrays, like `houseLocations` and `takenBeds` out of the iteration bounds for settlers. Remove assigned beds directly from a pre-computed array pool `.splice(bedIndex, 1)` rather than re-filtering `takenBeds` each iteration. Applied `useRef` to resource tracking in `App.jsx` to break synchronous re-rendering on interval ticks.
+=======
