@@ -714,14 +714,25 @@ const App = () => {
         checkProminentCitizens();
     }, [gameTime.hour, stage, worldStats, spawnedCitizens]);
 
+    // ⚡ Bolt Optimization: Use refs for state accessed in daily tick to prevent stale closures without re-triggering effect
+    const worldStatsRef = useRef(worldStats);
+    const advisorsRef = useRef(advisors);
+    const resourcesRef = useRef({ timber, lumber, rations, stone, bp });
+
+    useEffect(() => {
+        worldStatsRef.current = worldStats;
+        advisorsRef.current = advisors;
+        resourcesRef.current = { timber, lumber, rations, stone, bp };
+    }, [worldStats, advisors, timber, lumber, rations, stone, bp]);
+
     // Handle Tick Side Effects (Every Day and Year)
     useEffect(() => {
         if (stage < 3) return;
 
         if (gameTime.hour === 0) {
             let treasurerBonus = 0;
-            if (advisors.Treasurer) {
-                treasurerBonus = Math.floor((advisors.Treasurer.attribute || 0) / 4);
+            if (advisorsRef.current.Treasurer) {
+                treasurerBonus = Math.floor((advisorsRef.current.Treasurer.attribute || 0) / 4);
             }
 
             // Base Storage Capacities
@@ -747,6 +758,8 @@ const App = () => {
             let dailyLumber = 0;
             let dailyRations = 0;
             let dailyStone = 0;
+
+            const currentResources = resourcesRef.current;
 
             // Sequential Processing (Deficit Protocol)
             Object.entries(worldStatsRef.current.structureCounts).forEach(([structName, cellCount]) => {
@@ -810,6 +823,7 @@ const App = () => {
                 setBp(currentBp => currentBp - ANNUAL_UPKEEP);
                 addLog(`[-] Annual Upkeep: Paid ${ANNUAL_UPKEEP} BP.`);
 
+                const expectedBp = currentResources.bp + treasurerBonus - ANNUAL_UPKEEP;
                 const expectedBp = inventoryRef.current.bp + treasurerBonus - ANNUAL_UPKEEP;
                 if (expectedBp < 0) {
                     setUnrest(u => u + 1);
